@@ -5,22 +5,45 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>m13-vite</title>
-    <link rel="stylesheet" type="text/css"
+    <title>m13-gpu</title>
+    <!-- <link rel="stylesheet" type="text/css"
         href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:400,500,600&subset=latin" />
     <link rel="stylesheet" type="text/css"
         href="https://fonts.googleapis.com/css?family=IBM+Plex+Mono:400&subset=latin" />
     <link rel="stylesheet" type="text/css" href="style/tx-static.css" />
     <link rel="stylesheet" type="text/css" href="style/tx-dark.css" />
-    <link rel="stylesheet" type="text/css" href="style/tx.css" />
+    <link rel="stylesheet" type="text/css" href="style/tx.css" /> -->
     <script>
-    function run() {
-    import("./src/main.tsx")
-    }
+        function run() {
+            import("./src/main.tsx")
+        }
     </script>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+
+        html,
+        body {
+            margin: 0;
+            /* remove default margin */
+            height: 100%;
+            /* make body fill the browser window */
+            display: flex;
+            place-content: center center;
+        }
+
+        canvas {
+            width: 600px;
+            height: 600px;
+            max-width: 100%;
+            display: block;
+        }
+    </style>
 </head>
 
 <body onload="run()">
+    <canvas></canvas>
 </body>
 
 </html>
