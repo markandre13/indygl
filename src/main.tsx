@@ -11,6 +11,7 @@ import {
 import { ArcballCamera, WASDCamera } from './camera'
 import { createInputHandler } from './input'
 import { VertexBuffer } from './gpu/VertexBuffer'
+import { Texture } from "./gpu/Texture"
 
 async function main() {
 
@@ -98,13 +99,7 @@ fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
 
     // Create a vertex buffer from the cube data.
     const xyz = new VertexBuffer(device, cubeVertexArray)
-    // const verticesBuffer = device.createBuffer({
-    //     size: cubeVertexArray.byteLength,
-    //     usage: GPUBufferUsage.VERTEX,
-    //     mappedAtCreation: true,
-    // })
-    // new Float32Array(verticesBuffer.getMappedRange()).set(cubeVertexArray)
-    // verticesBuffer.unmap()
+
 
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
@@ -166,28 +161,8 @@ fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
     })
 
     // Fetch the image and upload it into a GPUTexture.
-    let cubeTexture: GPUTexture
-    {
-        const response = await fetch('Di-3d.png')
-        if (response.ok == false) {
-            throw Error(`cube texture: fetch failed`)
-        }
-        const imageBitmap = await createImageBitmap(await response.blob())
-
-        cubeTexture = device.createTexture({
-            size: [imageBitmap.width, imageBitmap.height, 1],
-            format: 'rgba8unorm',
-            usage:
-                GPUTextureUsage.TEXTURE_BINDING |
-                GPUTextureUsage.COPY_DST |
-                GPUTextureUsage.RENDER_ATTACHMENT,
-        })
-        device.queue.copyExternalImageToTexture(
-            { source: imageBitmap },
-            { texture: cubeTexture },
-            [imageBitmap.width, imageBitmap.height]
-        )
-    }
+    const cubeTexture = new Texture()
+    await cubeTexture.load(device, "Di-3d.png")
 
     // Create a sampler with linear filtering for smooth interpolation.
     const sampler = device.createSampler({
@@ -200,7 +175,7 @@ fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
         entries: [
             { binding: 0, resource: uniformBuffer },
             { binding: 1, resource: sampler },
-            { binding: 2, resource: cubeTexture.createView() },
+            { binding: 2, resource: cubeTexture.texture!.createView() },
         ],
     })
 
