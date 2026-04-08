@@ -1,11 +1,10 @@
-export const cubeVertexSize = 4 * 10; // Byte size of one cube vertex.
-export const cubePositionOffset = 0;
-export const cubeColorOffset = 4 * 4; // Byte offset of cube vertex color attribute.
-export const cubeUVOffset = 4 * 8;
-export const cubeVertexCount = 36;
-
+/**
+ * a cube defined by 36 vertices
+ * 
+ * 36 vertices = 3 vertices per triangle, 2 triangles per side, 6 sides
+ */
 // prettier-ignore
-export const cubeVertexArray = new Float32Array([
+const cubeVertexArray = new Float32Array([
   // float4 position, float4 color, float2 uv,
   1, -1, 1, 1,   1, 0, 1, 1,  0, 1,
   -1, -1, 1, 1,  0, 0, 1, 1,  1, 1,
@@ -49,3 +48,22 @@ export const cubeVertexArray = new Float32Array([
   1, -1, -1, 1,  1, 0, 0, 1,  0, 1,
   -1, 1, -1, 1,  0, 1, 0, 1,  1, 0,
 ]);
+
+const FLOAT32_SIZE = 4
+
+export const cubeData = {
+    /**
+     * cube vertices in the format (position: float4, color: float4, uv: float2)
+     */
+    vertices: cubeVertexArray,
+    vertexCount: 36,
+    bytesPerVertex: FLOAT32_SIZE * 10,
+    /**
+     * offsets within vertex
+     */
+    offset: {
+        position: 0,
+        color: FLOAT32_SIZE * 4,
+        uv: FLOAT32_SIZE * 8
+    },
+}

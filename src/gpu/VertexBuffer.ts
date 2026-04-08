@@ -1,3 +1,6 @@
+/**
+ * WebGPU vectices hold arbitrary data like position, normal, uv, color, ...
+ */
 export class VertexBuffer {
     buffer: GPUBuffer
     constructor(device: GPUDevice, xyz: Float32Array) {

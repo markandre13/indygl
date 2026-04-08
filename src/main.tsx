@@ -1,12 +1,6 @@
 import { mat4, vec3 } from 'wgpu-matrix'
 import { GUI } from 'dat.gui'
-import {
-    cubeVertexArray,
-    cubeVertexSize,
-    cubeUVOffset,
-    cubePositionOffset,
-    cubeVertexCount,
-} from './geom-cube'
+import { cubeData } from './geom-cube'
 // import cubeWGSL from './cube.wgsl';
 import { ArcballCamera, WASDCamera } from './camera'
 import { createInputHandler } from './input'
@@ -15,33 +9,15 @@ import { Texture } from "./gpu/Texture"
 
 async function main() {
 
-    const cubeWGSL = `
-struct Uniforms {
-  modelViewProjectionMatrix : mat4x4f,
-}
+    const cubeWGSL = /* wgsl */`
+        @group(0) @binding(1) var mySampler: sampler;
+        @group(0) @binding(2) var myTexture: texture_2d<f32>;
 
-@group(0) @binding(0) var<uniform> uniforms : Uniforms;
-@group(0) @binding(1) var mySampler: sampler;
-@group(0) @binding(2) var myTexture: texture_2d<f32>;
-
-struct VertexOutput {
-  @builtin(position) Position : vec4f,
-  @location(0) fragUV : vec2f,
-}
-
-@vertex
-fn vertex_main(
-  @location(0) position : vec4f,
-  @location(1) uv : vec2f
-) -> VertexOutput {
-  return VertexOutput(uniforms.modelViewProjectionMatrix * position, uv);
-}
-
-@fragment
-fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
-  return textureSample(myTexture, mySampler, fragUV);
-}
-
+        // color
+        @fragment
+        fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
+            return textureSample(myTexture, mySampler, fragUV);
+        }
 `
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
     if (canvas === null) {
@@ -74,6 +50,10 @@ fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
         oldCameraType = newCameraType
     })
 
+    //
+    // get GPU
+    //
+
     const adapter = await navigator.gpu?.requestAdapter({
         featureLevel: 'compatibility',
     })
@@ -98,44 +78,52 @@ fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
     })
 
     // Create a vertex buffer from the cube data.
-    const xyz = new VertexBuffer(device, cubeVertexArray)
-
+    // float4 position, float4 color, float2 uv,
+    const xyz = new VertexBuffer(device, cubeData.vertices)
 
     const pipeline = device.createRenderPipeline({
         layout: 'auto',
         vertex: {
+            buffers: [{
+                arrayStride: cubeData.bytesPerVertex,
+                attributes: [
+                    { shaderLocation: 0, offset: cubeData.offset.position, format: 'float32x4' },
+                    { shaderLocation: 1, offset: cubeData.offset.uv, format: 'float32x2' },
+                ],
+            }],
             module: device.createShaderModule({
-                code: cubeWGSL,
-            }),
-            buffers: [
-                {
-                    arrayStride: cubeVertexSize,
-                    attributes: [
-                        {
-                            // position
-                            shaderLocation: 0,
-                            offset: cubePositionOffset,
-                            format: 'float32x4',
-                        },
-                        {
-                            // uv
-                            shaderLocation: 1,
-                            offset: cubeUVOffset,
-                            format: 'float32x2',
-                        },
-                    ],
-                },
-            ],
+                code: /* wgsl */`
+                    struct Uniforms {
+                        modelViewProjectionMatrix : mat4x4f
+                    }
+
+                    @group(0) @binding(0) var<uniform> uniforms : Uniforms;
+               
+                    struct VertexOutput {
+                        @builtin(position) Position : vec4f,
+                        @location(0) fragUV : vec2f,
+                    }
+
+                    @vertex
+                    fn vertex_main(
+                        @location(0) position : vec4f,
+                        @location(1) uv : vec2f
+                    ) -> VertexOutput {
+                        return VertexOutput(uniforms.modelViewProjectionMatrix * position, uv);
+            }` })
         },
         fragment: {
             module: device.createShaderModule({
-                code: cubeWGSL,
-            }),
-            targets: [
-                {
-                    format: presentationFormat,
-                },
-            ],
+                code: /* wgsl */`
+                    @group(0) @binding(1) var mySampler: sampler;
+                    @group(0) @binding(2) var myTexture: texture_2d<f32>;
+
+                    @fragment
+                    fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
+                        return textureSample(myTexture, mySampler, fragUV);
+                    }
+            ` }),
+            targets: [{ format: presentationFormat }]
         },
         primitive: {
             topology: 'triangle-list',
@@ -182,8 +170,7 @@ fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
     const renderPassDescriptor: GPURenderPassDescriptor = {
         colorAttachments: [
             {
-                view: undefined, // Assigned later
-
+                view: undefined as any, // Assigned later
                 clearValue: [0.5, 0.5, 0.5, 1.0],
                 loadOp: 'clear',
                 storeOp: 'store',
@@ -191,7 +178,6 @@ fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
         ],
         depthStencilAttachment: {
             view: depthTexture.createView(),
-
             depthClearValue: 1.0,
             depthLoadOp: 'clear',
             depthStoreOp: 'store',
@@ -233,7 +219,7 @@ fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
         passEncoder.setPipeline(pipeline)
         passEncoder.setBindGroup(0, uniformBindGroup)
         passEncoder.setVertexBuffer(0, xyz.buffer)
-        passEncoder.draw(cubeVertexCount)
+        passEncoder.draw(cubeData.vertexCount)
         passEncoder.end()
         device!.queue.submit([commandEncoder.finish()])
 
