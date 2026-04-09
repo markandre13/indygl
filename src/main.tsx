@@ -61,6 +61,8 @@ async function shadedCube(device: GPUDevice) {
     )
 }
 
+console.log(`SIZE: ${cubeData.vertices.length}`)
+
 async function main() {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
     if (canvas === null) {
@@ -178,7 +180,7 @@ async function main() {
                         return VertexOutput(
                             uniforms.modelViewProjectionMatrix * position,
                             uv,
-                            vec3f(0,0,0)
+                            normal.xyz
                         );
             }` })
         },
@@ -195,7 +197,10 @@ async function main() {
                     ) -> @location(0) vec4f {
                         let lightDirection = normalize(vec3f(4, 10, 6));
                         let light = dot(normalize(normal), lightDirection) * 0.5 + 0.5;
-                        return vec4f(1, 0.5, 0, 1);
+                        let color = vec3f(1, 0.5, 0);
+
+                        return vec4f(color * light, 1);
+                        // return vec4f(1, 0.5, 0, 1);
                         // return textureSample(myTexture, mySampler, fragUV);
                     }
             ` }),
