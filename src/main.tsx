@@ -152,7 +152,8 @@ async function main() {
                 arrayStride: cubeData.bytesPerVertex,
                 attributes: [
                     { shaderLocation: 0, ...cubeData.layout.POSITION },
-                    { shaderLocation: 1, ...cubeData.layout.UV },
+                    { shaderLocation: 1, ...cubeData.layout.NORMAL },
+                    { shaderLocation: 2, ...cubeData.layout.UV },
                 ],
             }],
             module: device.createShaderModule({
@@ -165,14 +166,20 @@ async function main() {
                     struct VertexOutput {
                         @builtin(position) Position : vec4f,
                         @location(0) fragUV : vec2f,
+                        @location(1) normal: vec3f,
                     }
 
                     @vertex
                     fn vertex_main(
                         @location(0) position : vec4f,
-                        @location(1) uv : vec2f
+                        @location(1) normal : vec4f,
+                        @location(2) uv : vec2f
                     ) -> VertexOutput {
-                        return VertexOutput(uniforms.modelViewProjectionMatrix * position, uv);
+                        return VertexOutput(
+                            uniforms.modelViewProjectionMatrix * position,
+                            uv,
+                            vec3f(0,0,0)
+                        );
             }` })
         },
         fragment: {
@@ -182,8 +189,14 @@ async function main() {
                     @group(0) @binding(2) var myTexture: texture_2d<f32>;
 
                     @fragment
-                    fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
-                        return textureSample(myTexture, mySampler, fragUV);
+                    fn fragment_main(
+                        @location(0) fragUV: vec2f,
+                        @location(1) normal: vec3f
+                    ) -> @location(0) vec4f {
+                        let lightDirection = normalize(vec3f(4, 10, 6));
+                        let light = dot(normalize(normal), lightDirection) * 0.5 + 0.5;
+                        return vec4f(1, 0.5, 0, 1);
+                        // return textureSample(myTexture, mySampler, fragUV);
                     }
             ` }),
             targets: [{ format: presentationFormat }]
@@ -198,6 +211,29 @@ async function main() {
             format: 'depth24plus',
         },
     }
+    async function logMessages(name: string, module: GPUShaderModule | undefined) {
+        if (module === undefined) {
+            return
+        }
+        const info = await module.getCompilationInfo()
+        for(let m of info.messages) {
+            const l = `${name}: ${m.lineNum}:${m.linePos}: ${m.message}`
+            switch(m.type) {
+                case "error":
+                    console.error(l)
+                    break
+                case "warning":
+                    console.warn(l)
+                    break
+                case "info":
+                    console.info(l)
+                    break
+            }
+        }
+    }
+    await logMessages("vertex  ", pipelineDef.vertex?.module)
+    await logMessages("fragment", pipelineDef.fragment?.module)
+
     const pipeline = device.createRenderPipeline(pipelineDef)
 
     // define the values for shaders '@group(...) @binding(...)' sections
