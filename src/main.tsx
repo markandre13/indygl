@@ -157,8 +157,9 @@ async function main() {
             }],
             module: device.createShaderModule({
                 code: /* wgsl */`
-                    struct Uniforms { modelViewProjectionMatrix : mat4x4f }
-
+                    struct Uniforms { 
+                        modelViewProjectionMatrix : mat4x4f
+                    }
                     @group(0) @binding(0) var<uniform> uniforms : Uniforms;
                
                     struct VertexOutput {
@@ -198,7 +199,9 @@ async function main() {
         },
     }
     const pipeline = device.createRenderPipeline(pipelineDef)
-    const uniformBindGroup = device.createBindGroup({
+
+    // define the values for shaders '@group(...) @binding(...)' sections
+    const bindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
         entries: [
             { binding: 0, resource: modelViewProjectionBuffer },
@@ -242,7 +245,9 @@ async function main() {
         lastFrameMS = now
 
         updateModelViewProjectionMatrix(deltaTime)
+
         modelViewProjectionBuffer.writeQueue(device!.queue, modelViewProjectionMatrix)
+
         renderPassDescriptor.colorAttachments[0]!.view = context!
             .getCurrentTexture()
             .createView()
@@ -250,7 +255,7 @@ async function main() {
         const commandEncoder = device!.createCommandEncoder()
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor)
         passEncoder.setPipeline(pipeline)
-        passEncoder.setBindGroup(0, uniformBindGroup)
+        passEncoder.setBindGroup(0, bindGroup)
         passEncoder.setVertexBuffer(0, xyz.buffer)
         passEncoder.draw(cubeData.vertexCount)
         passEncoder.end()
