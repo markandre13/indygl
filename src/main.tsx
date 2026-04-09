@@ -4,9 +4,9 @@ import { cubeData, type TypedArrayConstructor, type TypedArrayView } from './geo
 // import cubeWGSL from './cube.wgsl';
 import { ArcballCamera, WASDCamera } from './camera'
 import { createInputHandler } from './input'
-import { VertexBuffer } from './gpu/VertexBuffer'
-import { Matrix } from "./gpu/Matrix"
-import { Texture } from "./gpu/Texture"
+import { VertexBuffer } from './gl/VertexBuffer'
+import { Matrix } from "./gl/Matrix"
+import { Texture } from "./gl/Texture"
 
 async function shadedCube(device: GPUDevice) {
     // prettier-ignore
@@ -134,6 +134,7 @@ async function main() {
     //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     // })
     const modelViewProjectionBuffer = new Matrix(device)
+    // new Uniform(["mat4x4f"])
 
     // Fetch the image and upload it into a GPUTexture.
     const cubeTexture = new Texture()
@@ -147,6 +148,51 @@ async function main() {
 
     const xyz = new VertexBuffer(device, cubeData.vertices)
 
+    const module = device.createShaderModule({ code: /* wgsl */`
+        struct Uniforms { 
+            modelViewProjectionMatrix: mat4x4f,
+            // uNormalMatrix: mat4x4f,
+            // uModelViewMatrix: mat4x4f,
+            // uProjectionMatrix: mat4x4f,
+        }
+        @group(0) @binding(0) var<uniform> uniforms : Uniforms;
+        @group(0) @binding(1) var mySampler: sampler;
+        @group(0) @binding(2) var myTexture: texture_2d<f32>;
+    
+        struct VertexOutput {
+            @builtin(position) Position: vec4f,
+            @location(0) fragUV: vec2f,
+            @location(1) normal: vec3f,
+        }
+
+        @vertex
+        fn vertex_main(
+            @location(0) position: vec4f,
+            @location(1) normal: vec4f,
+            @location(2) uv: vec2f
+        ) -> VertexOutput {
+            return VertexOutput(
+                uniforms.modelViewProjectionMatrix * position,
+                uv,
+                normal.xyz
+            );
+        }
+
+        @fragment
+        fn fragment_main(
+            @location(0) fragUV: vec2f,
+            @location(1) normal: vec3f
+        ) -> @location(0) vec4f {
+            let lightDirection = normalize(vec3f(4, 10, 6));
+            let light = dot(normalize(normal), lightDirection) * 0.5 + 0.5;
+            let color = vec3f(1, 0.5, 0);
+
+            return vec4f(color * light, 1);
+            // return vec4f(1, 0.5, 0, 1);
+            // return textureSample(myTexture, mySampler, fragUV);
+        }
+    `})
+
     const pipelineDef: GPURenderPipelineDescriptor = {
         layout: 'auto',
         vertex: {
@@ -158,52 +204,10 @@ async function main() {
                     { shaderLocation: 2, ...cubeData.layout.UV },
                 ],
             }],
-            module: device.createShaderModule({
-                code: /* wgsl */`
-                    struct Uniforms { 
-                        modelViewProjectionMatrix : mat4x4f
-                    }
-                    @group(0) @binding(0) var<uniform> uniforms : Uniforms;
-               
-                    struct VertexOutput {
-                        @builtin(position) Position : vec4f,
-                        @location(0) fragUV : vec2f,
-                        @location(1) normal: vec3f,
-                    }
-
-                    @vertex
-                    fn vertex_main(
-                        @location(0) position : vec4f,
-                        @location(1) normal : vec4f,
-                        @location(2) uv : vec2f
-                    ) -> VertexOutput {
-                        return VertexOutput(
-                            uniforms.modelViewProjectionMatrix * position,
-                            uv,
-                            normal.xyz
-                        );
-            }` })
+            module
         },
         fragment: {
-            module: device.createShaderModule({
-                code: /* wgsl */`
-                    @group(0) @binding(1) var mySampler: sampler;
-                    @group(0) @binding(2) var myTexture: texture_2d<f32>;
-
-                    @fragment
-                    fn fragment_main(
-                        @location(0) fragUV: vec2f,
-                        @location(1) normal: vec3f
-                    ) -> @location(0) vec4f {
-                        let lightDirection = normalize(vec3f(4, 10, 6));
-                        let light = dot(normalize(normal), lightDirection) * 0.5 + 0.5;
-                        let color = vec3f(1, 0.5, 0);
-
-                        return vec4f(color * light, 1);
-                        // return vec4f(1, 0.5, 0, 1);
-                        // return textureSample(myTexture, mySampler, fragUV);
-                    }
-            ` }),
+            module,
             targets: [{ format: presentationFormat }]
         },
         primitive: {
@@ -272,21 +276,41 @@ async function main() {
     const projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0)
     const modelViewProjectionMatrix = mat4.create()
 
-    function updateModelViewProjectionMatrix(deltaTime: number) {
-        const camera = cameras[params.type]
-        const viewMatrix = camera.update(deltaTime, inputHandler())
-        mat4.multiply(projectionMatrix, viewMatrix, modelViewProjectionMatrix)
-    }
+    // const projectionMatrix = this.prepareProjection()
+    // const modelViewMatrix = this.ctx.camera
+    // const normalMatrix = mat4.create()
+    // mat4.invert(normalMatrix, modelViewMatrix)
+    // mat4.transpose(normalMatrix, normalMatrix)
 
     let lastFrameMS = Date.now()
+
+    // STEP 1: send the color through the uniform
+    // STEP 2: send normalMatrix, modelViewMatrix, projectionMatrix through the uniform
+    // STEP 3: port the math from the ShaderShadedMono code
+
+
+
+    // const uniformBufferSize = (2 * 16 + 3 + 1 + 4) * 4;
+    // const uniformBuffer = device.createBuffer({
+    //   size: uniformBufferSize,
+    //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    // });
+    // const uniformValues = new Float32Array(uniformBufferSize / 4);
+    // const worldViewProjection = uniformValues.subarray(0, 16);
+    // const worldInverseTranspose = uniformValues.subarray(16, 32);
+    // const colorValue = uniformValues.subarray(32, 36);
+    // colorValue.set([1,0.5,0])
 
     function frame() {
         const now = Date.now()
         const deltaTime = (now - lastFrameMS) / 1000
         lastFrameMS = now
 
-        updateModelViewProjectionMatrix(deltaTime)
+        const modelViewMatrix = cameras[params.type].update(deltaTime, inputHandler())
 
+        mat4.multiply(projectionMatrix, modelViewMatrix, modelViewProjectionMatrix)
+
+        // THIS ONE
         modelViewProjectionBuffer.writeQueue(device!.queue, modelViewProjectionMatrix)
 
         renderPassDescriptor.colorAttachments[0]!.view = context!
@@ -294,12 +318,14 @@ async function main() {
             .createView()
 
         const commandEncoder = device!.createCommandEncoder()
-        const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor)
-        passEncoder.setPipeline(pipeline)
-        passEncoder.setBindGroup(0, bindGroup)
-        passEncoder.setVertexBuffer(0, xyz.buffer)
-        passEncoder.draw(cubeData.vertexCount)
-        passEncoder.end()
+
+        const pass = commandEncoder.beginRenderPass(renderPassDescriptor)
+        pass.setPipeline(pipeline)
+        pass.setBindGroup(0, bindGroup)
+        pass.setVertexBuffer(0, xyz.buffer)
+        pass.draw(cubeData.vertexCount)
+        pass.end()
+
         device!.queue.submit([commandEncoder.finish()])
 
         requestAnimationFrame(frame)
