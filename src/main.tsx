@@ -1,24 +1,67 @@
 import { mat4, vec3 } from 'wgpu-matrix'
 import { GUI } from 'dat.gui'
-import { cubeData } from './geom-cube'
+import { cubeData, type TypedArrayConstructor, type TypedArrayView } from './geom-cube'
 // import cubeWGSL from './cube.wgsl';
 import { ArcballCamera, WASDCamera } from './camera'
 import { createInputHandler } from './input'
 import { VertexBuffer } from './gpu/VertexBuffer'
+import { Matrix } from "./gpu/Matrix"
 import { Texture } from "./gpu/Texture"
 
+async function shadedCube(device: GPUDevice) {
+    // prettier-ignore
+    const vertexData = new Float32Array([
+        // position       normal
+        1, 1, -1, 1, 0, 0,
+        1, 1, 1, 1, 0, 0,
+        1, -1, 1, 1, 0, 0,
+        1, -1, -1, 1, 0, 0,
+        -1, 1, 1, -1, 0, 0,
+        -1, 1, -1, -1, 0, 0,
+        -1, -1, -1, -1, 0, 0,
+        -1, -1, 1, -1, 0, 0,
+        -1, 1, 1, 0, 1, 0,
+        1, 1, 1, 0, 1, 0,
+        1, 1, -1, 0, 1, 0,
+        -1, 1, -1, 0, 1, 0,
+        -1, -1, -1, 0, -1, 0,
+        1, -1, -1, 0, -1, 0,
+        1, -1, 1, 0, -1, 0,
+        -1, -1, 1, 0, -1, 0,
+        1, 1, 1, 0, 0, 1,
+        -1, 1, 1, 0, 0, 1,
+        -1, -1, 1, 0, 0, 1,
+        1, -1, 1, 0, 0, 1,
+        -1, 1, -1, 0, 0, -1,
+        1, 1, -1, 0, 0, -1,
+        1, -1, -1, 0, 0, -1,
+        -1, -1, -1, 0, 0, -1,
+    ])
+    // prettier-ignore
+    const indices = new Uint16Array([
+        0, 1, 2, 0, 2, 3, // +x face
+        4, 5, 6, 4, 6, 7, // -x face
+        8, 9, 10, 8, 10, 11, // +y face
+        12, 13, 14, 12, 14, 15, // -y face
+        16, 17, 18, 16, 18, 19, // +z face
+        20, 21, 22, 20, 22, 23, // -z face
+    ])
+
+    const vertexBuf = createBufferWithData(
+        device,
+        vertexData,
+        GPUBufferUsage.VERTEX,
+        'vertexBuffer'
+    )
+    const indicesBuf = createBufferWithData(
+        device,
+        indices,
+        GPUBufferUsage.INDEX,
+        'indexBuffer'
+    )
+}
+
 async function main() {
-
-    const cubeWGSL = /* wgsl */`
-        @group(0) @binding(1) var mySampler: sampler;
-        @group(0) @binding(2) var myTexture: texture_2d<f32>;
-
-        // color
-        @fragment
-        fn fragment_main(@location(0) fragUV: vec2f) -> @location(0) vec4f {
-            return textureSample(myTexture, mySampler, fragUV);
-        }
-`
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
     if (canvas === null) {
         throw Error("#canvas not found")
@@ -77,25 +120,44 @@ async function main() {
         format: presentationFormat,
     })
 
-    // Create a vertex buffer from the cube data.
-    // float4 position, float4 color, float2 uv,
+    const depthTexture = device.createTexture({
+        size: [canvas.width, canvas.height],
+        format: 'depth24plus',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    })
+
+    // const uniformBufferSize = 4 * 16 // 4x4 matrix
+    // const modelViewProjectionBuffer = device.createBuffer({
+    //     size: uniformBufferSize,
+    //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    // })
+    const modelViewProjectionBuffer = new Matrix(device)
+
+    // Fetch the image and upload it into a GPUTexture.
+    const cubeTexture = new Texture()
+    await cubeTexture.load(device, "Di-3d.png")
+
+    // Create a sampler with linear filtering for smooth interpolation.
+    const sampler = device.createSampler({
+        magFilter: 'linear',
+        minFilter: 'linear',
+    })
+
     const xyz = new VertexBuffer(device, cubeData.vertices)
 
-    const pipeline = device.createRenderPipeline({
+    const pipelineDef: GPURenderPipelineDescriptor = {
         layout: 'auto',
         vertex: {
             buffers: [{
                 arrayStride: cubeData.bytesPerVertex,
                 attributes: [
-                    { shaderLocation: 0, offset: cubeData.offset.position, format: 'float32x4' },
-                    { shaderLocation: 1, offset: cubeData.offset.uv, format: 'float32x2' },
+                    { shaderLocation: 0, ...cubeData.layout.POSITION },
+                    { shaderLocation: 1, ...cubeData.layout.UV },
                 ],
             }],
             module: device.createShaderModule({
                 code: /* wgsl */`
-                    struct Uniforms {
-                        modelViewProjectionMatrix : mat4x4f
-                    }
+                    struct Uniforms { modelViewProjectionMatrix : mat4x4f }
 
                     @group(0) @binding(0) var<uniform> uniforms : Uniforms;
                
@@ -134,34 +196,12 @@ async function main() {
             depthCompare: 'less',
             format: 'depth24plus',
         },
-    })
-
-    const depthTexture = device.createTexture({
-        size: [canvas.width, canvas.height],
-        format: 'depth24plus',
-        usage: GPUTextureUsage.RENDER_ATTACHMENT,
-    })
-
-    const uniformBufferSize = 4 * 16 // 4x4 matrix
-    const uniformBuffer = device.createBuffer({
-        size: uniformBufferSize,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    })
-
-    // Fetch the image and upload it into a GPUTexture.
-    const cubeTexture = new Texture()
-    await cubeTexture.load(device, "Di-3d.png")
-
-    // Create a sampler with linear filtering for smooth interpolation.
-    const sampler = device.createSampler({
-        magFilter: 'linear',
-        minFilter: 'linear',
-    })
-
+    }
+    const pipeline = device.createRenderPipeline(pipelineDef)
     const uniformBindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
         entries: [
-            { binding: 0, resource: uniformBuffer },
+            { binding: 0, resource: modelViewProjectionBuffer },
             { binding: 1, resource: sampler },
             { binding: 2, resource: cubeTexture.texture!.createView() },
         ],
@@ -188,11 +228,10 @@ async function main() {
     const projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0)
     const modelViewProjectionMatrix = mat4.create()
 
-    function getModelViewProjectionMatrix(deltaTime: number) {
+    function updateModelViewProjectionMatrix(deltaTime: number) {
         const camera = cameras[params.type]
         const viewMatrix = camera.update(deltaTime, inputHandler())
         mat4.multiply(projectionMatrix, viewMatrix, modelViewProjectionMatrix)
-        return modelViewProjectionMatrix
     }
 
     let lastFrameMS = Date.now()
@@ -202,14 +241,8 @@ async function main() {
         const deltaTime = (now - lastFrameMS) / 1000
         lastFrameMS = now
 
-        const modelViewProjection = getModelViewProjectionMatrix(deltaTime)
-        device!.queue.writeBuffer(
-            uniformBuffer,
-            0,
-            modelViewProjection.buffer,
-            modelViewProjection.byteOffset,
-            modelViewProjection.byteLength
-        )
+        updateModelViewProjectionMatrix(deltaTime)
+        modelViewProjectionBuffer.writeQueue(device!.queue, modelViewProjectionMatrix)
         renderPassDescriptor.colorAttachments[0]!.view = context!
             .getCurrentTexture()
             .createView()
@@ -230,3 +263,25 @@ async function main() {
 }
 
 main()
+
+function createBufferWithData(
+    device: GPUDevice,
+    data: TypedArrayView,
+    usage: GPUBufferUsageFlags,
+    label: string
+) {
+    const buffer = device.createBuffer({
+        label,
+        size: data.byteLength,
+        usage,
+        mappedAtCreation: true,
+    })
+    const Ctor = data.constructor as TypedArrayConstructor
+    // map gpubuffer
+    const dst = new Ctor(buffer.getMappedRange())
+    // copy data into it
+    dst.set(data)
+    // unmap gpubuffer
+    buffer.unmap()
+    return buffer
+}

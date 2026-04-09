@@ -5,53 +5,83 @@
  */
 // prettier-ignore
 const cubeVertexArray = new Float32Array([
-  // float4 position, float4 color, float2 uv,
-  1, -1, 1, 1,   1, 0, 1, 1,  0, 1,
-  -1, -1, 1, 1,  0, 0, 1, 1,  1, 1,
-  -1, -1, -1, 1, 0, 0, 0, 1,  1, 0,
-  1, -1, -1, 1,  1, 0, 0, 1,  0, 0,
-  1, -1, 1, 1,   1, 0, 1, 1,  0, 1,
-  -1, -1, -1, 1, 0, 0, 0, 1,  1, 0,
+    // float4 position, float4 color, float2 uv,
+    1, -1, 1, 1, 1, 0, 1, 1, 0, 1,
+    -1, -1, 1, 1, 0, 0, 1, 1, 1, 1,
+    -1, -1, -1, 1, 0, 0, 0, 1, 1, 0,
+    1, -1, -1, 1, 1, 0, 0, 1, 0, 0,
+    1, -1, 1, 1, 1, 0, 1, 1, 0, 1,
+    -1, -1, -1, 1, 0, 0, 0, 1, 1, 0,
 
-  1, 1, 1, 1,    1, 1, 1, 1,  0, 1,
-  1, -1, 1, 1,   1, 0, 1, 1,  1, 1,
-  1, -1, -1, 1,  1, 0, 0, 1,  1, 0,
-  1, 1, -1, 1,   1, 1, 0, 1,  0, 0,
-  1, 1, 1, 1,    1, 1, 1, 1,  0, 1,
-  1, -1, -1, 1,  1, 0, 0, 1,  1, 0,
+    1, 1, 1, 1, 1, 1, 1, 1, 0, 1,
+    1, -1, 1, 1, 1, 0, 1, 1, 1, 1,
+    1, -1, -1, 1, 1, 0, 0, 1, 1, 0,
+    1, 1, -1, 1, 1, 1, 0, 1, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 1, 0, 1,
+    1, -1, -1, 1, 1, 0, 0, 1, 1, 0,
 
-  -1, 1, 1, 1,   0, 1, 1, 1,  0, 1,
-  1, 1, 1, 1,    1, 1, 1, 1,  1, 1,
-  1, 1, -1, 1,   1, 1, 0, 1,  1, 0,
-  -1, 1, -1, 1,  0, 1, 0, 1,  0, 0,
-  -1, 1, 1, 1,   0, 1, 1, 1,  0, 1,
-  1, 1, -1, 1,   1, 1, 0, 1,  1, 0,
+    -1, 1, 1, 1, 0, 1, 1, 1, 0, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, -1, 1, 1, 1, 0, 1, 1, 0,
+    -1, 1, -1, 1, 0, 1, 0, 1, 0, 0,
+    -1, 1, 1, 1, 0, 1, 1, 1, 0, 1,
+    1, 1, -1, 1, 1, 1, 0, 1, 1, 0,
 
-  -1, -1, 1, 1,  0, 0, 1, 1,  0, 1,
-  -1, 1, 1, 1,   0, 1, 1, 1,  1, 1,
-  -1, 1, -1, 1,  0, 1, 0, 1,  1, 0,
-  -1, -1, -1, 1, 0, 0, 0, 1,  0, 0,
-  -1, -1, 1, 1,  0, 0, 1, 1,  0, 1,
-  -1, 1, -1, 1,  0, 1, 0, 1,  1, 0,
+    -1, -1, 1, 1, 0, 0, 1, 1, 0, 1,
+    -1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
+    -1, 1, -1, 1, 0, 1, 0, 1, 1, 0,
+    -1, -1, -1, 1, 0, 0, 0, 1, 0, 0,
+    -1, -1, 1, 1, 0, 0, 1, 1, 0, 1,
+    -1, 1, -1, 1, 0, 1, 0, 1, 1, 0,
 
-  1, 1, 1, 1,    1, 1, 1, 1,  0, 1,
-  -1, 1, 1, 1,   0, 1, 1, 1,  1, 1,
-  -1, -1, 1, 1,  0, 0, 1, 1,  1, 0,
-  -1, -1, 1, 1,  0, 0, 1, 1,  1, 0,
-  1, -1, 1, 1,   1, 0, 1, 1,  0, 0,
-  1, 1, 1, 1,    1, 1, 1, 1,  0, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 0, 1,
+    -1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
+    -1, -1, 1, 1, 0, 0, 1, 1, 1, 0,
+    -1, -1, 1, 1, 0, 0, 1, 1, 1, 0,
+    1, -1, 1, 1, 1, 0, 1, 1, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 1, 0, 1,
 
-  1, -1, -1, 1,  1, 0, 0, 1,  0, 1,
-  -1, -1, -1, 1, 0, 0, 0, 1,  1, 1,
-  -1, 1, -1, 1,  0, 1, 0, 1,  1, 0,
-  1, 1, -1, 1,   1, 1, 0, 1,  0, 0,
-  1, -1, -1, 1,  1, 0, 0, 1,  0, 1,
-  -1, 1, -1, 1,  0, 1, 0, 1,  1, 0,
-]);
+    1, -1, -1, 1, 1, 0, 0, 1, 0, 1,
+    -1, -1, -1, 1, 0, 0, 0, 1, 1, 1,
+    -1, 1, -1, 1, 0, 1, 0, 1, 1, 0,
+    1, 1, -1, 1, 1, 1, 0, 1, 0, 0,
+    1, -1, -1, 1, 1, 0, 0, 1, 0, 1,
+    -1, 1, -1, 1, 0, 1, 0, 1, 1, 0,
+])
 
 const FLOAT32_SIZE = 4
 
-export const cubeData = {
+export type TypedArrayView =
+    | Int8Array
+    | Uint8Array
+    | Int16Array
+    | Uint16Array
+    | Int32Array
+    | Uint32Array
+    | Float32Array
+    | Float64Array
+
+export type TypedArrayConstructor =
+    | Int8ArrayConstructor
+    | Uint8ArrayConstructor
+    | Int16ArrayConstructor
+    | Uint16ArrayConstructor
+    | Int32ArrayConstructor
+    | Uint32ArrayConstructor
+    | Float32ArrayConstructor
+    | Float64ArrayConstructor
+
+type GPUVertexDef = Omit<GPUVertexAttribute, "shaderLocation">
+type VertexLayout = { [name: string]: GPUVertexDef }
+
+interface VertexData {
+    vertices: Float32Array // TypedArrayView,
+    vertexCount: number
+    bytesPerVertex: number
+    layout: VertexLayout
+}
+
+export const cubeData: VertexData = {
     /**
      * cube vertices in the format (position: float4, color: float4, uv: float2)
      */
@@ -61,9 +91,9 @@ export const cubeData = {
     /**
      * offsets within vertex
      */
-    offset: {
-        position: 0,
-        color: FLOAT32_SIZE * 4,
-        uv: FLOAT32_SIZE * 8
-    },
+    layout: {
+        POSITION: { offset: FLOAT32_SIZE * 0, format: 'float32x4' },
+        COLOR: { offset: FLOAT32_SIZE * 4, format: 'float32x4' },
+        UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
+    }
 }
