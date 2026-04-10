@@ -1,14 +1,13 @@
-import { mat4, vec3 } from 'wgpu-matrix'
 import { cubeData, type TypedArrayConstructor, type TypedArrayView } from './geom-cube'
 import { VertexBuffer } from './gl/VertexBuffer'
 import { Texture } from "./gl/Texture"
 import { Uniform } from './gl/Uniform'
+import { mat4, vec3 } from 'gl-matrix'
 
 // stuff to investigate
 // * resize canvas
 // * draw via index
 // * hide more boilerplate code
-// * switch to gl-matrix
 
 async function shadedCube(device: GPUDevice) {
     // prettier-ignore
@@ -260,7 +259,7 @@ async function main() {
     const aspect = canvas.clientWidth / canvas.clientHeight
     const zNear = 0.1
     const zFar = 100.0
-    mat4.perspective(fieldOfView, aspect, zNear, zFar, uniforms.values[UniformIndex.PROJECTION])
+    mat4.perspectiveZO(uniforms.values[UniformIndex.PROJECTION], fieldOfView, aspect, zNear, zFar)
 
     let lastFrameMS = Date.now()
 
@@ -272,13 +271,13 @@ async function main() {
 
         const modelViewMatrix = uniforms.values[UniformIndex.MODELVIEW]
         mat4.identity(modelViewMatrix)
-        mat4.translate(modelViewMatrix, vec3.create(0, 0, -6), modelViewMatrix)
-        mat4.rotateZ(modelViewMatrix, cubeRotation, modelViewMatrix)
-        mat4.rotateY(modelViewMatrix, cubeRotation * 0.7, modelViewMatrix)
-        mat4.rotateX(modelViewMatrix, cubeRotation * 0.3, modelViewMatrix)
+        mat4.translate(modelViewMatrix, modelViewMatrix, vec3.fromValues(0, 0, -6))
+        mat4.rotateZ(modelViewMatrix, modelViewMatrix, cubeRotation)
+        mat4.rotateY(modelViewMatrix, modelViewMatrix, cubeRotation * 0.7)
+        mat4.rotateX(modelViewMatrix, modelViewMatrix, cubeRotation * 0.3)
 
         const normalMatrix = uniforms.values[UniformIndex.NORMAL]
-        mat4.invert(modelViewMatrix, normalMatrix)
+        mat4.invert(normalMatrix, modelViewMatrix)
         mat4.transpose(normalMatrix, normalMatrix)
 
         uniforms.writeTo(device!.queue)
