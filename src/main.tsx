@@ -7,6 +7,7 @@ import { createInputHandler } from './input'
 import { VertexBuffer } from './gl/VertexBuffer'
 import { Matrix } from "./gl/Matrix"
 import { Texture } from "./gl/Texture"
+import { Uniform } from './gl/Uniform'
 
 async function shadedCube(device: GPUDevice) {
     // prettier-ignore
@@ -133,8 +134,8 @@ async function main() {
     //     size: uniformBufferSize,
     //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     // })
-    const modelViewProjectionBuffer = new Matrix(device)
-    // new Uniform(["mat4x4f"])
+    // const uniforms = new Matrix(device)
+    const uniforms = new Uniform(device, ["mat4x4f"])
 
     // Fetch the image and upload it into a GPUTexture.
     const cubeTexture = new Texture()
@@ -249,7 +250,7 @@ async function main() {
     const bindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
         entries: [
-            { binding: 0, resource: modelViewProjectionBuffer },
+            { binding: 0, resource: uniforms },
             { binding: 1, resource: sampler },
             { binding: 2, resource: cubeTexture.texture!.createView() },
         ],
@@ -311,7 +312,8 @@ async function main() {
         mat4.multiply(projectionMatrix, modelViewMatrix, modelViewProjectionMatrix)
 
         // THIS ONE
-        modelViewProjectionBuffer.writeQueue(device!.queue, modelViewProjectionMatrix)
+        uniforms.values[0].set(modelViewProjectionMatrix)
+        uniforms.writeQueue(device!.queue)
 
         renderPassDescriptor.colorAttachments[0]!.view = context!
             .getCurrentTexture()
