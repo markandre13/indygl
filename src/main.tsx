@@ -280,6 +280,8 @@ async function main() {
         mat4.invert(normalMatrix, modelViewMatrix)
         mat4.transpose(normalMatrix, normalMatrix)
 
+        // how do we do multiple operations? what can be re-used?
+
         uniforms.writeTo(device!.queue)
 
         renderPassDescriptor.colorAttachments[0]!.view = context!
