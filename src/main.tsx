@@ -62,6 +62,12 @@ async function shadedCube(device: GPUDevice) {
     )
 }
 
+enum UniformIndex {
+    PROJECTION = 0,
+    MODELVIEW,
+    NORMAL
+}
+
 console.log(`SIZE: ${cubeData.vertices.length}`)
 
 async function main() {
@@ -129,7 +135,7 @@ async function main() {
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
     })
 
-    const uniforms = new Uniform(device, ["mat4x4f", "mat4x4f", "mat4x4f", "mat4x4f"])
+    const uniforms = new Uniform(device, ["mat4x4f", "mat4x4f", "mat4x4f"])
 
     // Fetch the image and upload it into a GPUTexture.
     const cubeTexture = new Texture()
@@ -143,21 +149,21 @@ async function main() {
 
     const xyz = new VertexBuffer(device, cubeData.vertices)
 
-    const module = device.createShaderModule({ code: /* wgsl */`
+    const module = device.createShaderModule({
+        code: /* wgsl */`
         struct Uniforms { 
-            modelViewProjectionMatrix: mat4x4f,
-            uNormalMatrix: mat4x4f,
-            uModelViewMatrix: mat4x4f,
             uProjectionMatrix: mat4x4f,
+            uModelViewMatrix: mat4x4f,
+            uNormalMatrix: mat4x4f,
         }
         @group(0) @binding(0) var<uniform> uniforms : Uniforms;
         @group(0) @binding(1) var mySampler: sampler;
         @group(0) @binding(2) var myTexture: texture_2d<f32>;
     
-        struct VertexOutput {
+        struct Vertex2Fragment {
             @builtin(position) Position: vec4f,
             @location(0) fragUV: vec2f,
-            @location(1) normal: vec3f,
+            @location(1) vLighting: vec3f
         }
 
         @vertex
@@ -165,24 +171,35 @@ async function main() {
             @location(0) position: vec4f,
             @location(1) normal: vec4f,
             @location(2) uv: vec2f
-        ) -> VertexOutput {
-            return VertexOutput(
-                uniforms.modelViewProjectionMatrix * position,
+        ) -> Vertex2Fragment {
+
+            // uniforms.values[UniformIndex.MODELVIEW].set(modelViewMatrix)
+            let gl_Position = uniforms.uProjectionMatrix  * position;
+
+            let ambientLight = vec3f(0.3, 0.3, 0.3);
+            let directionalLightColor = vec3f(1, 1, 1);
+            let directionalVector = normalize(vec3f(0.85, 0.8, 0.75));
+
+            let transformedNormal = uniforms.uNormalMatrix * vec4f(normal.xyz, 1);
+
+            let directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+            let vLighting = ambientLight + (directionalLightColor * directional);
+
+            return Vertex2Fragment(
+                gl_Position,
                 uv,
-                normal.xyz
+                vLighting
             );
         }
 
         @fragment
         fn fragment_main(
-            @location(0) fragUV: vec2f,
-            @location(1) normal: vec3f
+            vin: Vertex2Fragment
         ) -> @location(0) vec4f {
-            let lightDirection = normalize(vec3f(4, 10, 6));
-            let light = dot(normalize(normal), lightDirection) * 0.5 + 0.5;
             let color = vec3f(1, 0.5, 0);
 
-            return vec4f(color * light, 1);
+            return vec4f(color * vin.vLighting, 1);
+            // return vec4f(color * light, 1);
             // return vec4f(1, 0.5, 0, 1);
             // return textureSample(myTexture, mySampler, fragUV);
         }
@@ -220,9 +237,9 @@ async function main() {
             return
         }
         const info = await module.getCompilationInfo()
-        for(let m of info.messages) {
+        for (let m of info.messages) {
             const l = `${name}: ${m.lineNum}:${m.linePos}: ${m.message}`
-            switch(m.type) {
+            switch (m.type) {
                 case "error":
                     console.error(l)
                     break
@@ -267,8 +284,18 @@ async function main() {
         },
     }
 
-    const aspect = canvas.width / canvas.height
-    const projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0)
+    let cubeRotation = 0
+
+    
+        // like my OpenGL
+        const fieldOfView = (45 * Math.PI) / 180 // in radians
+        const aspect = canvas.clientWidth / canvas.clientHeight
+        const zNear = 0.1
+        const zFar = 100.0
+        const projectionMatrix = mat4.perspective(fieldOfView, aspect, zNear, zFar)
+        // uniforms.values[UniformIndex.PROJECTION].set(projectionMatrix.subarray(0,9))
+
+    
 
     let lastFrameMS = Date.now()
 
@@ -277,9 +304,37 @@ async function main() {
         const deltaTime = (now - lastFrameMS) / 1000
         lastFrameMS = now
 
-        const modelViewMatrix = cameras[params.type].update(deltaTime, inputHandler())
+        // const modelViewMatrix = cameras[params.type].update(deltaTime, inputHandler())
+        const modelViewMatrix = mat4.create()
+        mat4.identity(modelViewMatrix)
+        mat4.translate(modelViewMatrix, vec3.create(0, 0, -6), modelViewMatrix)
+        mat4.rotateZ(modelViewMatrix, cubeRotation, modelViewMatrix)
+        mat4.rotateY(modelViewMatrix, cubeRotation * 0.7, modelViewMatrix)
+        mat4.rotateX(modelViewMatrix, cubeRotation * 0.3, modelViewMatrix)
+        // console.log(modelViewMatrix)
 
-        mat4.multiply(projectionMatrix, modelViewMatrix, uniforms.values[0])
+        // mat4.multiply(projectionMatrix, modelViewMatrix, uniforms.values[0])
+
+        mat4.multiply(projectionMatrix, modelViewMatrix, uniforms.values[UniformIndex.PROJECTION])
+        // mat4.multiply(projectionMatrix, modelViewMatrix, uniforms.values[UniformIndex.PROJECTION])
+
+        // {
+        //     // like my OpenGL
+        //     const modelViewMatrix = mat4.create()
+        //     mat4.translate(modelViewMatrix, vec3.fromValues(0, 0, -6), modelViewMatrix)
+        //     mat4.rotateZ(modelViewMatrix, cubeRotation, modelViewMatrix)
+        //     mat4.rotateY(modelViewMatrix, cubeRotation * 0.7, modelViewMatrix)
+        //     mat4.rotateX(modelViewMatrix, cubeRotation * 0.3, modelViewMatrix)
+
+        const normalMatrix = mat4.create()
+        mat4.invert(modelViewMatrix, normalMatrix)
+        mat4.transpose(normalMatrix, normalMatrix)
+
+            uniforms.values[UniformIndex.MODELVIEW].set(modelViewMatrix)
+        uniforms.values[UniformIndex.NORMAL].set(normalMatrix)
+
+        cubeRotation += deltaTime
+        // }
 
         // THIS ONE
         uniforms.writeQueue(device!.queue)

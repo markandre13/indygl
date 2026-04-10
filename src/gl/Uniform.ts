@@ -25,7 +25,8 @@ export class Uniform {
         let offset = 0
         for (let i = 0; i < format.length; ++i) {
             let n = formats.get(format[i])
-            this.values[i] = this.float32array.subarray(offset, n)
+            this.values[i] = this.float32array.subarray(offset/FLOAT32_SIZE, (offset + n)/FLOAT32_SIZE)
+            console.log(`value[${i}] = ${offset}, ${n}`)
             offset += n
         }
     }
