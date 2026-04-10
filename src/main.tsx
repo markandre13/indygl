@@ -1,13 +1,14 @@
 import { mat4, vec3 } from 'wgpu-matrix'
-import { GUI } from 'dat.gui'
 import { cubeData, type TypedArrayConstructor, type TypedArrayView } from './geom-cube'
-// import cubeWGSL from './cube.wgsl';
-import { ArcballCamera, WASDCamera } from './camera'
-import { createInputHandler } from './input'
 import { VertexBuffer } from './gl/VertexBuffer'
-import { Matrix } from "./gl/Matrix"
 import { Texture } from "./gl/Texture"
 import { Uniform } from './gl/Uniform'
+
+// stuff to investigate
+// * resize canvas
+// * draw via index
+// * hide more boilerplate code
+// * switch to gl-matrix
 
 async function shadedCube(device: GPUDevice) {
     // prettier-ignore
@@ -68,52 +69,21 @@ enum UniformIndex {
     NORMAL
 }
 
-console.log(`SIZE: ${cubeData.vertices.length}`)
-
 async function main() {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
     if (canvas === null) {
         throw Error("#canvas not found")
     }
 
-    // The input handler
-    const inputHandler = createInputHandler(window, canvas)
-
-    // The camera types
-    const initialCameraPosition = vec3.create(3, 2, 5)
-    const cameras = {
-        arcball: new ArcballCamera({ position: initialCameraPosition }),
-        WASD: new WASDCamera({ position: initialCameraPosition }),
-    }
-
-    const gui = new GUI()
-
-    // GUI parameters
-    const params: { type: 'arcball' | 'WASD' } = {
-        type: 'arcball',
-    }
-
-    // Callback handler for camera mode
-    let oldCameraType = params.type
-    gui.add(params, 'type', ['arcball', 'WASD']).onChange(() => {
-        // Copy the camera matrix from old to new
-        const newCameraType = params.type
-        cameras[newCameraType].matrix = cameras[oldCameraType].matrix
-        oldCameraType = newCameraType
-    })
-
     //
     // get GPU
     //
 
-    const adapter = await navigator.gpu?.requestAdapter({
-        featureLevel: 'compatibility',
-    })
+    const adapter = await navigator.gpu?.requestAdapter({ featureLevel: 'core' })
     const device = await adapter?.requestDevice()
     if (device == null) {
         throw Error('context == null')
     }
-    // quitIfWebGPUNotAvailableOrMissingFeatures(adapter, device)
     const context = canvas.getContext('webgpu')
     if (context == null) {
         throw Error('no webgpu')
@@ -129,9 +99,10 @@ async function main() {
         format: presentationFormat,
     })
 
+    const depthTextureFormat = 'depth24plus'
     const depthTexture = device.createTexture({
         size: [canvas.width, canvas.height],
-        format: 'depth24plus',
+        format: depthTextureFormat,
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
     })
 
@@ -141,13 +112,15 @@ async function main() {
     const cubeTexture = new Texture()
     await cubeTexture.load(device, "Di-3d.png")
 
-    // Create a sampler with linear filtering for smooth interpolation.
+    // Create a sampler with linear filtering for smooth interpolation of the texture
     const sampler = device.createSampler({
         magFilter: 'linear',
         minFilter: 'linear',
     })
 
     const xyz = new VertexBuffer(device, cubeData.vertices)
+
+    // SYSTEM PART
 
     const module = device.createShaderModule({
         code: /* wgsl */`
@@ -156,7 +129,7 @@ async function main() {
             uModelViewMatrix: mat4x4f,
             uNormalMatrix: mat4x4f,
         }
-        @group(0) @binding(0) var<uniform> uniforms : Uniforms;
+        @group(0) @binding(0) var<uniform> uniforms: Uniforms;
         @group(0) @binding(1) var mySampler: sampler;
         @group(0) @binding(2) var myTexture: texture_2d<f32>;
     
@@ -173,8 +146,7 @@ async function main() {
             @location(2) uv: vec2f
         ) -> Vertex2Fragment {
 
-            // uniforms.values[UniformIndex.MODELVIEW].set(modelViewMatrix)
-            let gl_Position = uniforms.uProjectionMatrix  * position;
+            let gl_Position = uniforms.uProjectionMatrix * uniforms.uModelViewMatrix * position;
 
             let ambientLight = vec3f(0.3, 0.3, 0.3);
             let directionalLightColor = vec3f(1, 1, 1);
@@ -196,43 +168,12 @@ async function main() {
         fn fragment_main(
             vin: Vertex2Fragment
         ) -> @location(0) vec4f {
-            let color = vec3f(1, 0.5, 0);
-
+            // let color = vec3f(1, 0.5, 0);
+            let color = textureSample(myTexture, mySampler, vin.fragUV).rgb;
             return vec4f(color * vin.vLighting, 1);
-            // return vec4f(color * light, 1);
-            // return vec4f(1, 0.5, 0, 1);
-            // return textureSample(myTexture, mySampler, fragUV);
         }
     `})
-
-    const pipelineDef: GPURenderPipelineDescriptor = {
-        layout: 'auto',
-        vertex: {
-            buffers: [{
-                arrayStride: cubeData.bytesPerVertex,
-                attributes: [
-                    { shaderLocation: 0, ...cubeData.layout.POSITION },
-                    { shaderLocation: 1, ...cubeData.layout.NORMAL },
-                    { shaderLocation: 2, ...cubeData.layout.UV },
-                ],
-            }],
-            module
-        },
-        fragment: {
-            module,
-            targets: [{ format: presentationFormat }]
-        },
-        primitive: {
-            topology: 'triangle-list',
-            cullMode: 'back',
-        },
-        depthStencil: {
-            depthWriteEnabled: true,
-            depthCompare: 'less',
-            format: 'depth24plus',
-        },
-    }
-    async function logMessages(name: string, module: GPUShaderModule | undefined) {
+    async function logMessages(module: GPUShaderModule | undefined) {
         if (module === undefined) {
             return
         }
@@ -252,8 +193,36 @@ async function main() {
             }
         }
     }
-    await logMessages("vertex  ", pipelineDef.vertex?.module)
-    await logMessages("fragment", pipelineDef.fragment?.module)
+    await logMessages(module)
+
+    const pipelineDef: GPURenderPipelineDescriptor = {
+        layout: 'auto',
+        vertex: {
+            buffers: [{
+                arrayStride: cubeData.bytesPerVertex,
+                attributes: [
+                    { shaderLocation: 0, ...cubeData.layout.POSITION },
+                    { shaderLocation: 1, ...cubeData.layout.NORMAL },
+                    { shaderLocation: 2, ...cubeData.layout.UV },
+                ],
+            }],
+            module
+        },
+        fragment: {
+            module,
+            targets: [{ format: presentationFormat }]
+        },
+        primitive: {
+            // "line-list" | "line-strip" | "point-list" | "triangle-list" | "triangle-strip";
+            topology: 'triangle-list',
+            cullMode: 'back',
+        },
+        depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: 'less',
+            format: depthTextureFormat,
+        },
+    }
 
     const pipeline = device.createRenderPipeline(pipelineDef)
 
@@ -286,70 +255,46 @@ async function main() {
 
     let cubeRotation = 0
 
-    
-        // like my OpenGL
-        const fieldOfView = (45 * Math.PI) / 180 // in radians
-        const aspect = canvas.clientWidth / canvas.clientHeight
-        const zNear = 0.1
-        const zFar = 100.0
-        const projectionMatrix = mat4.perspective(fieldOfView, aspect, zNear, zFar)
-        // uniforms.values[UniformIndex.PROJECTION].set(projectionMatrix.subarray(0,9))
-
-    
+    // like my OpenGL
+    const fieldOfView = (45 * Math.PI) / 180 // in radians
+    const aspect = canvas.clientWidth / canvas.clientHeight
+    const zNear = 0.1
+    const zFar = 100.0
+    mat4.perspective(fieldOfView, aspect, zNear, zFar, uniforms.values[UniformIndex.PROJECTION])
 
     let lastFrameMS = Date.now()
 
     function frame() {
         const now = Date.now()
         const deltaTime = (now - lastFrameMS) / 1000
+        cubeRotation += deltaTime
         lastFrameMS = now
 
-        // const modelViewMatrix = cameras[params.type].update(deltaTime, inputHandler())
-        const modelViewMatrix = mat4.create()
+        const modelViewMatrix = uniforms.values[UniformIndex.MODELVIEW]
         mat4.identity(modelViewMatrix)
         mat4.translate(modelViewMatrix, vec3.create(0, 0, -6), modelViewMatrix)
         mat4.rotateZ(modelViewMatrix, cubeRotation, modelViewMatrix)
         mat4.rotateY(modelViewMatrix, cubeRotation * 0.7, modelViewMatrix)
         mat4.rotateX(modelViewMatrix, cubeRotation * 0.3, modelViewMatrix)
-        // console.log(modelViewMatrix)
 
-        // mat4.multiply(projectionMatrix, modelViewMatrix, uniforms.values[0])
-
-        mat4.multiply(projectionMatrix, modelViewMatrix, uniforms.values[UniformIndex.PROJECTION])
-        // mat4.multiply(projectionMatrix, modelViewMatrix, uniforms.values[UniformIndex.PROJECTION])
-
-        // {
-        //     // like my OpenGL
-        //     const modelViewMatrix = mat4.create()
-        //     mat4.translate(modelViewMatrix, vec3.fromValues(0, 0, -6), modelViewMatrix)
-        //     mat4.rotateZ(modelViewMatrix, cubeRotation, modelViewMatrix)
-        //     mat4.rotateY(modelViewMatrix, cubeRotation * 0.7, modelViewMatrix)
-        //     mat4.rotateX(modelViewMatrix, cubeRotation * 0.3, modelViewMatrix)
-
-        const normalMatrix = mat4.create()
+        const normalMatrix = uniforms.values[UniformIndex.NORMAL]
         mat4.invert(modelViewMatrix, normalMatrix)
         mat4.transpose(normalMatrix, normalMatrix)
 
-            uniforms.values[UniformIndex.MODELVIEW].set(modelViewMatrix)
-        uniforms.values[UniformIndex.NORMAL].set(normalMatrix)
-
-        cubeRotation += deltaTime
-        // }
-
-        // THIS ONE
-        uniforms.writeQueue(device!.queue)
+        uniforms.writeTo(device!.queue)
 
         renderPassDescriptor.colorAttachments[0]!.view = context!
             .getCurrentTexture()
             .createView()
 
         const commandEncoder = device!.createCommandEncoder()
-
         const pass = commandEncoder.beginRenderPass(renderPassDescriptor)
+
         pass.setPipeline(pipeline)
         pass.setBindGroup(0, bindGroup)
         pass.setVertexBuffer(0, xyz.buffer)
         pass.draw(cubeData.vertexCount)
+
         pass.end()
 
         device!.queue.submit([commandEncoder.finish()])

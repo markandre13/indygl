@@ -26,14 +26,14 @@ export class Uniform {
         for (let i = 0; i < format.length; ++i) {
             let n = formats.get(format[i])
             this.values[i] = this.float32array.subarray(offset/FLOAT32_SIZE, (offset + n)/FLOAT32_SIZE)
-            console.log(`value[${i}] = ${offset}, ${n}`)
+            // console.log(`value[${i}] = ${offset}, ${n}`)
             offset += n
         }
     }
     /**
      * Issues a write operation of the provided data into a GPUBuffer.
      */
-    writeQueue(queue: GPUQueue) {
+    writeTo(queue: GPUQueue) {
         queue.writeBuffer(
             this.buffer,
             0,
