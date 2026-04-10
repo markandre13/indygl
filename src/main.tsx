@@ -129,13 +129,7 @@ async function main() {
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
     })
 
-    // const uniformBufferSize = 4 * 16 // 4x4 matrix
-    // const modelViewProjectionBuffer = device.createBuffer({
-    //     size: uniformBufferSize,
-    //     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    // })
-    // const uniforms = new Matrix(device)
-    const uniforms = new Uniform(device, ["mat4x4f"])
+    const uniforms = new Uniform(device, ["mat4x4f", "mat4x4f", "mat4x4f", "mat4x4f"])
 
     // Fetch the image and upload it into a GPUTexture.
     const cubeTexture = new Texture()
@@ -152,9 +146,9 @@ async function main() {
     const module = device.createShaderModule({ code: /* wgsl */`
         struct Uniforms { 
             modelViewProjectionMatrix: mat4x4f,
-            // uNormalMatrix: mat4x4f,
-            // uModelViewMatrix: mat4x4f,
-            // uProjectionMatrix: mat4x4f,
+            uNormalMatrix: mat4x4f,
+            uModelViewMatrix: mat4x4f,
+            uProjectionMatrix: mat4x4f,
         }
         @group(0) @binding(0) var<uniform> uniforms : Uniforms;
         @group(0) @binding(1) var mySampler: sampler;
@@ -275,32 +269,8 @@ async function main() {
 
     const aspect = canvas.width / canvas.height
     const projectionMatrix = mat4.perspective((2 * Math.PI) / 5, aspect, 1, 100.0)
-    const modelViewProjectionMatrix = mat4.create()
-
-    // const projectionMatrix = this.prepareProjection()
-    // const modelViewMatrix = this.ctx.camera
-    // const normalMatrix = mat4.create()
-    // mat4.invert(normalMatrix, modelViewMatrix)
-    // mat4.transpose(normalMatrix, normalMatrix)
 
     let lastFrameMS = Date.now()
-
-    // STEP 1: send the color through the uniform
-    // STEP 2: send normalMatrix, modelViewMatrix, projectionMatrix through the uniform
-    // STEP 3: port the math from the ShaderShadedMono code
-
-
-
-    // const uniformBufferSize = (2 * 16 + 3 + 1 + 4) * 4;
-    // const uniformBuffer = device.createBuffer({
-    //   size: uniformBufferSize,
-    //   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    // });
-    // const uniformValues = new Float32Array(uniformBufferSize / 4);
-    // const worldViewProjection = uniformValues.subarray(0, 16);
-    // const worldInverseTranspose = uniformValues.subarray(16, 32);
-    // const colorValue = uniformValues.subarray(32, 36);
-    // colorValue.set([1,0.5,0])
 
     function frame() {
         const now = Date.now()
@@ -309,10 +279,9 @@ async function main() {
 
         const modelViewMatrix = cameras[params.type].update(deltaTime, inputHandler())
 
-        mat4.multiply(projectionMatrix, modelViewMatrix, modelViewProjectionMatrix)
+        mat4.multiply(projectionMatrix, modelViewMatrix, uniforms.values[0])
 
         // THIS ONE
-        uniforms.values[0].set(modelViewProjectionMatrix)
         uniforms.writeQueue(device!.queue)
 
         renderPassDescriptor.colorAttachments[0]!.view = context!
