@@ -9,8 +9,6 @@ import { mat4, vec3 } from 'gl-matrix'
 // * draw via index
 // * hide more boilerplate code
 
-
-
 async function shadedCube(device: GPUDevice) {
     // prettier-ignore
     const vertexData = new Float32Array([
@@ -124,7 +122,7 @@ class Context {
     }
 }
 
-class ShaderModule {
+class Shader {
     module: GPUShaderModule
     constructor(module: GPUShaderModule) {
         this.module = module
@@ -132,7 +130,7 @@ class ShaderModule {
     }
 }
 
-class ShaderShadedMono extends ShaderModule {
+class ShaderShadedMono extends Shader {
     constructor(device: Device) {
         super(
             device.device!.createShaderModule({
@@ -198,7 +196,7 @@ class Pipeline {
 }
 
 class PipelineShadedMono extends Pipeline {
-    constructor(device: Device, module: ShaderModule, context: Context) {
+    constructor(device: Device, module: Shader, context: Context) {
         const pipelineDef: GPURenderPipelineDescriptor = {
             layout: 'auto',
             vertex: {
@@ -217,7 +215,6 @@ class PipelineShadedMono extends Pipeline {
                 targets: [{ format: context.presentationFormat }]
             },
             primitive: {
-                // "line-list" | "line-strip" | "point-list" | "triangle-list" | "triangle-strip";
                 topology: 'triangle-list',
                 cullMode: 'back',
             },
@@ -250,11 +247,11 @@ async function main() {
 
     const vertices = new VertexBuffer(device.device!!, cubeData.vertices)
     const module = new ShaderShadedMono(device)
-    const pipeline = new PipelineShadedMono(device, module, context)
+    const shadedTrianglePipeline = new PipelineShadedMono(device, module, context)
 
     // define the values for shaders '@group(...) @binding(...)' sections
     const bindGroup = device.device!.createBindGroup({
-        layout: pipeline.pipeline.getBindGroupLayout(0),
+        layout: shadedTrianglePipeline.pipeline.getBindGroupLayout(0),
         entries: [
             { binding: 0, resource: uniforms },
             { binding: 1, resource: context.sampler },
@@ -315,7 +312,7 @@ async function main() {
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(renderPassDescriptor)
         {
-            pass.setPipeline(pipeline.pipeline)
+            pass.setPipeline(shadedTrianglePipeline.pipeline)
             {
                 uniforms.writeTo(device.device!.queue)
                 pass.setBindGroup(0, bindGroup)
