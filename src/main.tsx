@@ -9,6 +9,8 @@ import { mat4, vec3 } from 'gl-matrix'
 // * draw via index
 // * hide more boilerplate code
 
+
+
 async function shadedCube(device: GPUDevice) {
     // prettier-ignore
     const vertexData = new Float32Array([
@@ -68,6 +70,43 @@ enum UniformIndex {
     NORMAL
 }
 
+class Device {
+    adapter: GPUAdapter | null = null
+    device: GPUDevice | undefined
+
+    async init() {
+        this.adapter = await navigator.gpu?.requestAdapter({ featureLevel: 'core' })
+        if (this.adapter === null) {
+            throw Error('failed to allocate GPUAdapter')
+        }
+        this.device = await this.adapter?.requestDevice()
+        if (this.device === undefined) {
+            throw Error('failed to allocate `GPUDevice')
+        }
+    }
+}
+
+class Context {
+    context: GPUCanvasContext | null = null
+    presentationFormat: GPUTextureFormat
+    constructor(device: Device, canvas: HTMLCanvasElement) {
+        this.context = canvas.getContext('webgpu')
+        if (this.context == null) {
+            throw Error('no webgpu')
+        }
+
+        const devicePixelRatio = window.devicePixelRatio
+        canvas.width = canvas.clientWidth * devicePixelRatio
+        canvas.height = canvas.clientHeight * devicePixelRatio
+        this.presentationFormat = navigator.gpu.getPreferredCanvasFormat()
+
+        this.context.configure({
+            device: device.device!!,
+            format: this.presentationFormat,
+        })
+    }
+}
+
 async function main() {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
     if (canvas === null) {
@@ -78,50 +117,36 @@ async function main() {
     // get GPU
     //
 
-    const adapter = await navigator.gpu?.requestAdapter({ featureLevel: 'core' })
-    const device = await adapter?.requestDevice()
-    if (device == null) {
-        throw Error('context == null')
-    }
-    const context = canvas.getContext('webgpu')
-    if (context == null) {
-        throw Error('no webgpu')
-    }
-
-    const devicePixelRatio = window.devicePixelRatio
-    canvas.width = canvas.clientWidth * devicePixelRatio
-    canvas.height = canvas.clientHeight * devicePixelRatio
-    const presentationFormat = navigator.gpu.getPreferredCanvasFormat()
-
-    context.configure({
-        device,
-        format: presentationFormat,
-    })
+    const device = new Device()
+    await device.init()
+    const context = new Context(device, canvas)
 
     const depthTextureFormat = 'depth24plus'
-    const depthTexture = device.createTexture({
+    const depthTexture = device.device!!.createTexture({
         size: [canvas.width, canvas.height],
         format: depthTextureFormat,
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
     })
 
-    const uniforms = new Uniform(device, ["mat4x4f", "mat4x4f", "mat4x4f"])
+    const uniforms = new Uniform(device.device!!, ["mat4x4f", "mat4x4f", "mat4x4f"])
 
     // Fetch the image and upload it into a GPUTexture.
     const cubeTexture = new Texture()
-    await cubeTexture.load(device, "Di-3d.png")
+    await cubeTexture.load(device.device!!, "Di-3d.png")
 
     // Create a sampler with linear filtering for smooth interpolation of the texture
-    const sampler = device.createSampler({
+    const sampler = device.device!.createSampler({
         magFilter: 'linear',
         minFilter: 'linear',
     })
 
-    const xyz = new VertexBuffer(device, cubeData.vertices)
+    const vertices = new VertexBuffer(device.device!!, cubeData.vertices)
 
     // SYSTEM PART
 
-    const module = device.createShaderModule({
+    // NEXT: wrap this with a class
+
+    const module = device.device!.createShaderModule({
         code: /* wgsl */`
         struct Uniforms { 
             uProjectionMatrix: mat4x4f,
@@ -209,7 +234,7 @@ async function main() {
         },
         fragment: {
             module,
-            targets: [{ format: presentationFormat }]
+            targets: [{ format: context.presentationFormat }]
         },
         primitive: {
             // "line-list" | "line-strip" | "point-list" | "triangle-list" | "triangle-strip";
@@ -223,10 +248,10 @@ async function main() {
         },
     }
 
-    const pipeline = device.createRenderPipeline(pipelineDef)
+    const pipeline = device.device!.createRenderPipeline(pipelineDef)
 
     // define the values for shaders '@group(...) @binding(...)' sections
-    const bindGroup = device.createBindGroup({
+    const bindGroup = device.device!.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
         entries: [
             { binding: 0, resource: uniforms },
@@ -280,25 +305,26 @@ async function main() {
         mat4.invert(normalMatrix, modelViewMatrix)
         mat4.transpose(normalMatrix, normalMatrix)
 
-        // how do we do multiple operations? what can be re-used?
-
-        uniforms.writeTo(device!.queue)
-
-        renderPassDescriptor.colorAttachments[0]!.view = context!
+        // context refers to the canvas!!!
+        renderPassDescriptor.colorAttachments[0]!.view = context.context!
             .getCurrentTexture()
             .createView()
 
-        const commandEncoder = device!.createCommandEncoder()
+        const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(renderPassDescriptor)
+        {
+            pass.setPipeline(pipeline)
+            {
+                uniforms.writeTo(device.device!.queue)
+                pass.setBindGroup(0, bindGroup)
+                pass.setVertexBuffer(0, vertices.buffer)
 
-        pass.setPipeline(pipeline)
-        pass.setBindGroup(0, bindGroup)
-        pass.setVertexBuffer(0, xyz.buffer)
-        pass.draw(cubeData.vertexCount)
-
-        pass.end()
-
-        device!.queue.submit([commandEncoder.finish()])
+                pass.draw(cubeData.vertexCount)
+            }
+            pass.end()
+        }
+        const commandBuffer = commandEncoder.finish()
+        device.device!.queue.submit([commandBuffer])
 
         requestAnimationFrame(frame)
     }
@@ -307,25 +333,3 @@ async function main() {
 }
 
 main()
-
-function createBufferWithData(
-    device: GPUDevice,
-    data: TypedArrayView,
-    usage: GPUBufferUsageFlags,
-    label: string
-) {
-    const buffer = device.createBuffer({
-        label,
-        size: data.byteLength,
-        usage,
-        mappedAtCreation: true,
-    })
-    const Ctor = data.constructor as TypedArrayConstructor
-    // map gpubuffer
-    const dst = new Ctor(buffer.getMappedRange())
-    // copy data into it
-    dst.set(data)
-    // unmap gpubuffer
-    buffer.unmap()
-    return buffer
-}
