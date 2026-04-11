@@ -89,6 +89,10 @@ class Device {
 class Context {
     context: GPUCanvasContext | null = null
     presentationFormat: GPUTextureFormat
+    depthTextureFormat: GPUTextureFormat = 'depth24plus'
+    depthTexture: GPUTexture
+    sampler: GPUSampler
+
     constructor(device: Device, canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('webgpu')
         if (this.context == null) {
@@ -104,6 +108,19 @@ class Context {
             device: device.device!!,
             format: this.presentationFormat,
         })
+
+        this.depthTexture = device.device!!.createTexture({
+            size: [canvas.width, canvas.height],
+            format: this.depthTextureFormat,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        })
+
+        // Create a sampler with linear filtering for smooth interpolation of the texture
+        this.sampler = device.device!.createSampler({
+            magFilter: 'linear',
+            minFilter: 'linear',
+        })
+
     }
 }
 
@@ -173,26 +190,57 @@ class ShaderShadedMono extends ShaderModule {
     }
 }
 
+class Pipeline {
+    pipeline: GPURenderPipeline
+    constructor(pipeline: GPURenderPipeline) {
+        this.pipeline = pipeline
+    }
+}
+
+class PipelineShadedMono extends Pipeline {
+    constructor(device: Device, module: ShaderModule, context: Context) {
+        const pipelineDef: GPURenderPipelineDescriptor = {
+            layout: 'auto',
+            vertex: {
+                buffers: [{
+                    arrayStride: cubeData.bytesPerVertex,
+                    attributes: [
+                        { shaderLocation: 0, ...cubeData.layout.POSITION },
+                        { shaderLocation: 1, ...cubeData.layout.NORMAL },
+                        { shaderLocation: 2, ...cubeData.layout.UV },
+                    ],
+                }],
+                module: module.module
+            },
+            fragment: {
+                module: module.module,
+                targets: [{ format: context.presentationFormat }]
+            },
+            primitive: {
+                // "line-list" | "line-strip" | "point-list" | "triangle-list" | "triangle-strip";
+                topology: 'triangle-list',
+                cullMode: 'back',
+            },
+            depthStencil: {
+                depthWriteEnabled: true,
+                depthCompare: 'less',
+                format: context.depthTextureFormat,
+            },
+        }
+
+        super(device.device!.createRenderPipeline(pipelineDef))
+    }
+}
+
 async function main() {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
     if (canvas === null) {
         throw Error("#canvas not found")
     }
 
-    //
-    // get GPU
-    //
-
     const device = new Device()
     await device.init()
     const context = new Context(device, canvas)
-
-    const depthTextureFormat = 'depth24plus'
-    const depthTexture = device.device!!.createTexture({
-        size: [canvas.width, canvas.height],
-        format: depthTextureFormat,
-        usage: GPUTextureUsage.RENDER_ATTACHMENT,
-    })
 
     const uniforms = new Uniform(device.device!!, ["mat4x4f", "mat4x4f", "mat4x4f"])
 
@@ -200,54 +248,16 @@ async function main() {
     const cubeTexture = new Texture()
     await cubeTexture.load(device.device!!, "Di-3d.png")
 
-    // Create a sampler with linear filtering for smooth interpolation of the texture
-    const sampler = device.device!.createSampler({
-        magFilter: 'linear',
-        minFilter: 'linear',
-    })
-
     const vertices = new VertexBuffer(device.device!!, cubeData.vertices)
-
-
     const module = new ShaderShadedMono(device)
-
-    const pipelineDef: GPURenderPipelineDescriptor = {
-        layout: 'auto',
-        vertex: {
-            buffers: [{
-                arrayStride: cubeData.bytesPerVertex,
-                attributes: [
-                    { shaderLocation: 0, ...cubeData.layout.POSITION },
-                    { shaderLocation: 1, ...cubeData.layout.NORMAL },
-                    { shaderLocation: 2, ...cubeData.layout.UV },
-                ],
-            }],
-            module: module.module
-        },
-        fragment: {
-            module: module.module,
-            targets: [{ format: context.presentationFormat }]
-        },
-        primitive: {
-            // "line-list" | "line-strip" | "point-list" | "triangle-list" | "triangle-strip";
-            topology: 'triangle-list',
-            cullMode: 'back',
-        },
-        depthStencil: {
-            depthWriteEnabled: true,
-            depthCompare: 'less',
-            format: depthTextureFormat,
-        },
-    }
-
-    const pipeline = device.device!.createRenderPipeline(pipelineDef)
+    const pipeline = new PipelineShadedMono(device, module, context)
 
     // define the values for shaders '@group(...) @binding(...)' sections
     const bindGroup = device.device!.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
+        layout: pipeline.pipeline.getBindGroupLayout(0),
         entries: [
             { binding: 0, resource: uniforms },
-            { binding: 1, resource: sampler },
+            { binding: 1, resource: context.sampler },
             { binding: 2, resource: cubeTexture.texture!.createView() },
         ],
     })
@@ -262,7 +272,7 @@ async function main() {
             },
         ],
         depthStencilAttachment: {
-            view: depthTexture.createView(),
+            view: context.depthTexture.createView(),
             depthClearValue: 1.0,
             depthLoadOp: 'clear',
             depthStoreOp: 'store',
@@ -305,7 +315,7 @@ async function main() {
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(renderPassDescriptor)
         {
-            pass.setPipeline(pipeline)
+            pass.setPipeline(pipeline.pipeline)
             {
                 uniforms.writeTo(device.device!.queue)
                 pass.setBindGroup(0, bindGroup)
