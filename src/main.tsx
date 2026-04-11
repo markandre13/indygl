@@ -107,6 +107,72 @@ class Context {
     }
 }
 
+class ShaderModule {
+    module: GPUShaderModule
+    constructor(module: GPUShaderModule) {
+        this.module = module
+        module.getCompilationInfo().then(info => logCompilationInfo(info))
+    }
+}
+
+class ShaderShadedMono extends ShaderModule {
+    constructor(device: Device) {
+        super(
+            device.device!.createShaderModule({
+                code: /* wgsl */`
+                struct Uniforms { 
+                    uProjectionMatrix: mat4x4f,
+                    uModelViewMatrix: mat4x4f,
+                    uNormalMatrix: mat4x4f,
+                }
+                @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+                @group(0) @binding(1) var mySampler: sampler;
+                @group(0) @binding(2) var myTexture: texture_2d<f32>;
+            
+                struct Vertex2Fragment {
+                    @builtin(position) Position: vec4f,
+                    @location(0) fragUV: vec2f,
+                    @location(1) vLighting: vec3f
+                }
+
+                @vertex
+                fn vertex_main(
+                    @location(0) position: vec4f,
+                    @location(1) normal: vec4f,
+                    @location(2) uv: vec2f
+                ) -> Vertex2Fragment {
+
+                    let gl_Position = uniforms.uProjectionMatrix * uniforms.uModelViewMatrix * position;
+
+                    let ambientLight = vec3f(0.3, 0.3, 0.3);
+                    let directionalLightColor = vec3f(1, 1, 1);
+                    let directionalVector = normalize(vec3f(0.85, 0.8, 0.75));
+
+                    let transformedNormal = uniforms.uNormalMatrix * vec4f(normal.xyz, 1);
+
+                    let directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+                    let vLighting = ambientLight + (directionalLightColor * directional);
+
+                    return Vertex2Fragment(
+                        gl_Position,
+                        uv,
+                        vLighting
+                    );
+                }
+
+                @fragment
+                fn fragment_main(
+                    vin: Vertex2Fragment
+                ) -> @location(0) vec4f {
+                    // let color = vec3f(1, 0.5, 0);
+                    let color = textureSample(myTexture, mySampler, vin.fragUV).rgb;
+                    return vec4f(color * vin.vLighting, 1);
+                }
+            `})
+        )
+    }
+}
+
 async function main() {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
     if (canvas === null) {
@@ -142,82 +208,8 @@ async function main() {
 
     const vertices = new VertexBuffer(device.device!!, cubeData.vertices)
 
-    // SYSTEM PART
 
-    // NEXT: wrap this with a class
-
-    const module = device.device!.createShaderModule({
-        code: /* wgsl */`
-        struct Uniforms { 
-            uProjectionMatrix: mat4x4f,
-            uModelViewMatrix: mat4x4f,
-            uNormalMatrix: mat4x4f,
-        }
-        @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-        @group(0) @binding(1) var mySampler: sampler;
-        @group(0) @binding(2) var myTexture: texture_2d<f32>;
-    
-        struct Vertex2Fragment {
-            @builtin(position) Position: vec4f,
-            @location(0) fragUV: vec2f,
-            @location(1) vLighting: vec3f
-        }
-
-        @vertex
-        fn vertex_main(
-            @location(0) position: vec4f,
-            @location(1) normal: vec4f,
-            @location(2) uv: vec2f
-        ) -> Vertex2Fragment {
-
-            let gl_Position = uniforms.uProjectionMatrix * uniforms.uModelViewMatrix * position;
-
-            let ambientLight = vec3f(0.3, 0.3, 0.3);
-            let directionalLightColor = vec3f(1, 1, 1);
-            let directionalVector = normalize(vec3f(0.85, 0.8, 0.75));
-
-            let transformedNormal = uniforms.uNormalMatrix * vec4f(normal.xyz, 1);
-
-            let directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-            let vLighting = ambientLight + (directionalLightColor * directional);
-
-            return Vertex2Fragment(
-                gl_Position,
-                uv,
-                vLighting
-            );
-        }
-
-        @fragment
-        fn fragment_main(
-            vin: Vertex2Fragment
-        ) -> @location(0) vec4f {
-            // let color = vec3f(1, 0.5, 0);
-            let color = textureSample(myTexture, mySampler, vin.fragUV).rgb;
-            return vec4f(color * vin.vLighting, 1);
-        }
-    `})
-    async function logMessages(module: GPUShaderModule | undefined) {
-        if (module === undefined) {
-            return
-        }
-        const info = await module.getCompilationInfo()
-        for (let m of info.messages) {
-            const l = `${name}: ${m.lineNum}:${m.linePos}: ${m.message}`
-            switch (m.type) {
-                case "error":
-                    console.error(l)
-                    break
-                case "warning":
-                    console.warn(l)
-                    break
-                case "info":
-                    console.info(l)
-                    break
-            }
-        }
-    }
-    await logMessages(module)
+    const module = new ShaderShadedMono(device)
 
     const pipelineDef: GPURenderPipelineDescriptor = {
         layout: 'auto',
@@ -230,10 +222,10 @@ async function main() {
                     { shaderLocation: 2, ...cubeData.layout.UV },
                 ],
             }],
-            module
+            module: module.module
         },
         fragment: {
-            module,
+            module: module.module,
             targets: [{ format: context.presentationFormat }]
         },
         primitive: {
@@ -333,3 +325,20 @@ async function main() {
 }
 
 main()
+
+async function logCompilationInfo(info: GPUCompilationInfo) {
+    for (let m of info.messages) {
+        const l = `${m.lineNum}:${m.linePos}: ${m.message}`
+        switch (m.type) {
+            case "error":
+                console.error(l)
+                break
+            case "warning":
+                console.warn(l)
+                break
+            case "info":
+                console.info(l)
+                break
+        }
+    }
+}
