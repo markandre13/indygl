@@ -64,7 +64,7 @@ async function shadedCube(device: GPUDevice) {
     // )
 }
 
-export const testData: VertexData = {
+export const cube_XYZ_RGB: VertexData = {
     /**
      * cube vertices in the format (position: float4, color: float4, uv: float2)
      */
@@ -91,6 +91,61 @@ export const testData: VertexData = {
     }
 }
 
+export const cube_XYZ: VertexData = {
+    /**
+     * cube vertices in the format (position: float4, color: float4, uv: float2)
+     */
+    vertices: [
+        -1, 1, -1,
+        1, 1, -1,
+        1, -1, -1,
+        -1, -1, -1,
+
+        -1, 1, 1,
+        1, 1, 1,
+        1, -1, 1,
+        -1, -1, 1,
+    ],
+    vertexCount: 8,
+    bytesPerVertex: FLOAT32_SIZE * 3,
+    /**
+     * offsets within vertex
+     */
+    layout: {
+        POSITION: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
+        // COLOR: { offset: FLOAT32_SIZE * 3, format: 'float32x3' },
+        // UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
+    }
+}
+
+export const cube_RGB: VertexData = {
+    /**
+     * cube vertices in the format (position: float4, color: float4, uv: float2)
+     */
+    vertices: [
+        0, 0, 1,
+        0, 0.5, 1,
+        0, 1, 0,
+        0.5, 1, 0,
+
+        1, 0.5, 0,
+        1, 0, 0,
+        1, 0, 0.5,
+        1, 0, 1
+    ],
+    vertexCount: 8,
+    bytesPerVertex: FLOAT32_SIZE * 3,
+    /**
+     * offsets within vertex
+     */
+    layout: {
+        // POSITION: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
+        COLOR: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
+        // UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
+    }
+}
+
+
 enum UniformIndex {
     MODELVIEW = 0,
     NORMAL = 1
@@ -109,6 +164,8 @@ class Device {
         if (this.device === undefined) {
             throw Error('failed to allocate `GPUDevice')
         }
+        // uncaught errors
+        this.device.addEventListener('uncapturederror', event => console.log(event.error));
     }
 }
 
@@ -236,13 +293,21 @@ class PipelineShadedMono extends Pipeline {
             layout: 'auto',
             vertex: {
                 buffers: [{
-                    arrayStride: testData.bytesPerVertex,
+                    arrayStride: cube_XYZ.bytesPerVertex,
                     attributes: [
-                        { shaderLocation: 0, ...testData.layout.POSITION },
-                        { shaderLocation: 1, ...testData.layout.COLOR },
+                        { shaderLocation: 0, ...cube_XYZ.layout.POSITION },
+                        // { shaderLocation: 1, ...cube_RGB.layout.COLOR },
                         // { shaderLocation: 1, ...cubeData.layout.NORMAL },
                         // { shaderLocation: 2, ...cubeData.layout.UV },
-                    ],
+                    ]
+                }, {
+                    arrayStride: cube_RGB.bytesPerVertex,
+                    attributes: [
+                        { shaderLocation: 1, ...cube_RGB.layout.COLOR },
+                        // { shaderLocation: 1, ...cube_RGB.layout.COLOR },
+                        // { shaderLocation: 1, ...cubeData.layout.NORMAL },
+                        // { shaderLocation: 2, ...cubeData.layout.UV },
+                    ]
                 }],
                 module: module.module
             },
@@ -291,7 +356,9 @@ async function main() {
     //
     //  4     5
     // 7     6
-    const vertices = new VertexBuffer(device.device!!, testData.vertices)
+    const vertices = new VertexBuffer(device.device!!, cube_XYZ.vertices)
+    const colors = new VertexBuffer(device.device!!, cube_RGB.vertices)
+
     const indices = new IndexBuffer(device.device!!, [
         // top
         0, 1, 2,
@@ -385,6 +452,7 @@ async function main() {
                 modelUniforms.writeTo(device.device!.queue)
                 pass.setBindGroup(0, bindGroup)
                 pass.setVertexBuffer(0, vertices.buffer)
+                pass.setVertexBuffer(1, colors.buffer)
                 pass.setIndexBuffer(indices.buffer, 'uint32')
                 // pass.draw(testData.vertexCount)
                 pass.drawIndexed(indices.length)
