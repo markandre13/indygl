@@ -4,6 +4,7 @@ import { Texture } from "./gl/Texture"
 import { Uniform } from './gl/Uniform'
 import { mat4, vec3 } from 'gl-matrix'
 import { FLOAT32_SIZE, type VertexData } from './geom-cube'
+import { IndexBuffer } from './gl/IndexBuffer'
 
 // stuff to investigate
 // * resize canvas
@@ -12,7 +13,7 @@ import { FLOAT32_SIZE, type VertexData } from './geom-cube'
 
 async function shadedCube(device: GPUDevice) {
     // prettier-ignore
-    const vertexData = new Float32Array([
+    const vertexData = [
         // position       normal
         1, 1, -1, 1, 0, 0,
         1, 1, 1, 1, 0, 0,
@@ -38,16 +39,16 @@ async function shadedCube(device: GPUDevice) {
         1, 1, -1, 0, 0, -1,
         1, -1, -1, 0, 0, -1,
         -1, -1, -1, 0, 0, -1,
-    ])
+    ]
     // prettier-ignore
-    const indices = new Uint16Array([
+    const indices = [
         0, 1, 2, 0, 2, 3, // +x face
         4, 5, 6, 4, 6, 7, // -x face
         8, 9, 10, 8, 10, 11, // +y face
         12, 13, 14, 12, 14, 15, // -y face
         16, 17, 18, 16, 18, 19, // +z face
         20, 21, 22, 20, 22, 23, // -z face
-    ])
+    ]
 
     // const vertexBuf = createBufferWithData(
     //     device,
@@ -67,20 +68,25 @@ export const testData: VertexData = {
     /**
      * cube vertices in the format (position: float4, color: float4, uv: float2)
      */
-    vertices: new Float32Array([
-        -1, 1, -1,
-        1, 1, -1,
-        1, -1, -1,
-        -1, -1, -1
-    ]),
-    vertexCount: 3,
-    bytesPerVertex: FLOAT32_SIZE * 3,
+    vertices: [
+        -1, 1, -1, 0, 0, 1,
+        1, 1, -1, 0, 0.5, 1,
+        1, -1, -1, 0, 1, 0,
+        -1, -1, -1, 0.5, 1, 0,
+
+        -1, 1, 1, 1, 0.5, 0,
+        1, 1, 1, 1, 0, 0,
+        1, -1, 1, 1, 0, 0.5,
+        -1, -1, 1, 1, 0, 1
+    ],
+    vertexCount: 8,
+    bytesPerVertex: FLOAT32_SIZE * 6,
     /**
      * offsets within vertex
      */
     layout: {
         POSITION: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
-        // NORMAL: { offset: FLOAT32_SIZE * 4, format: 'float32x4' },
+        COLOR: { offset: FLOAT32_SIZE * 3, format: 'float32x3' },
         // UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
     }
 }
@@ -171,18 +177,20 @@ class ShaderShadedMono extends Shader {
             
                 struct Vertex2Fragment {
                     @builtin(position) Position: vec4f,
+                    @location(0) rgb: vec3f
                     // @location(0) fragUV: vec2f,
                     // @location(1) vLighting: vec3f
                 }
 
                 @vertex
                 fn vertex_main(
-                    @location(0) position: vec4f
+                    @location(0) position: vec3f,
+                    @location(1) rgb: vec3f
                     // @location(1) normal: vec4f,
                     // @location(2) uv: vec2f
                 ) -> Vertex2Fragment {
 
-                    let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * position;
+                    let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(position, 1);
 
                     // let ambientLight = vec3f(0.3, 0.3, 0.3);
                     // let directionalLightColor = vec3f(1, 1, 1);
@@ -194,7 +202,8 @@ class ShaderShadedMono extends Shader {
                     // let vLighting = ambientLight + (directionalLightColor * directional);
 
                     return Vertex2Fragment(
-                        gl_Position
+                        gl_Position,
+                        rgb
                         // uv,
                         // vLighting
                     );
@@ -204,10 +213,10 @@ class ShaderShadedMono extends Shader {
                 fn fragment_main(
                     vin: Vertex2Fragment
                 ) -> @location(0) vec4f {
-                    let color = vec3f(1, 0.5, 0);
+                    // let color = vec3f(1, 0.5, 0);
                     // let color = textureSample(myTexture, mySampler, vin.fragUV).rgb;
                     // return vec4f(color * vin.vLighting, 1);
-                    return vec4f(color, 1);
+                    return vec4f(vin.rgb, 1);
                 }
             `})
         )
@@ -230,6 +239,7 @@ class PipelineShadedMono extends Pipeline {
                     arrayStride: testData.bytesPerVertex,
                     attributes: [
                         { shaderLocation: 0, ...testData.layout.POSITION },
+                        { shaderLocation: 1, ...testData.layout.COLOR },
                         // { shaderLocation: 1, ...cubeData.layout.NORMAL },
                         // { shaderLocation: 2, ...cubeData.layout.UV },
                     ],
@@ -242,7 +252,7 @@ class PipelineShadedMono extends Pipeline {
             },
             primitive: {
                 topology: 'triangle-list',
-                cullMode: 'back',
+                cullMode: 'none',
             },
             depthStencil: {
                 depthWriteEnabled: true,
@@ -275,9 +285,33 @@ async function main() {
     const cubeTexture = new Texture()
     await cubeTexture.load(device.device!!, "Di-3d.png")
 
-    // ?    const vertices = 
 
+    //  0     1
+    // 3     2
+    //
+    //  4     5
+    // 7     6
     const vertices = new VertexBuffer(device.device!!, testData.vertices)
+    const indices = new IndexBuffer(device.device!!, [
+        // top
+        0, 1, 2,
+        0, 2, 3,
+        // left
+        0, 3, 7,
+        0, 7, 4,
+        // back
+        1, 0, 4,
+        1, 4, 5,
+        // front
+        3, 2, 6,
+        3, 6, 7,
+        // right
+        1, 5, 6,
+        1, 6, 2,
+        // bottom
+        5, 4, 7,
+        5, 7, 6,
+    ])
     const module = new ShaderShadedMono(device)
     const shadedTrianglePipeline = new PipelineShadedMono(device, module, context)
 
@@ -351,8 +385,9 @@ async function main() {
                 modelUniforms.writeTo(device.device!.queue)
                 pass.setBindGroup(0, bindGroup)
                 pass.setVertexBuffer(0, vertices.buffer)
-
-                pass.draw(testData.vertexCount)
+                pass.setIndexBuffer(indices.buffer, 'uint32')
+                // pass.draw(testData.vertexCount)
+                pass.drawIndexed(indices.length)
             }
             pass.end()
         }

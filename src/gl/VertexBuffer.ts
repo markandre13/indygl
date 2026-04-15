@@ -3,9 +3,10 @@
  */
 export class VertexBuffer {
     buffer: GPUBuffer
-    constructor(device: GPUDevice, xyz: Float32Array) {
+    constructor(device: GPUDevice, xyz: ArrayLike<number>) {
         this.buffer = device.createBuffer({
-            size: xyz.byteLength,
+            label: "vertexbuffer",
+            size: xyz.length * 4,
             usage: GPUBufferUsage.VERTEX,
             mappedAtCreation: true,
         })
@@ -13,3 +14,4 @@ export class VertexBuffer {
         this.buffer.unmap()
     }
 }
+

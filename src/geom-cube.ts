@@ -76,7 +76,7 @@ export type GPUVertexDef = Omit<GPUVertexAttribute, "shaderLocation">
 export type VertexLayout = { [name: string]: GPUVertexDef }
 
 export interface VertexData {
-    vertices: Float32Array // TypedArrayView,
+    vertices: ArrayLike<number> // TypedArrayView,
     vertexCount: number
     bytesPerVertex: number
     layout: VertexLayout
