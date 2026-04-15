@@ -48,24 +48,24 @@ async function shadedCube(device: GPUDevice) {
         20, 21, 22, 20, 22, 23, // -z face
     ])
 
-    const vertexBuf = createBufferWithData(
-        device,
-        vertexData,
-        GPUBufferUsage.VERTEX,
-        'vertexBuffer'
-    )
-    const indicesBuf = createBufferWithData(
-        device,
-        indices,
-        GPUBufferUsage.INDEX,
-        'indexBuffer'
-    )
+    // const vertexBuf = createBufferWithData(
+    //     device,
+    //     vertexData,
+    //     GPUBufferUsage.VERTEX,
+    //     'vertexBuffer'
+    // )
+    // const indicesBuf = createBufferWithData(
+    //     device,
+    //     indices,
+    //     GPUBufferUsage.INDEX,
+    //     'indexBuffer'
+    // )
 }
 
 enum UniformIndex {
-    PROJECTION = 0,
-    MODELVIEW,
-    NORMAL
+    // PROJECTION = 0,
+    MODELVIEW = 0,
+    NORMAL = 1
 }
 
 class Device {
@@ -135,14 +135,17 @@ class ShaderShadedMono extends Shader {
         super(
             device.device!.createShaderModule({
                 code: /* wgsl */`
-                struct Uniforms { 
+                struct SceneUniforms { 
                     uProjectionMatrix: mat4x4f,
+                };
+                struct ModelUniforms { 
                     uModelViewMatrix: mat4x4f,
                     uNormalMatrix: mat4x4f,
-                }
-                @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-                @group(0) @binding(1) var mySampler: sampler;
-                @group(0) @binding(2) var myTexture: texture_2d<f32>;
+                };
+                @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
+                @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
+                @group(0) @binding(2) var mySampler: sampler;
+                @group(0) @binding(3) var myTexture: texture_2d<f32>;
             
                 struct Vertex2Fragment {
                     @builtin(position) Position: vec4f,
@@ -157,13 +160,13 @@ class ShaderShadedMono extends Shader {
                     @location(2) uv: vec2f
                 ) -> Vertex2Fragment {
 
-                    let gl_Position = uniforms.uProjectionMatrix * uniforms.uModelViewMatrix * position;
+                    let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * position;
 
                     let ambientLight = vec3f(0.3, 0.3, 0.3);
                     let directionalLightColor = vec3f(1, 1, 1);
                     let directionalVector = normalize(vec3f(0.85, 0.8, 0.75));
 
-                    let transformedNormal = uniforms.uNormalMatrix * vec4f(normal.xyz, 1);
+                    let transformedNormal = modelUniforms.uNormalMatrix * vec4f(normal.xyz, 1);
 
                     let directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
                     let vLighting = ambientLight + (directionalLightColor * directional);
@@ -239,7 +242,11 @@ async function main() {
     await device.init()
     const context = new Context(device, canvas)
 
-    const uniforms = new Uniform(device.device!!, ["mat4x4f", "mat4x4f", "mat4x4f"])
+    // uniforms shared by all shaders
+    // * projection matrix
+    // * lights...
+    const sceneUniforms = new Uniform(device.device!!, ["mat4x4f"])
+    const modelUniforms = new Uniform(device.device!!, ["mat4x4f", "mat4x4f"])
 
     // Fetch the image and upload it into a GPUTexture.
     const cubeTexture = new Texture()
@@ -253,9 +260,10 @@ async function main() {
     const bindGroup = device.device!.createBindGroup({
         layout: shadedTrianglePipeline.pipeline.getBindGroupLayout(0),
         entries: [
-            { binding: 0, resource: uniforms },
-            { binding: 1, resource: context.sampler },
-            { binding: 2, resource: cubeTexture.texture!.createView() },
+            { binding: 0, resource: sceneUniforms },
+            { binding: 1, resource: modelUniforms },
+            { binding: 2, resource: context.sampler },
+            { binding: 3, resource: cubeTexture.texture!.createView() },
         ],
     })
 
@@ -283,7 +291,8 @@ async function main() {
     const aspect = canvas.clientWidth / canvas.clientHeight
     const zNear = 0.1
     const zFar = 100.0
-    mat4.perspectiveZO(uniforms.values[UniformIndex.PROJECTION], fieldOfView, aspect, zNear, zFar)
+    mat4.perspectiveZO(sceneUniforms.values[0], fieldOfView, aspect, zNear, zFar)
+    sceneUniforms.writeTo(device.device!.queue)
 
     let lastFrameMS = Date.now()
 
@@ -293,14 +302,14 @@ async function main() {
         cubeRotation += deltaTime
         lastFrameMS = now
 
-        const modelViewMatrix = uniforms.values[UniformIndex.MODELVIEW]
+        const modelViewMatrix = modelUniforms.values[UniformIndex.MODELVIEW]
         mat4.identity(modelViewMatrix)
         mat4.translate(modelViewMatrix, modelViewMatrix, vec3.fromValues(0, 0, -6))
         mat4.rotateZ(modelViewMatrix, modelViewMatrix, cubeRotation)
         mat4.rotateY(modelViewMatrix, modelViewMatrix, cubeRotation * 0.7)
         mat4.rotateX(modelViewMatrix, modelViewMatrix, cubeRotation * 0.3)
 
-        const normalMatrix = uniforms.values[UniformIndex.NORMAL]
+        const normalMatrix = modelUniforms.values[UniformIndex.NORMAL]
         mat4.invert(normalMatrix, modelViewMatrix)
         mat4.transpose(normalMatrix, normalMatrix)
 
@@ -314,7 +323,7 @@ async function main() {
         {
             pass.setPipeline(shadedTrianglePipeline.pipeline)
             {
-                uniforms.writeTo(device.device!.queue)
+                modelUniforms.writeTo(device.device!.queue)
                 pass.setBindGroup(0, bindGroup)
                 pass.setVertexBuffer(0, vertices.buffer)
 
