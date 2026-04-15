@@ -1,8 +1,9 @@
-import { cubeData, type TypedArrayConstructor, type TypedArrayView } from './geom-cube'
+// import { cubeData, FLOAT32_SIZE, type VertexData } from './geom-cube'
 import { VertexBuffer } from './gl/VertexBuffer'
 import { Texture } from "./gl/Texture"
 import { Uniform } from './gl/Uniform'
 import { mat4, vec3 } from 'gl-matrix'
+import { FLOAT32_SIZE, type VertexData } from './geom-cube'
 
 // stuff to investigate
 // * resize canvas
@@ -62,8 +63,29 @@ async function shadedCube(device: GPUDevice) {
     // )
 }
 
+export const testData: VertexData = {
+    /**
+     * cube vertices in the format (position: float4, color: float4, uv: float2)
+     */
+    vertices: new Float32Array([
+        -1, 1, -1,
+        1, 1, -1,
+        1, -1, -1,
+        -1, -1, -1
+    ]),
+    vertexCount: 3,
+    bytesPerVertex: FLOAT32_SIZE * 3,
+    /**
+     * offsets within vertex
+     */
+    layout: {
+        POSITION: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
+        // NORMAL: { offset: FLOAT32_SIZE * 4, format: 'float32x4' },
+        // UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
+    }
+}
+
 enum UniformIndex {
-    // PROJECTION = 0,
     MODELVIEW = 0,
     NORMAL = 1
 }
@@ -149,32 +171,32 @@ class ShaderShadedMono extends Shader {
             
                 struct Vertex2Fragment {
                     @builtin(position) Position: vec4f,
-                    @location(0) fragUV: vec2f,
-                    @location(1) vLighting: vec3f
+                    // @location(0) fragUV: vec2f,
+                    // @location(1) vLighting: vec3f
                 }
 
                 @vertex
                 fn vertex_main(
-                    @location(0) position: vec4f,
-                    @location(1) normal: vec4f,
-                    @location(2) uv: vec2f
+                    @location(0) position: vec4f
+                    // @location(1) normal: vec4f,
+                    // @location(2) uv: vec2f
                 ) -> Vertex2Fragment {
 
                     let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * position;
 
-                    let ambientLight = vec3f(0.3, 0.3, 0.3);
-                    let directionalLightColor = vec3f(1, 1, 1);
-                    let directionalVector = normalize(vec3f(0.85, 0.8, 0.75));
+                    // let ambientLight = vec3f(0.3, 0.3, 0.3);
+                    // let directionalLightColor = vec3f(1, 1, 1);
+                    // let directionalVector = normalize(vec3f(0.85, 0.8, 0.75));
 
-                    let transformedNormal = modelUniforms.uNormalMatrix * vec4f(normal.xyz, 1);
+                    // let transformedNormal = modelUniforms.uNormalMatrix * vec4f(normal.xyz, 1);
 
-                    let directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-                    let vLighting = ambientLight + (directionalLightColor * directional);
+                    // let directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+                    // let vLighting = ambientLight + (directionalLightColor * directional);
 
                     return Vertex2Fragment(
-                        gl_Position,
-                        uv,
-                        vLighting
+                        gl_Position
+                        // uv,
+                        // vLighting
                     );
                 }
 
@@ -182,9 +204,10 @@ class ShaderShadedMono extends Shader {
                 fn fragment_main(
                     vin: Vertex2Fragment
                 ) -> @location(0) vec4f {
-                    // let color = vec3f(1, 0.5, 0);
-                    let color = textureSample(myTexture, mySampler, vin.fragUV).rgb;
-                    return vec4f(color * vin.vLighting, 1);
+                    let color = vec3f(1, 0.5, 0);
+                    // let color = textureSample(myTexture, mySampler, vin.fragUV).rgb;
+                    // return vec4f(color * vin.vLighting, 1);
+                    return vec4f(color, 1);
                 }
             `})
         )
@@ -204,11 +227,11 @@ class PipelineShadedMono extends Pipeline {
             layout: 'auto',
             vertex: {
                 buffers: [{
-                    arrayStride: cubeData.bytesPerVertex,
+                    arrayStride: testData.bytesPerVertex,
                     attributes: [
-                        { shaderLocation: 0, ...cubeData.layout.POSITION },
-                        { shaderLocation: 1, ...cubeData.layout.NORMAL },
-                        { shaderLocation: 2, ...cubeData.layout.UV },
+                        { shaderLocation: 0, ...testData.layout.POSITION },
+                        // { shaderLocation: 1, ...cubeData.layout.NORMAL },
+                        // { shaderLocation: 2, ...cubeData.layout.UV },
                     ],
                 }],
                 module: module.module
@@ -252,7 +275,9 @@ async function main() {
     const cubeTexture = new Texture()
     await cubeTexture.load(device.device!!, "Di-3d.png")
 
-    const vertices = new VertexBuffer(device.device!!, cubeData.vertices)
+    // ?    const vertices = 
+
+    const vertices = new VertexBuffer(device.device!!, testData.vertices)
     const module = new ShaderShadedMono(device)
     const shadedTrianglePipeline = new PipelineShadedMono(device, module, context)
 
@@ -327,7 +352,7 @@ async function main() {
                 pass.setBindGroup(0, bindGroup)
                 pass.setVertexBuffer(0, vertices.buffer)
 
-                pass.draw(cubeData.vertexCount)
+                pass.draw(testData.vertexCount)
             }
             pass.end()
         }

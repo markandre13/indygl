@@ -50,7 +50,7 @@ const cubeVertexArray = new Float32Array([
     -1, 1, -1, 1, 0, 0, -1, 1, 1, 0,
 ])
 
-const FLOAT32_SIZE = 4
+export const FLOAT32_SIZE = 4
 
 export type TypedArrayView =
     | Int8Array
@@ -72,10 +72,10 @@ export type TypedArrayConstructor =
     | Float32ArrayConstructor
     | Float64ArrayConstructor
 
-type GPUVertexDef = Omit<GPUVertexAttribute, "shaderLocation">
-type VertexLayout = { [name: string]: GPUVertexDef }
+export type GPUVertexDef = Omit<GPUVertexAttribute, "shaderLocation">
+export type VertexLayout = { [name: string]: GPUVertexDef }
 
-interface VertexData {
+export interface VertexData {
     vertices: Float32Array // TypedArrayView,
     vertexCount: number
     bytesPerVertex: number
