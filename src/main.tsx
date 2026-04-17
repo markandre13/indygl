@@ -177,69 +177,95 @@ class Device {
 }
 
 class CanvasContext {
+    device: Device
+    canvas: HTMLCanvasElement
     context: GPUCanvasContext | null = null
     presentationFormat: GPUTextureFormat
     depthTextureFormat: GPUTextureFormat = 'depth24plus'
-    depthTexture: GPUTexture
+    private depthTexture?: GPUTexture
+    private depthTextureView?: GPUTextureView
     sampler: GPUSampler
     sceneUniforms: Uniform
 
     constructor(device: Device, canvas: HTMLCanvasElement) {
+        this.device = device
+        this.canvas = canvas
         this.context = canvas.getContext('webgpu')
         if (this.context == null) {
             throw Error('no webgpu')
         }
 
-        const devicePixelRatio = window.devicePixelRatio
-        canvas.width = canvas.clientWidth * devicePixelRatio
-        canvas.height = canvas.clientHeight * devicePixelRatio
-        this.presentationFormat = navigator.gpu.getPreferredCanvasFormat()
+        this.sceneUniforms = new Uniform(device.device!!, ["mat4x4f"])
 
+        const devicePixelRatio = window.devicePixelRatio
+        const pixelWidth = canvas.clientWidth * devicePixelRatio
+        const pixelHeight = canvas.clientHeight * devicePixelRatio
+        this.adjustSizeCore(pixelWidth, pixelHeight)
+
+        this.presentationFormat = navigator.gpu.getPreferredCanvasFormat()
         this.context.configure({
             device: device.device!!,
             format: this.presentationFormat,
         })
 
-        this.depthTexture = device.device!!.createTexture({
-            size: [canvas.width, canvas.height],
-            format: this.depthTextureFormat,
-            usage: GPUTextureUsage.RENDER_ATTACHMENT,
-        })
-
-        // Create a sampler with linear filtering for smooth interpolation of the texture
+        // Create a sampler with linear filtering for smooth interpolation of textures
         this.sampler = device.device!.createSampler({
             magFilter: 'linear',
             minFilter: 'linear',
         })
 
-        this.sceneUniforms = new Uniform(device.device!!, ["mat4x4f"])
+        const observer = new ResizeObserver(_entries => {
+            this.ajustSize()
+        })
+        observer.observe(canvas)
+    }
+
+    getCanvasView() {
+        return this.context!
+            .getCurrentTexture() // get canvas as texture
+            .createView() // map it into WebGPU
+    }
+
+    getDepthTextureView(): GPUTextureView {
+        if (this.depthTexture === undefined || this.depthTextureView === undefined) {
+            this.depthTexture = this.device.device!.createTexture({
+                size: [this.canvas.width, this.canvas.height],
+                format: this.depthTextureFormat,
+                usage: GPUTextureUsage.RENDER_ATTACHMENT,
+            })
+            if (this.depthTexture === undefined) {
+                throw Error(`failed to create depth texture`)
+            }
+            this.depthTextureView = this.depthTexture.createView()
+            if (this.depthTextureView === undefined) {
+                throw Error(`failed to create depth texture view`)
+            }
+        }
+        return this.depthTextureView!
+    }
+
+    ajustSize() {
+        const devicePixelRatio = window.devicePixelRatio
+        const pixelWidth = this.canvas.clientWidth * devicePixelRatio
+        const pixelHeight = this.canvas.clientHeight * devicePixelRatio
+        if (this.canvas.width !== pixelWidth || this.canvas.height !== pixelHeight) {
+            this.adjustSizeCore(pixelWidth, pixelHeight)
+        }
+    }
+
+    adjustSizeCore(pixelWidth: number, pixelHeight: number) {
+        console.log(`adjust canvas size: canvas.width=${this.canvas.width}, pixelWidth=${pixelWidth}; canvas.height=${this.canvas.height}, pixelHeight=${pixelHeight}`)
+        this.canvas.width = pixelWidth
+        this.canvas.height = pixelHeight
+
+        this.depthTexture = undefined
+        
         const fieldOfView = (45 * Math.PI) / 180 // in radians
-        const aspect = canvas.clientWidth / canvas.clientHeight
+        const aspect = this.canvas.clientWidth / this.canvas.clientHeight
         const zNear = 0.1
         const zFar = 100.0
         mat4.perspectiveZO(this.sceneUniforms.values[0], fieldOfView, aspect, zNear, zFar)
-        this.sceneUniforms.writeTo(device.device!.queue)
-
-        // // see
-        // // http://localhost:8080/?sample=resizeCanvas
-        // const observer = new ResizeObserver(entries => {
-        //     for (const entry of entries) {
-        //         // const width = entry.devicePixelContentBoxSize[0].inlineSize
-        //         // const height = entry.devicePixelContentBoxSize[0].blockSize
-        //         // canvas.width = Math.max(1, Math.min(width, device.device!!.limits.maxTextureDimension2D))
-        //         // canvas.height = Math.max(1, Math.min(height, device.device!!.limits.maxTextureDimension2D))
-        //         canvas.width = canvas.clientWidth * devicePixelRatio
-        //         canvas.height = canvas.clientHeight * devicePixelRatio
-
-        //         // this.depthTexture = device.device!!.createTexture({
-        //         //     size: [canvas.width, canvas.height],
-        //         //     format: this.depthTextureFormat,
-        //         //     usage: GPUTextureUsage.RENDER_ATTACHMENT,
-        //         // })
-        //     }
-        // })
-        // observer.observe(canvas)
-
+        this.sceneUniforms.writeTo(this.device.device!.queue)
     }
 }
 
@@ -429,17 +455,18 @@ async function main() {
         ],
     })
 
+    // move into context?
     const renderPassDescriptor: GPURenderPassDescriptor = {
         colorAttachments: [
             {
-                view: undefined as any, // Assigned later
+                view: undefined as any, // assigned later
                 clearValue: [0.5, 0.5, 0.5, 1.0],
                 loadOp: 'clear',
                 storeOp: 'store',
             },
         ],
         depthStencilAttachment: {
-            view: context.depthTexture.createView(),
+            view: undefined as any, // assigned later
             depthClearValue: 1.0,
             depthLoadOp: 'clear',
             depthStoreOp: 'store',
@@ -449,8 +476,6 @@ async function main() {
     let cubeRotation = 0
 
     // like my OpenGL
-
-
     let lastFrameMS = Date.now()
 
     function frame() {
@@ -470,10 +495,11 @@ async function main() {
         mat4.invert(normalMatrix, modelViewMatrix)
         mat4.transpose(normalMatrix, normalMatrix)
 
-        // context refers to the canvas!!!
-        renderPassDescriptor.colorAttachments[0]!.view = context.context!
-            .getCurrentTexture()
-            .createView()
+        context.ajustSize()
+
+        // set render destination
+        renderPassDescriptor.colorAttachments[0]!.view = context.getCanvasView()
+        renderPassDescriptor.depthStencilAttachment!.view = context.getDepthTextureView()
 
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(renderPassDescriptor)
