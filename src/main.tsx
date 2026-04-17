@@ -9,7 +9,14 @@ import { IndexBuffer } from './gl/IndexBuffer'
 // stuff to investigate
 // * resize canvas
 // * draw via index
-// * hide more boilerplate code
+
+// * create examples for all possible use cases
+//   * xyz, norm, uv, rgb, rgba and all their combinations
+//   * for performance, when writing to vertex buffers, it might be usefull to cycle through
+//     about four of them
+//     https://www.reddit.com/r/opengl/comments/155jq8v/whats_better_multiple_vertex_buffers_or_a_single/
+// * test them with visual regression tests
+//   https://vitest.dev/guide/browser/visual-regression-testing
 
 async function shadedCube(device: GPUDevice) {
     // prettier-ignore
@@ -165,7 +172,7 @@ class Device {
             throw Error('failed to allocate `GPUDevice')
         }
         // uncaught errors
-        this.device.addEventListener('uncapturederror', event => console.log(event.error));
+        this.device.addEventListener('uncapturederror', event => console.log(event.error))
     }
 }
 
@@ -175,6 +182,7 @@ class Context {
     depthTextureFormat: GPUTextureFormat = 'depth24plus'
     depthTexture: GPUTexture
     sampler: GPUSampler
+    sceneUniforms: Uniform
 
     constructor(device: Device, canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('webgpu')
@@ -203,6 +211,34 @@ class Context {
             magFilter: 'linear',
             minFilter: 'linear',
         })
+
+        this.sceneUniforms = new Uniform(device.device!!, ["mat4x4f"])
+        const fieldOfView = (45 * Math.PI) / 180 // in radians
+        const aspect = canvas.clientWidth / canvas.clientHeight
+        const zNear = 0.1
+        const zFar = 100.0
+        mat4.perspectiveZO(this.sceneUniforms.values[0], fieldOfView, aspect, zNear, zFar)
+        this.sceneUniforms.writeTo(device.device!.queue)
+
+        // // see
+        // // http://localhost:8080/?sample=resizeCanvas
+        // const observer = new ResizeObserver(entries => {
+        //     for (const entry of entries) {
+        //         // const width = entry.devicePixelContentBoxSize[0].inlineSize
+        //         // const height = entry.devicePixelContentBoxSize[0].blockSize
+        //         // canvas.width = Math.max(1, Math.min(width, device.device!!.limits.maxTextureDimension2D))
+        //         // canvas.height = Math.max(1, Math.min(height, device.device!!.limits.maxTextureDimension2D))
+        //         canvas.width = canvas.clientWidth * devicePixelRatio
+        //         canvas.height = canvas.clientHeight * devicePixelRatio
+
+        //         // this.depthTexture = device.device!!.createTexture({
+        //         //     size: [canvas.width, canvas.height],
+        //         //     format: this.depthTextureFormat,
+        //         //     usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        //         // })
+        //     }
+        // })
+        // observer.observe(canvas)
 
     }
 }
@@ -343,7 +379,7 @@ async function main() {
     // uniforms shared by all shaders
     // * projection matrix
     // * lights...
-    const sceneUniforms = new Uniform(device.device!!, ["mat4x4f"])
+
     const modelUniforms = new Uniform(device.device!!, ["mat4x4f", "mat4x4f"])
 
     // Fetch the image and upload it into a GPUTexture.
@@ -386,7 +422,7 @@ async function main() {
     const bindGroup = device.device!.createBindGroup({
         layout: shadedTrianglePipeline.pipeline.getBindGroupLayout(0),
         entries: [
-            { binding: 0, resource: sceneUniforms },
+            { binding: 0, resource: context.sceneUniforms },
             { binding: 1, resource: modelUniforms },
             { binding: 2, resource: context.sampler },
             { binding: 3, resource: cubeTexture.texture!.createView() },
@@ -413,12 +449,7 @@ async function main() {
     let cubeRotation = 0
 
     // like my OpenGL
-    const fieldOfView = (45 * Math.PI) / 180 // in radians
-    const aspect = canvas.clientWidth / canvas.clientHeight
-    const zNear = 0.1
-    const zFar = 100.0
-    mat4.perspectiveZO(sceneUniforms.values[0], fieldOfView, aspect, zNear, zFar)
-    sceneUniforms.writeTo(device.device!.queue)
+
 
     let lastFrameMS = Date.now()
 
@@ -465,7 +496,6 @@ async function main() {
         requestAnimationFrame(frame)
     }
     requestAnimationFrame(frame)
-
 }
 
 main()
