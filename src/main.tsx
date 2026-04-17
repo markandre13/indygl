@@ -176,7 +176,7 @@ class Device {
     }
 }
 
-class Context {
+class CanvasContext {
     context: GPUCanvasContext | null = null
     presentationFormat: GPUTextureFormat
     depthTextureFormat: GPUTextureFormat = 'depth24plus'
@@ -324,7 +324,7 @@ class Pipeline {
 }
 
 class PipelineShadedMono extends Pipeline {
-    constructor(device: Device, module: Shader, context: Context) {
+    constructor(device: Device, module: Shader, context: CanvasContext) {
         const pipelineDef: GPURenderPipelineDescriptor = {
             layout: 'auto',
             vertex: {
@@ -374,7 +374,7 @@ async function main() {
 
     const device = new Device()
     await device.init()
-    const context = new Context(device, canvas)
+    const context = new CanvasContext(device, canvas)
 
     // uniforms shared by all shaders
     // * projection matrix
