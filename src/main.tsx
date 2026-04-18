@@ -260,8 +260,9 @@ class CanvasContext {
 
         this.depthTexture = undefined
         
+        // TODO: move perspective() this into a class named SceneUniforms
         const fieldOfView = (45 * Math.PI) / 180 // in radians
-        const aspect = this.canvas.clientWidth / this.canvas.clientHeight
+        const aspect = pixelWidth / pixelHeight
         const zNear = 0.1
         const zFar = 100.0
         mat4.perspectiveZO(this.sceneUniforms.values[0], fieldOfView, aspect, zNear, zFar)

@@ -8,12 +8,15 @@
     "preview": "vite preview",
     "dev:build": "tsgo --watch",
     "dev:serve": "NODE_ENV=production vite --open",
+    "test": "vitest",
     "update": "npx npm-check-updates -u && npm install"
   },
   "devDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20260413.1",
+    "@vitest/browser-playwright": "^4.1.4",
     "@webgpu/types": "^0.1.69",
-    "vite": "^8.0.0-beta.18"
+    "vite": "^8.0.0-beta.18",
+    "vitest": "^4.1.4"
   },
   "dependencies": {
     "gl-matrix": "^3.4.4",
