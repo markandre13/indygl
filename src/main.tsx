@@ -8,7 +8,7 @@ import { Texture } from './gl/buffers/Texture'
 import { IndexBuffer } from './gl/buffers/IndexBuffer'
 import { PositionBuffer } from './gl/buffers/PositionBuffer'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
-import { Shader_XYZ_RGB } from './gl/shaders/Shader_XYZ_RGB'
+import { Shader_XYZ_RGB_IDX } from './gl/shaders/Shader_XYZ_RGB_IDX'
 import { cube_IDX, cube_RGB, cube_XYZ } from './cube'
 
 // * create examples for all possible use cases
@@ -38,7 +38,7 @@ async function main() {
     const colors = new ColorBuffer(device, cube_RGB)
     const indices = new IndexBuffer(device, cube_IDX)
 
-    const shadedColor = new Shader_XYZ_RGB(device, context)
+    const shadedColor = new Shader_XYZ_RGB_IDX(device, context)
 
     let cubeRotation = 0
     let lastFrameMS = Date.now()

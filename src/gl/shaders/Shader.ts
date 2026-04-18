@@ -1,8 +1,13 @@
+import type { Device } from "../Device"
+
 export class Shader {
+    device: Device
     module: GPUShaderModule
-    constructor(module: GPUShaderModule) {
-        this.module = module
-        module.getCompilationInfo().then(info => logCompilationInfo(info))
+    // pipeline: GPURenderPipeline
+    constructor(device: Device, code: string) {
+        this.device = device
+        this.module = this.device.device.createShaderModule({ code })
+        this.module.getCompilationInfo().then(info => logCompilationInfo(info))
     }
 }
 
