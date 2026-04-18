@@ -52,24 +52,6 @@ async function main() {
         ],
     })
 
-    // move into context?
-    const renderPassDescriptor: GPURenderPassDescriptor = {
-        colorAttachments: [
-            {
-                view: undefined as any, // assigned later
-                clearValue: [0.5, 0.5, 0.5, 1.0],
-                loadOp: 'clear',
-                storeOp: 'store',
-            },
-        ],
-        depthStencilAttachment: {
-            view: undefined as any, // assigned later
-            depthClearValue: 1.0,
-            depthLoadOp: 'clear',
-            depthStoreOp: 'store',
-        },
-    }
-
     let cubeRotation = 0
 
     // like my OpenGL
@@ -94,12 +76,8 @@ async function main() {
 
         context.ajustSize()
 
-        // set render destination
-        renderPassDescriptor.colorAttachments[0]!.view = context.getCanvasView()
-        renderPassDescriptor.depthStencilAttachment!.view = context.getDepthTextureView()
-
         const commandEncoder = device.device!.createCommandEncoder()
-        const pass = commandEncoder.beginRenderPass(renderPassDescriptor)
+        const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
         {
             pass.setPipeline(shadedTrianglePipeline.pipeline)
             {

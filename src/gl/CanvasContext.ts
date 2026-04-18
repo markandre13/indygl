@@ -11,6 +11,7 @@ export class CanvasContext {
     private depthTextureView?: GPUTextureView
     sampler: GPUSampler
     sceneUniforms: SceneUniform
+    renderPassDescriptor: GPURenderPassDescriptor
 
     constructor(device: Device, canvas: HTMLCanvasElement) {
         this.device = device
@@ -38,6 +39,23 @@ export class CanvasContext {
             magFilter: 'linear',
             minFilter: 'linear',
         })
+
+        this.renderPassDescriptor = {
+            colorAttachments: [
+                {
+                    view: undefined as any, // assigned later
+                    clearValue: [0.5, 0.5, 0.5, 1.0],
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                },
+            ],
+            depthStencilAttachment: {
+                view: undefined as any, // assigned later
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store',
+            },
+        }
 
         const observer = new ResizeObserver(_entries => {
             this.ajustSize()
@@ -67,6 +85,13 @@ export class CanvasContext {
             }
         }
         return this.depthTextureView!
+    }
+
+    getRenderPassDescriptor() {
+        // set render destination
+        this.renderPassDescriptor.colorAttachments[0]!.view = this.getCanvasView()
+        this.renderPassDescriptor.depthStencilAttachment!.view = this.getDepthTextureView()
+        return this.renderPassDescriptor
     }
 
     ajustSize() {
