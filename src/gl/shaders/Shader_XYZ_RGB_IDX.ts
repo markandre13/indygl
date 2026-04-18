@@ -45,8 +45,9 @@ export class Shader_XYZ_RGB_IDX extends Shader {
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
 
     }
+    
     bindGroup?: GPUBindGroup
-    createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
+    private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
         if (this.bindGroup === undefined) {
             this.bindGroup = this.device.device.createBindGroup({
                 layout: this.pipeline.getBindGroupLayout(0),

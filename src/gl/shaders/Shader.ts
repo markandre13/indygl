@@ -3,7 +3,6 @@ import type { Device } from "../Device"
 export class Shader {
     device: Device
     module: GPUShaderModule
-    // pipeline: GPURenderPipeline
     constructor(device: Device, code: string) {
         this.device = device
         this.module = this.device.device.createShaderModule({ code })
