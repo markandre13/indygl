@@ -1,12 +1,14 @@
+import type { Device } from "../Device"
+import { UINT32_NUM_BYTES } from "./sizeof"
 
 export class IndexBuffer {
     buffer: GPUBuffer
     private _length: number
-    constructor(device: GPUDevice, indices: ArrayLike<number>) {
+    constructor(device: Device, indices: ArrayLike<number>) {
         this._length = indices.length
-        this.buffer = device.createBuffer({
+        this.buffer = device.device.createBuffer({
             label: 'indexbuffer',
-            size: indices.length * 4,
+            size: indices.length * UINT32_NUM_BYTES,
             usage: GPUBufferUsage.INDEX,
             mappedAtCreation: true,
         })

@@ -35,9 +35,9 @@ async function main() {
     const cubeTexture = new Texture()
     await cubeTexture.load(device.device!!, "Di-3d.png")
 
-    const positions = new PositionBuffer(device.device!!, cube_XYZ)
-    const colors = new ColorBuffer(device.device!!, cube_RGB)
-    const indices = new IndexBuffer(device.device!!, cube_IDX)
+    const positions = new PositionBuffer(device, cube_XYZ)
+    const colors = new ColorBuffer(device, cube_RGB)
+    const indices = new IndexBuffer(device, cube_IDX)
     const module = new ShaderShadedMono(device)
     const shadedTrianglePipeline = new PipelineShadedMono(device, module, context, positions, colors)
 

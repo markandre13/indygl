@@ -1,13 +1,20 @@
 export class Device {
-    adapter: GPUAdapter | null = null;
-    device: GPUDevice | undefined
+    adapter!: GPUAdapter;
+    device!: GPUDevice
+
+    constructor() {
+        if (!navigator.gpu) {
+            throw Error('No WebGPU')
+        }
+    }
 
     async init() {
-        this.adapter = await navigator.gpu?.requestAdapter({ featureLevel: 'core' })
-        if (this.adapter === null) {
+        const adapter = await navigator.gpu!.requestAdapter({ featureLevel: 'core' })
+        if (adapter === null) {
             throw Error('failed to allocate GPUAdapter')
         }
-        this.device = await this.adapter?.requestDevice()
+        this.adapter = adapter
+        this.device = await this.adapter.requestDevice()
         if (this.device === undefined) {
             throw Error('failed to allocate `GPUDevice')
         }
