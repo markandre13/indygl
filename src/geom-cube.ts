@@ -6,8 +6,11 @@
 
 import type { GPUVertexDef } from "./gl/buffers/GPUVertexDef"
 
+// Shader_Point3f_Color3f_texCoord2f
+
+
 // prettier-ignore
-const cubeVertexArray = new Float32Array([
+export const cubeVertexArray = [
     // float4 position, float4 normal, float2 uv,
     1, -1, 1, 1, 0, -1, 0, 1, 0, 1,
     -1, -1, 1, 1, 0, -1, 0, 1, 1, 1,
@@ -51,7 +54,7 @@ const cubeVertexArray = new Float32Array([
     1, 1, -1, 1, 0, 0, -1, 1, 0, 0,
     1, -1, -1, 1, 0, 0, -1, 1, 0, 1,
     -1, 1, -1, 1, 0, 0, -1, 1, 1, 0,
-])
+]
 
 export const FLOAT32_SIZE = 4
 
