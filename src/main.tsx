@@ -39,8 +39,7 @@ async function main() {
     const colors = new ColorBuffer(device, cube_RGB)
     const indices = new IndexBuffer(device, cube_IDX)
 
-    const module = new ShaderShadedMono(device)
-    const shadedTrianglePipeline = new PipelineShadedMono(device, module, context, positions, colors)
+    const shadedColor = new PipelineShadedMono(device, context)
 
     let cubeRotation = 0
     let lastFrameMS = Date.now()
@@ -63,14 +62,13 @@ async function main() {
         mat4.transpose(normalMatrix, normalMatrix)
 
         modelUniforms.writeTo(device)
-
         context.ajustSize()
 
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
         {
             {
-                shadedTrianglePipeline.draw(
+                shadedColor.draw(
                     pass,
                     context,
                     modelUniforms,

@@ -4,6 +4,6 @@ import { VertexBuffer } from "./VertexBuffer"
 
 
 export class PositionBuffer extends VertexBuffer {
-    bytesPerVertex: number = FLOAT32_NUM_BYTES * 3;
-    position: GPUVertexDef = { offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' };
+    static bytesPerVertex: number = FLOAT32_NUM_BYTES * 3;
+    static position: GPUVertexDef = { offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' };
 }

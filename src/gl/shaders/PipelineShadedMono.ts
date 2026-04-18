@@ -1,27 +1,30 @@
-import type { ColorBuffer } from "../buffers/ColorBuffer"
+import { ColorBuffer } from "../buffers/ColorBuffer"
 import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
-import type { PositionBuffer } from "../buffers/PositionBuffer"
+import { PositionBuffer } from "../buffers/PositionBuffer"
 import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Pipeline } from "./Pipeline"
-import type { Shader } from "./Shader"
+import { ShaderShadedMono } from "./ShaderShadedMono"
 
 export class PipelineShadedMono extends Pipeline {
     device: Device
-    constructor(device: Device, module: Shader, context: CanvasContext, positions: PositionBuffer, colors: ColorBuffer) {
+    constructor(device: Device,
+        context: CanvasContext
+    ) {
+        const module = new ShaderShadedMono(device)
         const pipelineDef: GPURenderPipelineDescriptor = {
             layout: 'auto',
             vertex: {
                 buffers: [{
-                    arrayStride: positions.bytesPerVertex,
+                    arrayStride: PositionBuffer.bytesPerVertex,
                     attributes: [
-                        { shaderLocation: 0, ...positions.position },
+                        { shaderLocation: 0, ...PositionBuffer.position },
                     ]
                 }, {
-                    arrayStride: colors.bytesPerVertex,
+                    arrayStride: ColorBuffer.bytesPerVertex,
                     attributes: [
-                        { shaderLocation: 1, ...colors.color },
+                        { shaderLocation: 1, ...ColorBuffer.color },
                     ]
                 }],
                 module: module.module
