@@ -1,7 +1,6 @@
 // import { cubeData, FLOAT32_SIZE, type VertexData } from './geom-cube'
 
 import { mat4, vec3 } from 'gl-matrix'
-import { FLOAT32_SIZE, type VertexData } from './geom-cube'
 import { Device } from './gl/Device'
 import { CanvasContext } from './gl/CanvasContext'
 import { ShaderShadedMono } from './gl/shaders/ShaderShadedMono'
@@ -11,6 +10,7 @@ import { IndexBuffer } from './gl/buffers/IndexBuffer'
 import { PositionBuffer } from './gl/buffers/PositionBuffer'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
 import { PipelineShadedMono } from './gl/shaders/PipelineShadedMono'
+import { FLOAT32_NUM_BYTES } from './gl/buffers/sizeof'
 
 // * create examples for all possible use cases
 //   * xyz, norm, uv, rgb, rgba and all their combinations
@@ -20,7 +20,7 @@ import { PipelineShadedMono } from './gl/shaders/PipelineShadedMono'
 // * test them with visual regression tests
 //   https://vitest.dev/guide/browser/visual-regression-testing
 
-export const cube_XYZ_RGB: VertexData = {
+export const cube_XYZ_RGB = {
     /**
      * cube vertices in the format (position: float4, color: float4, uv: float2)
      */
@@ -36,70 +36,40 @@ export const cube_XYZ_RGB: VertexData = {
         -1, -1, 1, 1, 0, 1
     ],
     vertexCount: 8,
-    bytesPerVertex: FLOAT32_SIZE * 6,
+    bytesPerVertex: FLOAT32_NUM_BYTES * 6,
     /**
      * offsets within vertex
      */
     layout: {
-        POSITION: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
-        COLOR: { offset: FLOAT32_SIZE * 3, format: 'float32x3' },
+        POSITION: { offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
+        COLOR: { offset: FLOAT32_NUM_BYTES * 3, format: 'float32x3' },
         // UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
     }
 }
 
-export const cube_XYZ: VertexData = {
-    /**
-     * cube vertices in the format (position: float4, color: float4, uv: float2)
-     */
-    vertices: [
-        -1, 1, -1,
-        1, 1, -1,
-        1, -1, -1,
-        -1, -1, -1,
+export const cube_XYZ = [
+    -1, 1, -1,
+    1, 1, -1,
+    1, -1, -1,
+    -1, -1, -1,
 
-        -1, 1, 1,
-        1, 1, 1,
-        1, -1, 1,
-        -1, -1, 1,
-    ],
-    vertexCount: 8,
-    bytesPerVertex: FLOAT32_SIZE * 3,
-    /**
-     * offsets within vertex
-     */
-    layout: {
-        POSITION: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
-        // COLOR: { offset: FLOAT32_SIZE * 3, format: 'float32x3' },
-        // UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
-    }
-}
+    -1, 1, 1,
+    1, 1, 1,
+    1, -1, 1,
+    -1, -1, 1,
+]
 
-export const cube_RGB: VertexData = {
-    /**
-     * cube vertices in the format (position: float4, color: float4, uv: float2)
-     */
-    vertices: [
-        0, 0, 1,
-        0, 0.5, 1,
-        0, 1, 0,
-        0.5, 1, 0,
+export const cube_RGB = [
+    0, 0, 1,
+    0, 0.5, 1,
+    0, 1, 0,
+    0.5, 1, 0,
 
-        1, 0.5, 0,
-        1, 0, 0,
-        1, 0, 0.5,
-        1, 0, 1
-    ],
-    vertexCount: 8,
-    bytesPerVertex: FLOAT32_SIZE * 3,
-    /**
-     * offsets within vertex
-     */
-    layout: {
-        // POSITION: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
-        COLOR: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
-        // UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
-    }
-}
+    1, 0.5, 0,
+    1, 0, 0,
+    1, 0, 0.5,
+    1, 0, 1
+]
 
 async function main() {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
@@ -127,8 +97,8 @@ async function main() {
     //
     //  4     5
     // 7     6
-    const positions = new PositionBuffer(device.device!!, cube_XYZ.vertices)
-    const colors = new ColorBuffer(device.device!!, cube_RGB.vertices)
+    const positions = new PositionBuffer(device.device!!, cube_XYZ)
+    const colors = new ColorBuffer(device.device!!, cube_RGB)
     const indices = new IndexBuffer(device.device!!, [
         // top
         0, 1, 2,
