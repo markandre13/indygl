@@ -12,7 +12,8 @@ import { Shader_XYZ_RGB_IDX } from './gl/shaders/Shader_XYZ_RGB_IDX'
 import { cube_IDX, cube_RGB, cube_XYZ } from './cube'
 import { Shader_P4N4T2 } from './gl/shaders/Shader_P4N4T2'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
-import { cube_P4N4T2 } from './geom-cube'
+import { cube_P3N3, cube_P4N4T2 } from './geom-cube'
+import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
 
 // * create examples for all possible use cases
 //   * xyz, norm, uv, rgb, rgba and all their combinations
@@ -42,9 +43,11 @@ async function main() {
     const indices = new IndexBuffer(device, cube_IDX)
 
     const posColUv = new VertexBuffer(device, cube_P4N4T2)
+    const posNorm = new VertexBuffer(device, cube_P3N3)
 
     const shaderColor = new Shader_XYZ_RGB_IDX(device, context)
     const shaderShadedTexture = new Shader_P4N4T2(device, context)
+    const shaderShadedMono = new ShaderP3N3(device, context)
 
     let cubeRotation = 0
     let lastFrameMS = Date.now()
@@ -73,7 +76,8 @@ async function main() {
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
-        shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, cubeTexture)
+        // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, cubeTexture)
+        shaderShadedMono.draw(pass, context, modelUniforms, posNorm)
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
