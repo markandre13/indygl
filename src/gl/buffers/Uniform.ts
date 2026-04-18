@@ -1,3 +1,4 @@
+import type { Device } from "../Device"
 
 const FLOAT32_SIZE = 4
 
@@ -35,8 +36,8 @@ export class Uniform {
     /**
      * Issues a write operation of the provided data into a GPUBuffer.
      */
-    writeTo(queue: GPUQueue) {
-        queue.writeBuffer(
+    writeTo(device: Device) {
+        device.device.queue.writeBuffer(
             this.buffer,
             0,
             this.float32array.buffer,
@@ -45,5 +46,3 @@ export class Uniform {
         )
     }
 }
-
-

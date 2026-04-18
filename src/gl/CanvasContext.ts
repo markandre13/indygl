@@ -115,6 +115,6 @@ export class CanvasContext {
         const zNear = 0.1
         const zFar = 100.0
         this.sceneUniforms.perspective(fieldOfView, aspect, zNear, zFar)
-        this.sceneUniforms.writeTo(this.device.device!.queue)
+        this.sceneUniforms.writeTo(this.device)
     }
 }

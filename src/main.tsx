@@ -38,6 +38,7 @@ async function main() {
     const positions = new PositionBuffer(device, cube_XYZ)
     const colors = new ColorBuffer(device, cube_RGB)
     const indices = new IndexBuffer(device, cube_IDX)
+    
     const module = new ShaderShadedMono(device)
     const shadedTrianglePipeline = new PipelineShadedMono(device, module, context, positions, colors)
 
@@ -74,6 +75,8 @@ async function main() {
         mat4.invert(normalMatrix, modelViewMatrix)
         mat4.transpose(normalMatrix, normalMatrix)
 
+        modelUniforms.writeTo(device)
+
         context.ajustSize()
 
         const commandEncoder = device.device!.createCommandEncoder()
@@ -81,7 +84,6 @@ async function main() {
         {
             pass.setPipeline(shadedTrianglePipeline.pipeline)
             {
-                modelUniforms.writeTo(device.device!.queue)
                 pass.setBindGroup(0, bindGroup)
                 pass.setVertexBuffer(0, positions.buffer)
                 pass.setVertexBuffer(1, colors.buffer)
