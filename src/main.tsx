@@ -65,21 +65,12 @@ async function main() {
 
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
-        {
-            {
-                shadedColor.draw(
-                    pass,
-                    context,
-                    modelUniforms,
-                    positions,
-                    colors,
-                    indices
-                )
-            }
-            pass.end()
-        }
+
+        shadedColor.draw(pass, context, modelUniforms, positions, colors, indices)
+
+        pass.end()
         const commandBuffer = commandEncoder.finish()
-        device.device!.queue.submit([commandBuffer])
+        device.device.queue.submit([commandBuffer])
 
         requestAnimationFrame(frame)
     }
