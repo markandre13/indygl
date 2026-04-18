@@ -1,5 +1,5 @@
 import { mat4 } from "gl-matrix"
-import type { Device } from "./Device"
+import type { Device } from "../Device"
 import { Uniform } from "./Uniform"
 
 

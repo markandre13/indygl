@@ -1,5 +1,5 @@
 import type { mat4 } from "gl-matrix"
-import type { Device } from "./Device"
+import type { Device } from "../Device"
 import { Uniform } from "./Uniform"
 
 // new Uniform(device.device!!, ["mat4x4f", "mat4x4f"])

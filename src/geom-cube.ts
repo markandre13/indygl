@@ -3,6 +3,9 @@
  * 
  * 36 vertices = 3 vertices per triangle, 2 triangles per side, 6 sides
  */
+
+import type { GPUVertexDef } from "./gl/buffers/GPUVertexDef"
+
 // prettier-ignore
 const cubeVertexArray = new Float32Array([
     // float4 position, float4 normal, float2 uv,
@@ -72,7 +75,6 @@ export type TypedArrayConstructor =
     | Float32ArrayConstructor
     | Float64ArrayConstructor
 
-export type GPUVertexDef = Omit<GPUVertexAttribute, "shaderLocation">
 export type VertexLayout = { [name: string]: GPUVertexDef }
 
 export interface VertexData {

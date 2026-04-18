@@ -1,5 +1,5 @@
+import { SceneUniform } from './buffers/SceneUniform'
 import type { Device } from './Device'
-import { SceneUniform } from "./SceneUniform"
 
 export class CanvasContext {
     device: Device
