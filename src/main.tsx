@@ -38,11 +38,11 @@ async function main() {
     const positions = new PositionBuffer(device, cube_XYZ)
     const colors = new ColorBuffer(device, cube_RGB)
     const indices = new IndexBuffer(device, cube_IDX)
-    
+
     const module = new ShaderShadedMono(device)
     const shadedTrianglePipeline = new PipelineShadedMono(device, module, context, positions, colors)
 
-    // define the values for shaders '@group(...) @binding(...)' sections
+    // TODO: this belongs into the shader object
     const bindGroup = device.device!.createBindGroup({
         layout: shadedTrianglePipeline.pipeline.getBindGroupLayout(0),
         entries: [
@@ -82,8 +82,9 @@ async function main() {
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
         {
-            pass.setPipeline(shadedTrianglePipeline.pipeline)
             {
+                // TODO: this belongs into the shader object  
+                pass.setPipeline(shadedTrianglePipeline.pipeline)
                 pass.setBindGroup(0, bindGroup)
                 pass.setVertexBuffer(0, positions.buffer)
                 pass.setVertexBuffer(1, colors.buffer)
