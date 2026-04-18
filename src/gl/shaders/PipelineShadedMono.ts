@@ -1,4 +1,5 @@
 import type { ColorBuffer } from "../buffers/ColorBuffer"
+import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
 import type { PositionBuffer } from "../buffers/PositionBuffer"
 import type { CanvasContext } from "../CanvasContext"
@@ -56,5 +57,21 @@ export class PipelineShadedMono extends Pipeline {
             })
         }
         return this.bindGroup
+    }
+
+    draw(pass: GPURenderPassEncoder,
+        context: CanvasContext,
+        modelUniforms: ModelUniform,
+        positions: PositionBuffer,
+        colors: ColorBuffer,
+        indices: IndexBuffer
+    ) {
+        pass.setPipeline(this.pipeline)
+        pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
+        pass.setVertexBuffer(0, positions.buffer)
+        pass.setVertexBuffer(1, colors.buffer)
+        pass.setIndexBuffer(indices.buffer, 'uint32')
+        // pass.draw(testData.vertexCount)
+        pass.drawIndexed(indices.length)
     }
 }

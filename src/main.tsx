@@ -43,8 +43,6 @@ async function main() {
     const shadedTrianglePipeline = new PipelineShadedMono(device, module, context, positions, colors)
 
     let cubeRotation = 0
-
-    // like my OpenGL
     let lastFrameMS = Date.now()
 
     function frame() {
@@ -72,14 +70,14 @@ async function main() {
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
         {
             {
-                // TODO: this belongs into the shader object  
-                pass.setPipeline(shadedTrianglePipeline.pipeline)
-                pass.setBindGroup(0, shadedTrianglePipeline.createBindGroup(context, modelUniforms))
-                pass.setVertexBuffer(0, positions.buffer)
-                pass.setVertexBuffer(1, colors.buffer)
-                pass.setIndexBuffer(indices.buffer, 'uint32')
-                // pass.draw(testData.vertexCount)
-                pass.drawIndexed(indices.length)
+                shadedTrianglePipeline.draw(
+                    pass,
+                    context,
+                    modelUniforms,
+                    positions,
+                    colors,
+                    indices
+                )
             }
             pass.end()
         }
