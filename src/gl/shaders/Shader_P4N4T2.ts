@@ -1,10 +1,14 @@
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
+import type { Texture } from "../buffers/Texture"
 import type { VertexBuffer } from "../buffers/VertexBuffer"
 import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
+/**
+ * single vertex consisting of: point4f, normal4f, texCoord2
+ */
 export class Shader_P4N4T2 extends Shader {
     pipeline: GPURenderPipeline
     constructor(device: Device,
@@ -41,6 +45,8 @@ export class Shader_P4N4T2 extends Shader {
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
 
+
+    texture?: GPUTexture
     bindGroup?: GPUBindGroup
     private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
         if (this.bindGroup === undefined) {
@@ -50,7 +56,7 @@ export class Shader_P4N4T2 extends Shader {
                     { binding: 0, resource: context.sceneUniforms.buffer },
                     { binding: 1, resource: modelUniforms.buffer },
                     { binding: 2, resource: context.sampler },
-                    // { binding: 3, resource: cubeTexture.texture!.createView() },
+                    { binding: 3, resource: this.texture!.createView() },
                 ],
             })
         }
@@ -61,7 +67,12 @@ export class Shader_P4N4T2 extends Shader {
         context: CanvasContext,
         modelUniforms: ModelUniform,
         positions: VertexBuffer,
+        texture: Texture
     ) {
+        if (texture.texture !== this.texture) {
+            this.texture = texture.texture
+            this.bindGroup = undefined
+        }
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
         pass.setVertexBuffer(0, positions.buffer)
@@ -80,7 +91,7 @@ const code = /* wgsl */`
     @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
     @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
     @group(0) @binding(2) var mySampler: sampler;
-    // @group(0) @binding(3) var myTexture: texture_2d<f32>;
+    @group(0) @binding(3) var myTexture: texture_2d<f32>;
 
     struct Vertex2Fragment {
         @builtin(position) Position: vec4f,
@@ -95,13 +106,13 @@ const code = /* wgsl */`
         @location(2) uv: vec2f
     ) -> Vertex2Fragment {
 
-        let gl_Position = uniforms.uProjectionMatrix * uniforms.uModelViewMatrix * position;
+        let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * position;
 
         let ambientLight = vec3f(0.3, 0.3, 0.3);
         let directionalLightColor = vec3f(1, 1, 1);
         let directionalVector = normalize(vec3f(0.85, 0.8, 0.75));
 
-        let transformedNormal = uniforms.uNormalMatrix * vec4f(normal.xyz, 1);
+        let transformedNormal = modelUniforms.uNormalMatrix * vec4f(normal.xyz, 1);
 
         let directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
         let vLighting = ambientLight + (directionalLightColor * directional);
@@ -117,8 +128,8 @@ const code = /* wgsl */`
     fn fragment_main(
         vin: Vertex2Fragment
     ) -> @location(0) vec4f {
-        let color = vec3f(1, 0.5, 0);
-        // let color = textureSample(myTexture, mySampler, vin.fragUV).rgb;
+        // let color = vec3f(1, 0.5, 0);
+        let color = textureSample(myTexture, mySampler, vin.fragUV).rgb;
         return vec4f(color * vin.vLighting, 1);
     }
 `

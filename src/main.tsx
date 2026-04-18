@@ -73,7 +73,7 @@ async function main() {
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
-        shaderShadedTexture.draw(pass, context, modelUniforms)
+        shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, cubeTexture)
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
