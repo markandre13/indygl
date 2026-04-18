@@ -5,13 +5,12 @@ import { FLOAT32_SIZE, type VertexData } from './geom-cube'
 import { Device } from './gl/Device'
 import { CanvasContext } from './gl/CanvasContext'
 import { ShaderShadedMono } from './gl/shaders/ShaderShadedMono'
-import { Pipeline } from './gl/shaders/Pipeline'
-import type { Shader } from './gl/shaders/Shader'
 import { ModelUniform } from './gl/buffers/ModelUniform'
 import { Texture } from './gl/buffers/Texture'
 import { IndexBuffer } from './gl/buffers/IndexBuffer'
 import { PositionBuffer } from './gl/buffers/PositionBuffer'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
+import { PipelineShadedMono } from './gl/shaders/PipelineShadedMono'
 
 // * create examples for all possible use cases
 //   * xyz, norm, uv, rgb, rgba and all their combinations
@@ -99,43 +98,6 @@ export const cube_RGB: VertexData = {
         // POSITION: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
         COLOR: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
         // UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
-    }
-}
-
-class PipelineShadedMono extends Pipeline {
-    constructor(device: Device, module: Shader, context: CanvasContext, positions: PositionBuffer, colors: ColorBuffer) {
-        const pipelineDef: GPURenderPipelineDescriptor = {
-            layout: 'auto',
-            vertex: {
-                buffers: [{
-                    arrayStride: positions.bytesPerVertex,
-                    attributes: [
-                        { shaderLocation: 0, ...positions.position },
-                    ]
-                }, {
-                    arrayStride: colors.bytesPerVertex,
-                    attributes: [
-                        { shaderLocation: 1, ...colors.color },
-                    ]
-                }],
-                module: module.module
-            },
-            fragment: {
-                module: module.module,
-                targets: [{ format: context.presentationFormat }]
-            },
-            primitive: {
-                topology: 'triangle-list',
-                cullMode: 'none',
-            },
-            depthStencil: {
-                depthWriteEnabled: true,
-                depthCompare: 'less',
-                format: context.depthTextureFormat,
-            },
-        }
-
-        super(device.device!.createRenderPipeline(pipelineDef))
     }
 }
 
