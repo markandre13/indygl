@@ -10,7 +10,7 @@ import { IndexBuffer } from './gl/buffers/IndexBuffer'
 import { PositionBuffer } from './gl/buffers/PositionBuffer'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
 import { PipelineShadedMono } from './gl/shaders/PipelineShadedMono'
-import { FLOAT32_NUM_BYTES } from './gl/buffers/sizeof'
+import { cube_IDX, cube_RGB, cube_XYZ } from './cube'
 
 // * create examples for all possible use cases
 //   * xyz, norm, uv, rgb, rgba and all their combinations
@@ -19,78 +19,6 @@ import { FLOAT32_NUM_BYTES } from './gl/buffers/sizeof'
 //     https://www.reddit.com/r/opengl/comments/155jq8v/whats_better_multiple_vertex_buffers_or_a_single/
 // * test them with visual regression tests
 //   https://vitest.dev/guide/browser/visual-regression-testing
-
-export const cube_XYZ_RGB = {
-    /**
-     * cube vertices in the format (position: float4, color: float4, uv: float2)
-     */
-    vertices: [
-        -1, 1, -1, 0, 0, 1,
-        1, 1, -1, 0, 0.5, 1,
-        1, -1, -1, 0, 1, 0,
-        -1, -1, -1, 0.5, 1, 0,
-
-        -1, 1, 1, 1, 0.5, 0,
-        1, 1, 1, 1, 0, 0,
-        1, -1, 1, 1, 0, 0.5,
-        -1, -1, 1, 1, 0, 1
-    ],
-    vertexCount: 8,
-    bytesPerVertex: FLOAT32_NUM_BYTES * 6,
-    /**
-     * offsets within vertex
-     */
-    layout: {
-        POSITION: { offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
-        COLOR: { offset: FLOAT32_NUM_BYTES * 3, format: 'float32x3' },
-        // UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
-    }
-}
-
-export const cube_XYZ = [
-    -1, 1, -1,
-    1, 1, -1,
-    1, -1, -1,
-    -1, -1, -1,
-
-    -1, 1, 1,
-    1, 1, 1,
-    1, -1, 1,
-    -1, -1, 1,
-]
-
-export const cube_RGB = [
-    0, 0, 1,
-    0, 0.5, 1,
-    0, 1, 0,
-    0.5, 1, 0,
-
-    1, 0.5, 0,
-    1, 0, 0,
-    1, 0, 0.5,
-    1, 0, 1
-]
-
-export const cube_IDX = [
-    // top
-    0, 1, 2,
-    0, 2, 3,
-    // left
-    0, 3, 7,
-    0, 7, 4,
-    // back
-    1, 0, 4,
-    1, 4, 5,
-    // front
-    3, 2, 6,
-    3, 6, 7,
-    // right
-    1, 5, 6,
-    1, 6, 2,
-    // bottom
-    5, 4, 7,
-    5, 7, 6,
-]
 
 async function main() {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
@@ -107,11 +35,6 @@ async function main() {
     const cubeTexture = new Texture()
     await cubeTexture.load(device.device!!, "Di-3d.png")
 
-    //  0     1
-    // 3     2
-    //
-    //  4     5
-    // 7     6
     const positions = new PositionBuffer(device.device!!, cube_XYZ)
     const colors = new ColorBuffer(device.device!!, cube_RGB)
     const indices = new IndexBuffer(device.device!!, cube_IDX)
