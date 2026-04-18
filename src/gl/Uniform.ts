@@ -1,3 +1,4 @@
+
 const FLOAT32_SIZE = 4
 
 export type WslVertexFormat = "mat4x4f" | "vec4f"
@@ -9,8 +10,9 @@ const formats = new Map<WslVertexFormat, any>([
 
 export class Uniform {
     buffer: GPUBuffer
-    float32array: Float32Array
-    values: Float32Array[]
+    protected float32array: Float32Array
+    protected values: Float32Array[]
+
     constructor(device: GPUDevice, format: WslVertexFormat[]) {
         let size = 0
         for (const f of format) {
@@ -25,7 +27,7 @@ export class Uniform {
         let offset = 0
         for (let i = 0; i < format.length; ++i) {
             let n = formats.get(format[i])
-            this.values[i] = this.float32array.subarray(offset/FLOAT32_SIZE, (offset + n)/FLOAT32_SIZE)
+            this.values[i] = this.float32array.subarray(offset / FLOAT32_SIZE, (offset + n) / FLOAT32_SIZE)
             // console.log(`value[${i}] = ${offset}, ${n}`)
             offset += n
         }
@@ -43,3 +45,5 @@ export class Uniform {
         )
     }
 }
+
+

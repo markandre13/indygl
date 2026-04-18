@@ -1,14 +1,12 @@
 // import { cubeData, FLOAT32_SIZE, type VertexData } from './geom-cube'
 import { VertexBuffer } from './gl/VertexBuffer'
 import { Texture } from "./gl/Texture"
-import { Uniform } from './gl/Uniform'
+import { ModelUniform } from "./gl/ModelUniform"
 import { mat4, vec3 } from 'gl-matrix'
 import { FLOAT32_SIZE, type VertexData } from './geom-cube'
 import { IndexBuffer } from './gl/IndexBuffer'
-
-// stuff to investigate
-// * resize canvas
-// * draw via index
+import { Device } from './gl/Device'
+import { CanvasContext } from './gl/CanvasContext'
 
 // * create examples for all possible use cases
 //   * xyz, norm, uv, rgb, rgba and all their combinations
@@ -17,59 +15,6 @@ import { IndexBuffer } from './gl/IndexBuffer'
 //     https://www.reddit.com/r/opengl/comments/155jq8v/whats_better_multiple_vertex_buffers_or_a_single/
 // * test them with visual regression tests
 //   https://vitest.dev/guide/browser/visual-regression-testing
-
-async function shadedCube(device: GPUDevice) {
-    // prettier-ignore
-    const vertexData = [
-        // position       normal
-        1, 1, -1, 1, 0, 0,
-        1, 1, 1, 1, 0, 0,
-        1, -1, 1, 1, 0, 0,
-        1, -1, -1, 1, 0, 0,
-        -1, 1, 1, -1, 0, 0,
-        -1, 1, -1, -1, 0, 0,
-        -1, -1, -1, -1, 0, 0,
-        -1, -1, 1, -1, 0, 0,
-        -1, 1, 1, 0, 1, 0,
-        1, 1, 1, 0, 1, 0,
-        1, 1, -1, 0, 1, 0,
-        -1, 1, -1, 0, 1, 0,
-        -1, -1, -1, 0, -1, 0,
-        1, -1, -1, 0, -1, 0,
-        1, -1, 1, 0, -1, 0,
-        -1, -1, 1, 0, -1, 0,
-        1, 1, 1, 0, 0, 1,
-        -1, 1, 1, 0, 0, 1,
-        -1, -1, 1, 0, 0, 1,
-        1, -1, 1, 0, 0, 1,
-        -1, 1, -1, 0, 0, -1,
-        1, 1, -1, 0, 0, -1,
-        1, -1, -1, 0, 0, -1,
-        -1, -1, -1, 0, 0, -1,
-    ]
-    // prettier-ignore
-    const indices = [
-        0, 1, 2, 0, 2, 3, // +x face
-        4, 5, 6, 4, 6, 7, // -x face
-        8, 9, 10, 8, 10, 11, // +y face
-        12, 13, 14, 12, 14, 15, // -y face
-        16, 17, 18, 16, 18, 19, // +z face
-        20, 21, 22, 20, 22, 23, // -z face
-    ]
-
-    // const vertexBuf = createBufferWithData(
-    //     device,
-    //     vertexData,
-    //     GPUBufferUsage.VERTEX,
-    //     'vertexBuffer'
-    // )
-    // const indicesBuf = createBufferWithData(
-    //     device,
-    //     indices,
-    //     GPUBufferUsage.INDEX,
-    //     'indexBuffer'
-    // )
-}
 
 export const cube_XYZ_RGB: VertexData = {
     /**
@@ -149,124 +94,6 @@ export const cube_RGB: VertexData = {
         // POSITION: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
         COLOR: { offset: FLOAT32_SIZE * 0, format: 'float32x3' },
         // UV: { offset: FLOAT32_SIZE * 8, format: 'float32x2' }
-    }
-}
-
-
-enum UniformIndex {
-    MODELVIEW = 0,
-    NORMAL = 1
-}
-
-class Device {
-    adapter: GPUAdapter | null = null
-    device: GPUDevice | undefined
-
-    async init() {
-        this.adapter = await navigator.gpu?.requestAdapter({ featureLevel: 'core' })
-        if (this.adapter === null) {
-            throw Error('failed to allocate GPUAdapter')
-        }
-        this.device = await this.adapter?.requestDevice()
-        if (this.device === undefined) {
-            throw Error('failed to allocate `GPUDevice')
-        }
-        // uncaught errors
-        this.device.addEventListener('uncapturederror', event => console.log(event.error))
-    }
-}
-
-class CanvasContext {
-    device: Device
-    canvas: HTMLCanvasElement
-    context: GPUCanvasContext | null = null
-    presentationFormat: GPUTextureFormat
-    depthTextureFormat: GPUTextureFormat = 'depth24plus'
-    private depthTexture?: GPUTexture
-    private depthTextureView?: GPUTextureView
-    sampler: GPUSampler
-    sceneUniforms: Uniform
-
-    constructor(device: Device, canvas: HTMLCanvasElement) {
-        this.device = device
-        this.canvas = canvas
-        this.context = canvas.getContext('webgpu')
-        if (this.context == null) {
-            throw Error('no webgpu')
-        }
-
-        this.sceneUniforms = new Uniform(device.device!!, ["mat4x4f"])
-
-        const devicePixelRatio = window.devicePixelRatio
-        const pixelWidth = canvas.clientWidth * devicePixelRatio
-        const pixelHeight = canvas.clientHeight * devicePixelRatio
-        this.adjustSizeCore(pixelWidth, pixelHeight)
-
-        this.presentationFormat = navigator.gpu.getPreferredCanvasFormat()
-        this.context.configure({
-            device: device.device!!,
-            format: this.presentationFormat,
-        })
-
-        // Create a sampler with linear filtering for smooth interpolation of textures
-        this.sampler = device.device!.createSampler({
-            magFilter: 'linear',
-            minFilter: 'linear',
-        })
-
-        const observer = new ResizeObserver(_entries => {
-            this.ajustSize()
-        })
-        observer.observe(canvas)
-    }
-
-    getCanvasView() {
-        return this.context!
-            .getCurrentTexture() // get canvas as texture
-            .createView() // map it into WebGPU
-    }
-
-    getDepthTextureView(): GPUTextureView {
-        if (this.depthTexture === undefined || this.depthTextureView === undefined) {
-            this.depthTexture = this.device.device!.createTexture({
-                size: [this.canvas.width, this.canvas.height],
-                format: this.depthTextureFormat,
-                usage: GPUTextureUsage.RENDER_ATTACHMENT,
-            })
-            if (this.depthTexture === undefined) {
-                throw Error(`failed to create depth texture`)
-            }
-            this.depthTextureView = this.depthTexture.createView()
-            if (this.depthTextureView === undefined) {
-                throw Error(`failed to create depth texture view`)
-            }
-        }
-        return this.depthTextureView!
-    }
-
-    ajustSize() {
-        const devicePixelRatio = window.devicePixelRatio
-        const pixelWidth = this.canvas.clientWidth * devicePixelRatio
-        const pixelHeight = this.canvas.clientHeight * devicePixelRatio
-        if (this.canvas.width !== pixelWidth || this.canvas.height !== pixelHeight) {
-            this.adjustSizeCore(pixelWidth, pixelHeight)
-        }
-    }
-
-    adjustSizeCore(pixelWidth: number, pixelHeight: number) {
-        console.log(`adjust canvas size: canvas.width=${this.canvas.width}, pixelWidth=${pixelWidth}; canvas.height=${this.canvas.height}, pixelHeight=${pixelHeight}`)
-        this.canvas.width = pixelWidth
-        this.canvas.height = pixelHeight
-
-        this.depthTexture = undefined
-        
-        // TODO: move perspective() this into a class named SceneUniforms
-        const fieldOfView = (45 * Math.PI) / 180 // in radians
-        const aspect = pixelWidth / pixelHeight
-        const zNear = 0.1
-        const zFar = 100.0
-        mat4.perspectiveZO(this.sceneUniforms.values[0], fieldOfView, aspect, zNear, zFar)
-        this.sceneUniforms.writeTo(this.device.device!.queue)
     }
 }
 
@@ -407,7 +234,7 @@ async function main() {
     // * projection matrix
     // * lights...
 
-    const modelUniforms = new Uniform(device.device!!, ["mat4x4f", "mat4x4f"])
+    const modelUniforms = new ModelUniform(device)
 
     // Fetch the image and upload it into a GPUTexture.
     const cubeTexture = new Texture()
@@ -449,8 +276,8 @@ async function main() {
     const bindGroup = device.device!.createBindGroup({
         layout: shadedTrianglePipeline.pipeline.getBindGroupLayout(0),
         entries: [
-            { binding: 0, resource: context.sceneUniforms },
-            { binding: 1, resource: modelUniforms },
+            { binding: 0, resource: context.sceneUniforms.buffer },
+            { binding: 1, resource: modelUniforms.buffer },
             { binding: 2, resource: context.sampler },
             { binding: 3, resource: cubeTexture.texture!.createView() },
         ],
@@ -485,14 +312,14 @@ async function main() {
         cubeRotation += deltaTime
         lastFrameMS = now
 
-        const modelViewMatrix = modelUniforms.values[UniformIndex.MODELVIEW]
+        const modelViewMatrix = modelUniforms.modelViewMatrix
         mat4.identity(modelViewMatrix)
         mat4.translate(modelViewMatrix, modelViewMatrix, vec3.fromValues(0, 0, -6))
         mat4.rotateZ(modelViewMatrix, modelViewMatrix, cubeRotation)
         mat4.rotateY(modelViewMatrix, modelViewMatrix, cubeRotation * 0.7)
         mat4.rotateX(modelViewMatrix, modelViewMatrix, cubeRotation * 0.3)
 
-        const normalMatrix = modelUniforms.values[UniformIndex.NORMAL]
+        const normalMatrix = modelUniforms.normalMatrix
         mat4.invert(normalMatrix, modelViewMatrix)
         mat4.transpose(normalMatrix, normalMatrix)
 
