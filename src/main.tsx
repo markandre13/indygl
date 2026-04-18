@@ -71,6 +71,27 @@ export const cube_RGB = [
     1, 0, 1
 ]
 
+export const cube_IDX = [
+    // top
+    0, 1, 2,
+    0, 2, 3,
+    // left
+    0, 3, 7,
+    0, 7, 4,
+    // back
+    1, 0, 4,
+    1, 4, 5,
+    // front
+    3, 2, 6,
+    3, 6, 7,
+    // right
+    1, 5, 6,
+    1, 6, 2,
+    // bottom
+    5, 4, 7,
+    5, 7, 6,
+]
+
 async function main() {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
     if (canvas === null) {
@@ -80,17 +101,11 @@ async function main() {
     const device = new Device()
     await device.init()
     const context = new CanvasContext(device, canvas)
-
-    // uniforms shared by all shaders
-    // * projection matrix
-    // * lights...
-
     const modelUniforms = new ModelUniform(device)
 
     // Fetch the image and upload it into a GPUTexture.
     const cubeTexture = new Texture()
     await cubeTexture.load(device.device!!, "Di-3d.png")
-
 
     //  0     1
     // 3     2
@@ -99,26 +114,7 @@ async function main() {
     // 7     6
     const positions = new PositionBuffer(device.device!!, cube_XYZ)
     const colors = new ColorBuffer(device.device!!, cube_RGB)
-    const indices = new IndexBuffer(device.device!!, [
-        // top
-        0, 1, 2,
-        0, 2, 3,
-        // left
-        0, 3, 7,
-        0, 7, 4,
-        // back
-        1, 0, 4,
-        1, 4, 5,
-        // front
-        3, 2, 6,
-        3, 6, 7,
-        // right
-        1, 5, 6,
-        1, 6, 2,
-        // bottom
-        5, 4, 7,
-        5, 7, 6,
-    ])
+    const indices = new IndexBuffer(device.device!!, cube_IDX)
     const module = new ShaderShadedMono(device)
     const shadedTrianglePipeline = new PipelineShadedMono(device, module, context, positions, colors)
 
