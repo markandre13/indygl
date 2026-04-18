@@ -3,13 +3,12 @@
 import { mat4, vec3 } from 'gl-matrix'
 import { Device } from './gl/Device'
 import { CanvasContext } from './gl/CanvasContext'
-import { ShaderShadedMono } from './gl/shaders/ShaderShadedMono'
 import { ModelUniform } from './gl/buffers/ModelUniform'
 import { Texture } from './gl/buffers/Texture'
 import { IndexBuffer } from './gl/buffers/IndexBuffer'
 import { PositionBuffer } from './gl/buffers/PositionBuffer'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
-import { PipelineShadedMono } from './gl/shaders/PipelineShadedMono'
+import { Shader_XYZ_RGB } from './gl/shaders/Shader_XYZ_RGB'
 import { cube_IDX, cube_RGB, cube_XYZ } from './cube'
 
 // * create examples for all possible use cases
@@ -39,7 +38,7 @@ async function main() {
     const colors = new ColorBuffer(device, cube_RGB)
     const indices = new IndexBuffer(device, cube_IDX)
 
-    const shadedColor = new PipelineShadedMono(device, context)
+    const shadedColor = new Shader_XYZ_RGB(device, context)
 
     let cubeRotation = 0
     let lastFrameMS = Date.now()
