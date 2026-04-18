@@ -2,6 +2,7 @@ import type { Device } from '../Device'
 import { Shader } from './Shader'
 
 export class ShaderShadedMono extends Shader {
+    device: Device
     constructor(device: Device) {
         super(
             device.device!.createShaderModule({
@@ -15,8 +16,8 @@ export class ShaderShadedMono extends Shader {
                 };
                 @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
                 @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
-                @group(0) @binding(2) var mySampler: sampler;
-                @group(0) @binding(3) var myTexture: texture_2d<f32>;
+                // @group(0) @binding(2) var mySampler: sampler;
+                // @group(0) @binding(3) var myTexture: texture_2d<f32>;
             
                 struct Vertex2Fragment {
                     @builtin(position) Position: vec4f,
@@ -64,5 +65,6 @@ export class ShaderShadedMono extends Shader {
             `
             })
         )
+        this.device = device
     }
 }

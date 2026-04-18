@@ -42,17 +42,6 @@ async function main() {
     const module = new ShaderShadedMono(device)
     const shadedTrianglePipeline = new PipelineShadedMono(device, module, context, positions, colors)
 
-    // TODO: this belongs into the shader object
-    const bindGroup = device.device!.createBindGroup({
-        layout: shadedTrianglePipeline.pipeline.getBindGroupLayout(0),
-        entries: [
-            { binding: 0, resource: context.sceneUniforms.buffer },
-            { binding: 1, resource: modelUniforms.buffer },
-            { binding: 2, resource: context.sampler },
-            { binding: 3, resource: cubeTexture.texture!.createView() },
-        ],
-    })
-
     let cubeRotation = 0
 
     // like my OpenGL
@@ -85,7 +74,7 @@ async function main() {
             {
                 // TODO: this belongs into the shader object  
                 pass.setPipeline(shadedTrianglePipeline.pipeline)
-                pass.setBindGroup(0, bindGroup)
+                pass.setBindGroup(0, shadedTrianglePipeline.createBindGroup(context, modelUniforms))
                 pass.setVertexBuffer(0, positions.buffer)
                 pass.setVertexBuffer(1, colors.buffer)
                 pass.setIndexBuffer(indices.buffer, 'uint32')
