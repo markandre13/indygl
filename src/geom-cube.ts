@@ -10,7 +10,7 @@ import type { GPUVertexDef } from "./gl/buffers/GPUVertexDef"
 
 
 // prettier-ignore
-export const cubeVertexArray = [
+export const cube_P4N4T2 = [
     // float4 position, float4 normal, float2 uv,
     1, -1, 1, 1, 0, -1, 0, 1, 0, 1,
     -1, -1, 1, 1, 0, -1, 0, 1, 1, 1,
@@ -91,7 +91,7 @@ export const cubeData: VertexData = {
     /**
      * cube vertices in the format (position: float4, color: float4, uv: float2)
      */
-    vertices: cubeVertexArray,
+    vertices: cube_P4N4T2,
     vertexCount: 36,
     bytesPerVertex: FLOAT32_SIZE * 10,
     /**
