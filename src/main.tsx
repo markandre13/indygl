@@ -9,7 +9,6 @@ import { Pipeline } from './gl/shaders/Pipeline'
 import type { Shader } from './gl/shaders/Shader'
 import { ModelUniform } from './gl/buffers/ModelUniform'
 import { Texture } from './gl/buffers/Texture'
-import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { IndexBuffer } from './gl/buffers/IndexBuffer'
 import { PositionBuffer } from './gl/buffers/PositionBuffer'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
@@ -104,25 +103,19 @@ export const cube_RGB: VertexData = {
 }
 
 class PipelineShadedMono extends Pipeline {
-    constructor(device: Device, module: Shader, context: CanvasContext) {
+    constructor(device: Device, module: Shader, context: CanvasContext, positions: PositionBuffer, colors: ColorBuffer) {
         const pipelineDef: GPURenderPipelineDescriptor = {
             layout: 'auto',
             vertex: {
                 buffers: [{
-                    arrayStride: cube_XYZ.bytesPerVertex,
+                    arrayStride: positions.bytesPerVertex,
                     attributes: [
-                        { shaderLocation: 0, ...cube_XYZ.layout.POSITION },
-                        // { shaderLocation: 1, ...cube_RGB.layout.COLOR },
-                        // { shaderLocation: 1, ...cubeData.layout.NORMAL },
-                        // { shaderLocation: 2, ...cubeData.layout.UV },
+                        { shaderLocation: 0, ...positions.position },
                     ]
                 }, {
-                    arrayStride: cube_RGB.bytesPerVertex,
+                    arrayStride: colors.bytesPerVertex,
                     attributes: [
-                        { shaderLocation: 1, ...cube_RGB.layout.COLOR },
-                        // { shaderLocation: 1, ...cube_RGB.layout.COLOR },
-                        // { shaderLocation: 1, ...cubeData.layout.NORMAL },
-                        // { shaderLocation: 2, ...cubeData.layout.UV },
+                        { shaderLocation: 1, ...colors.color },
                     ]
                 }],
                 module: module.module
@@ -195,7 +188,7 @@ async function main() {
         5, 7, 6,
     ])
     const module = new ShaderShadedMono(device)
-    const shadedTrianglePipeline = new PipelineShadedMono(device, module, context)
+    const shadedTrianglePipeline = new PipelineShadedMono(device, module, context, positions, colors)
 
     // define the values for shaders '@group(...) @binding(...)' sections
     const bindGroup = device.device!.createBindGroup({
