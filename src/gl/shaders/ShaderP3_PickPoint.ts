@@ -1,7 +1,6 @@
-import { ColorBuffer } from "../buffers/ColorBuffer"
-import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { PositionBuffer } from "../buffers/PositionBuffer"
+import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
@@ -17,24 +16,16 @@ export class ShaderP3_PickPoint extends Shader {
             vertex: {
                 buffers: [{
                     arrayStride: PositionBuffer.bytesPerVertex,
+                    stepMode: 'instance',
                     attributes: [
                         { shaderLocation: 0, ...PositionBuffer.position },
                     ]
-                // }, {
-                //     arrayStride: ColorBuffer.bytesPerVertex,
-                //     attributes: [
-                //         { shaderLocation: 1, ...ColorBuffer.color },
-                //     ]
                 }],
                 module: this.module
             },
             fragment: {
                 module: this.module,
                 targets: [{ format: context.presentationFormat }]
-            },
-            primitive: {
-                topology: 'triangle-list',
-                cullMode: 'none',
             },
             depthStencil: {
                 depthWriteEnabled: true,
@@ -62,14 +53,12 @@ export class ShaderP3_PickPoint extends Shader {
     draw(pass: GPURenderPassEncoder,
         context: CanvasContext,
         modelUniforms: ModelUniform,
-        positions: PositionBuffer,
-        indices: IndexBuffer
+        positions: PositionBuffer
     ) {
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
         pass.setVertexBuffer(0, positions.buffer)
-        pass.setIndexBuffer(indices.buffer, 'uint32')
-        pass.drawIndexed(indices.length)
+        pass.draw(6, positions.buffer.size / 3 / FLOAT32_NUM_BYTES)
     }
 }
 
@@ -84,22 +73,33 @@ const code = /* wgsl */ `
     @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
     @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
 
-    struct Vertex2Fragment {
+    struct VSOutput {
         @builtin(position) Position: vec4f,
+        @location(0) color: vec4f,
     }
 
     @vertex
     fn vertex_main(
-        @location(0) position: vec3f
-    ) -> Vertex2Fragment {
-        let pos = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(position, 1);
-        return Vertex2Fragment(pos);
+        @location(0) vert: vec3f,
+        @builtin(vertex_index) vNdx: u32,
+        @builtin(instance_index) iNdx: u32,
+    ) -> VSOutput {
+        let rectangle = array(
+            vec2f(-1, -1), vec2f( 1, -1), vec2f(-1,  1),
+            vec2f(-1,  1), vec2f( 1, -1), vec2f( 1,  1),
+        );
+        let pos = rectangle[vNdx];
+        let clipPos = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(vert, 1);
+        let scale = vec2f(0.01, 0.01);
+        let pointPos = vec4f(pos * scale * clipPos.w, 0, 0);
+        let color = vec4f(f32(iNdx) / 8.0, 0, 0, 1);
+        return VSOutput(clipPos + pointPos, color);
     }
 
     @fragment
     fn fragment_main(
-        vin: Vertex2Fragment
+        vin: VSOutput
     ) -> @location(0) vec4f {
-        return vec4f(1, 0.5, 0, 1);
+        return vin.color;
     }
 `

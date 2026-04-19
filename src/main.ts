@@ -76,10 +76,10 @@ async function main() {
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
-        shaderPickPoint.draw(pass, context, modelUniforms, positions, indices)
+        shaderPickPoint.draw(pass, context, modelUniforms, positions)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, cubeTexture)
-        // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
+        shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
