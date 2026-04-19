@@ -26,9 +26,12 @@ export class CanvasContext {
 
     pushController(controller: Controller) {
         this._controllerStack.push(controller)
+        this.invalidate()
+        console.log(controller.info())
     }
     popController() {
         this._controllerStack.pop()
+        this.invalidate()
     }
 
     constructor(device: Device, canvas: HTMLCanvasElement) {

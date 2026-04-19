@@ -3,6 +3,7 @@ import { Controller } from './Controller'
 import { Projection, type CanvasContext } from '../CanvasContext'
 import { deg2rad } from '../algorithms/deg2rad'
 import { MouseButton } from './details/MouseButton'
+import { FlyMode } from './FlyMode'
 
 interface Point {
     x: number,
@@ -87,7 +88,7 @@ export class BasicMode extends Controller {
                 break
             case 'Backquote':
                 if (ev.shiftKey) {
-                    // this._context.pushInputHandler(new FlyMode(this._context))
+                    this.context.pushController(new FlyMode(this.context))
                 }
                 break
             default:
@@ -150,6 +151,6 @@ export class BasicMode extends Controller {
         }
         ev.preventDefault()
         this._down = undefined
-        this._camera = undefined
+        // this._camera = undefined
     }
 }
