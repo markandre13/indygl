@@ -199,12 +199,6 @@ const renderPassDescriptor: GPURenderPassDescriptor = {
     },
 }
 
-const settings = {
-    fixedSize: true,
-    textured: false,
-    size: 10,
-}
-
 let depthTexture: GPUTexture
 
 function render(time: number) {
@@ -234,10 +228,8 @@ function render(time: number) {
     }
     renderPassDescriptor.depthStencilAttachment!.view = depthTexture.createView()
 
-    const { size, fixedSize, textured } = settings
-
     // Set the size in the uniform values
-    sizeValue[0] = size
+    sizeValue[0] = 4000 / Math.min(canvas.clientWidth, canvas.clientHeight)
 
     const fov = (90 * Math.PI) / 180
     const aspect = canvas.clientWidth / canvas.clientHeight
