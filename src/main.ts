@@ -17,14 +17,14 @@ import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
 import { ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
 
 // next steps:
-// * update vertex buffer
-// * draw lines
-// * pick points
-// * transformation pipelines
-// * fly mode
+// [ ] update vertex buffer
+// [ ] draw lines
+// [X] pick points
+// [ ] transformation pipelines
+// [ ] rotate, fly mode
 
 async function main() {
-    const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
+    const canvas = document.querySelector<HTMLCanvasElement>('canvas')
     if (canvas === null) {
         throw Error("#canvas not found")
     }
@@ -55,7 +55,7 @@ async function main() {
 
     function frame() {
         const now = Date.now()
-        const deltaTime = (now - lastFrameMS) / 1000
+        const deltaTime = (now - lastFrameMS) / 4000
         cubeRotation += deltaTime
         lastFrameMS = now
 
@@ -74,7 +74,7 @@ async function main() {
         context.ajustSize()
 
         const commandEncoder = device.device!.createCommandEncoder()
-        const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
+        const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor()) // this is were we could ask to render into a texture
 
         shaderPickPoint.draw(pass, context, modelUniforms, positions)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)

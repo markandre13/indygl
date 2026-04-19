@@ -2,11 +2,12 @@ import type { Device } from "../Device"
 
 const FLOAT32_SIZE = 4
 
-export type WslVertexFormat = "mat4x4f" | "vec4f"
+export type WslVertexFormat = "mat4x4f" | "vec4f" | "vec2f"
 
 const formats = new Map<WslVertexFormat, any>([
     ["mat4x4f", FLOAT32_SIZE * 16],
-    ["vec4f", FLOAT32_SIZE * 4]
+    ["vec4f", FLOAT32_SIZE * 4],
+    ["vec2f", FLOAT32_SIZE * 2]
 ])
 
 export class Uniform {
