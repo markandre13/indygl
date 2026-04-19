@@ -68,7 +68,7 @@ export class CanvasContext {
             colorAttachments: [
                 {
                     view: undefined as any, // assigned later
-                    clearValue: [0.5, 0.5, 0.5, 1.0],
+                    clearValue: this.backgroundColor,
                     loadOp: 'clear',
                     storeOp: 'store',
                 },
@@ -83,11 +83,13 @@ export class CanvasContext {
 
         const observer = new ResizeObserver(_entries => {
             this.ajustSize()
+            this.invalidate()
         })
         observer.observe(canvas)
     }
 
     // paint?: () => void
+    backgroundColor = [0.247, 0.247, 0.247, 1.0]
     camera = mat4.create()
     private _invalidated = false
     invalidate() {
