@@ -216,9 +216,12 @@ export class FlyMode extends Controller {
             this._move[1] ||
             this._move[2] ||
             this._drift[0] ||
-            this._drift[1]) {
+            this._drift[1]
+        ) {
+            // console.log(`FlyMode.paint() -> continue`)
             this.invalidate()
         } else {
+            // console.log(`FlyMode.paint() -> done`)
             this._lastUpdate = undefined
         }
     }

@@ -87,7 +87,7 @@ export class CanvasContext {
         observer.observe(canvas)
     }
 
-    paint?: () => void
+    // paint?: () => void
     camera = mat4.create()
     private _invalidated = false
     invalidate() {
@@ -96,12 +96,26 @@ export class CanvasContext {
         }
         this._invalidated = true
         requestAnimationFrame(() => {
-            if (this.paint) {
-                this.paint()
+            if (this.doPaint) {
+                this.doPaint()
             }
-            this._invalidated = false
         })
     }
+    paint?: () => void
+    protected doPaint() {
+        // console.log(`Controller.doPaint()`)
+        // we clear _invalidated here so that the following paint()'s may invalidate the view again
+        this._invalidated = false
+
+        if (this.paint) {
+            this.paint()
+        }
+        // console.log(`this._controllerStack.length = ${this._controllerStack.length }`)
+        for (let i = this._controllerStack.length - 1; i >= 0; --i) {
+            this._controllerStack[i]!.paint()
+        }
+    }
+
     resetCamera() {
         // const defaultCamera = this._context.defaultCamera
         // if (defaultCamera) {

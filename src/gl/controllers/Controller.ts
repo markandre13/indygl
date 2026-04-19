@@ -14,7 +14,7 @@ export class Controller {
      * 
      * @returns a center to rotate around
      */
-    selectionCenter(): vec3 { return vec3.fromValues(0,0,-6) }
+    selectionCenter(): vec3 { return vec3.fromValues(0,0,0) }
     paint() {}
 
     keyup(_ev: KeyboardEvent): void {}

@@ -20,9 +20,9 @@ import { BasicMode } from './gl/controllers/BasicController'
 // next steps:
 // [ ] update vertex buffer
 // [ ] draw lines
-// [X] pick points
+// [ ] pick points
 // [ ] transformation pipelines
-// [ ] rotate, fly mode
+// [X] rotate, fly mode
 
 async function main() {
     const canvas = document.querySelector<HTMLCanvasElement>('canvas')
@@ -52,22 +52,12 @@ async function main() {
     const shaderShadedTexture = new ShaderP4N4T2(device, context)
     const shaderShadedMono = new ShaderP3N3(device, context)
 
-    let cubeRotation = 0
-    let lastFrameMS = Date.now()
+    mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -6))
 
-    function frame() {
-        const now = Date.now()
-        const deltaTime = (now - lastFrameMS) / 4000
-        // cubeRotation += deltaTime
-        lastFrameMS = now
+    context.paint = () => {
 
         const modelViewMatrix = modelUniforms.modelViewMatrix
-        // mat4.identity(modelViewMatrix)
         mat4.copy(modelViewMatrix, context.camera)
-        mat4.translate(modelViewMatrix, modelViewMatrix, vec3.fromValues(0, 0, -6))
-        mat4.rotateZ(modelViewMatrix, modelViewMatrix, cubeRotation)
-        mat4.rotateY(modelViewMatrix, modelViewMatrix, cubeRotation * 0.7)
-        mat4.rotateX(modelViewMatrix, modelViewMatrix, cubeRotation * 0.3)
 
         const normalMatrix = modelUniforms.normalMatrix
         mat4.invert(normalMatrix, modelViewMatrix)
@@ -88,9 +78,10 @@ async function main() {
         const commandBuffer = commandEncoder.finish()
         device.device.queue.submit([commandBuffer])
 
-        requestAnimationFrame(frame)
+        // context.invalidate()
+        // requestAnimationFrame(frame)
     }
-    requestAnimationFrame(frame)
+    // requestAnimationFrame(frame)
 }
 
 main()
