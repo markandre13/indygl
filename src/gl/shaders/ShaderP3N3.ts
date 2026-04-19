@@ -1,17 +1,19 @@
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
+import { Uniform } from "../buffers/Uniform"
 import type { VertexBuffer } from "../buffers/VertexBuffer"
 import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
-
 export class ShaderP3N3 extends Shader {
- pipeline: GPURenderPipeline
+    pipeline: GPURenderPipeline
+    colorUniform: Uniform
     constructor(device: Device,
         context: CanvasContext
     ) {
         super(device, code)
+        this.colorUniform = new Uniform(device.device, ["vec4f"])
         const pipelineDef: GPURenderPipelineDescriptor = {
             layout: 'auto',
             vertex: {
@@ -20,7 +22,6 @@ export class ShaderP3N3 extends Shader {
                     attributes: [
                         { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
                         { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 3, format: 'float32x3' },
-                        // { shaderLocation: 2, offset: FLOAT32_NUM_BYTES * 8, format: 'float32x2' }
                     ]
                 }],
                 module: this.module
@@ -50,8 +51,7 @@ export class ShaderP3N3 extends Shader {
                 entries: [
                     { binding: 0, resource: context.sceneUniforms.buffer },
                     { binding: 1, resource: modelUniforms.buffer },
-                    // { binding: 2, resource: context.sampler },
-                    // { binding: 3, resource: this.texture!.createView() },
+                    { binding: 2, resource: this.colorUniform.buffer },
                 ],
             })
         }
@@ -61,12 +61,20 @@ export class ShaderP3N3 extends Shader {
     draw(pass: GPURenderPassEncoder,
         context: CanvasContext,
         modelUniforms: ModelUniform,
-        positions: VertexBuffer,
+        vertices: VertexBuffer,
+        rgba: number[]
     ) {
+        const color = this.colorUniform.values[0]
+        color[0] = rgba[0]
+        color[1] = rgba[1]
+        color[2] = rgba[2]
+        color[3] = rgba[3]
+        this.colorUniform.writeTo(this.device)
+
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
-        pass.setVertexBuffer(0, positions.buffer)
-        pass.draw(positions.buffer.size / FLOAT32_NUM_BYTES / 6)
+        pass.setVertexBuffer(0, vertices.buffer)
+        pass.draw(vertices.buffer.size / FLOAT32_NUM_BYTES / 6)
     }
 }
 
@@ -78,14 +86,15 @@ const code = /* wgsl */`
         uModelViewMatrix: mat4x4f,
         uNormalMatrix: mat4x4f,
     };
+    struct ColorUniforms {
+        uColor: vec4f
+    }
     @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
     @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
-    // @group(0) @binding(2) var mySampler: sampler;
-    // @group(0) @binding(3) var myTexture: texture_2d<f32>;
+    @group(0) @binding(2) var<uniform> colorUniforms: ColorUniforms;
 
     struct Vertex2Fragment {
         @builtin(position) Position: vec4f,
-        // @location(0) fragUV: vec2f,
         @location(0) vLighting: vec3f
     }
 
@@ -93,7 +102,6 @@ const code = /* wgsl */`
     fn vertex_main(
         @location(0) position: vec4f,
         @location(1) normal: vec4f,
-        // @location(2) uv: vec2f
     ) -> Vertex2Fragment {
 
         let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * position;
@@ -109,7 +117,6 @@ const code = /* wgsl */`
 
         return Vertex2Fragment(
             gl_Position,
-            // uv,
             vLighting
         );
     }
@@ -118,8 +125,6 @@ const code = /* wgsl */`
     fn fragment_main(
         vin: Vertex2Fragment
     ) -> @location(0) vec4f {
-        let color = vec3f(1, 0.5, 0);
-        // let color = textureSample(myTexture, mySampler, vin.fragUV).rgb;
-        return vec4f(color * vin.vLighting, 1);
+        return vec4f(colorUniforms.uColor.xyz * vin.vLighting, colorUniforms.uColor.w);
     }
 `

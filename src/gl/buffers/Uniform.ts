@@ -12,7 +12,7 @@ const formats = new Map<WslVertexFormat, any>([
 export class Uniform {
     buffer: GPUBuffer
     protected float32array: Float32Array
-    protected values: Float32Array[]
+    values: Float32Array[]
 
     constructor(device: GPUDevice, format: WslVertexFormat[]) {
         let size = 0

@@ -15,13 +15,12 @@ import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { cube_P3N3, cube_P4N4T2 } from './geom-cube'
 import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
 
-// * create examples for all possible use cases
-//   * xyz, norm, uv, rgb, rgba and all their combinations
-//   * for performance, when writing to vertex buffers, it might be usefull to cycle through
-//     about four of them
-//     https://www.reddit.com/r/opengl/comments/155jq8v/whats_better_multiple_vertex_buffers_or_a_single/
-// * test them with visual regression tests
-//   https://vitest.dev/guide/browser/visual-regression-testing
+// next steps:
+// * update vertex buffer
+// * draw lines
+// * pick points
+// * transformation pipelines
+// * fly mode
 
 async function main() {
     const canvas = document.querySelector('canvas') as HTMLCanvasElement | null
@@ -77,7 +76,7 @@ async function main() {
 
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, cubeTexture)
-        shaderShadedMono.draw(pass, context, modelUniforms, posNorm)
+        shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
