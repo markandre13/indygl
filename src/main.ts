@@ -14,6 +14,7 @@ import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { cube_P3N3, cube_P4N4T2 } from './geom-cube'
 import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
+import { ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
 
 // next steps:
 // * update vertex buffer
@@ -44,6 +45,7 @@ async function main() {
     const posColUv = new VertexBuffer(device, cube_P4N4T2)
     const posNorm = new VertexBuffer(device, cube_P3N3)
 
+    const shaderPickPoint = new ShaderP3_PickPoint(device, context)
     const shaderColor = new ShaderP3_C3_IDX(device, context)
     const shaderShadedTexture = new ShaderP4N4T2(device, context)
     const shaderShadedMono = new ShaderP3N3(device, context)
@@ -74,9 +76,10 @@ async function main() {
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
+        shaderPickPoint.draw(pass, context, modelUniforms, positions, indices)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, cubeTexture)
-        shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
+        // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
 
         pass.end()
         const commandBuffer = commandEncoder.finish()

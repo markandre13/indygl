@@ -20,11 +20,11 @@ export class ShaderP3_PickPoint extends Shader {
                     attributes: [
                         { shaderLocation: 0, ...PositionBuffer.position },
                     ]
-                }, {
-                    arrayStride: ColorBuffer.bytesPerVertex,
-                    attributes: [
-                        { shaderLocation: 1, ...ColorBuffer.color },
-                    ]
+                // }, {
+                //     arrayStride: ColorBuffer.bytesPerVertex,
+                //     attributes: [
+                //         { shaderLocation: 1, ...ColorBuffer.color },
+                //     ]
                 }],
                 module: this.module
             },
@@ -63,13 +63,11 @@ export class ShaderP3_PickPoint extends Shader {
         context: CanvasContext,
         modelUniforms: ModelUniform,
         positions: PositionBuffer,
-        colors: ColorBuffer,
         indices: IndexBuffer
     ) {
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
         pass.setVertexBuffer(0, positions.buffer)
-        pass.setVertexBuffer(1, colors.buffer)
         pass.setIndexBuffer(indices.buffer, 'uint32')
         pass.drawIndexed(indices.length)
     }
@@ -88,22 +86,20 @@ const code = /* wgsl */ `
 
     struct Vertex2Fragment {
         @builtin(position) Position: vec4f,
-        @location(0) rgb: vec3f
     }
 
     @vertex
     fn vertex_main(
-        @location(0) position: vec3f,
-        @location(1) rgb: vec3f
+        @location(0) position: vec3f
     ) -> Vertex2Fragment {
         let pos = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(position, 1);
-        return Vertex2Fragment(pos, rgb);
+        return Vertex2Fragment(pos);
     }
 
     @fragment
     fn fragment_main(
         vin: Vertex2Fragment
     ) -> @location(0) vec4f {
-        return vec4f(vin.rgb, 1);
+        return vec4f(1, 0.5, 0, 1);
     }
 `
