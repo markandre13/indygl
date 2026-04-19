@@ -1,5 +1,14 @@
+import { mat4 } from 'gl-matrix'
 import { SceneUniform } from './buffers/SceneUniform'
 import type { Device } from './Device'
+import { deg2rad } from './algorithms/deg2rad'
+import { euler2matrix } from './algorithms/euler'
+import type { Controller } from './controllers/Controller'
+
+export enum Projection {
+    ORTHOGONAL,
+    PERSPECTIVE
+}
 
 export class CanvasContext {
     device: Device
@@ -13,9 +22,21 @@ export class CanvasContext {
     sceneUniforms: SceneUniform
     renderPassDescriptor: GPURenderPassDescriptor
 
+    private _controllerStack: Controller[] = []
+
+    pushController(controller: Controller) {
+        this._controllerStack.push(controller)
+    }
+    popController() {
+        this._controllerStack.pop()
+    }
+
     constructor(device: Device, canvas: HTMLCanvasElement) {
         this.device = device
         this.canvas = canvas
+
+        this.setupEventHandling(canvas)
+
         this.context = canvas.getContext('webgpu')
         if (this.context == null) {
             throw Error('no webgpu')
@@ -61,6 +82,51 @@ export class CanvasContext {
             this.ajustSize()
         })
         observer.observe(canvas)
+    }
+
+    paint?: () => void
+    camera = mat4.create()
+    private _invalidated = false
+    invalidate() {
+        if (this._invalidated) {
+            return
+        }
+        this._invalidated = true
+        requestAnimationFrame(() => {
+            if (this.paint) {
+                this.paint()
+            }
+            this._invalidated = false
+        })
+    }
+    resetCamera() {
+        // const defaultCamera = this._context.defaultCamera
+        // if (defaultCamera) {
+        mat4.identity(this.camera)
+        mat4.translate(this.camera, this.camera, [0.0, 0.0, -6.0])
+        this.invalidate()
+        //     mat4.copy(this._context.camera, defaultCamera)
+        //     this._context.invalidate()
+        // }
+    }
+    rotateCameraTo(x: number, y: number, z: number) {
+        const justTranslation = mat4.clone(this.camera)
+        // just rotation
+        justTranslation[12] = justTranslation[13] = justTranslation[14] = 0
+        // inverse rotation
+        mat4.invert(justTranslation, justTranslation)
+        // just translation
+        mat4.mul(justTranslation, justTranslation, this.camera)
+
+        const newRotation = euler2matrix(deg2rad(x), deg2rad(y), deg2rad(z))
+
+        this.camera = mat4.mul(newRotation, newRotation, justTranslation)
+    }
+
+    protected _projection: Projection = Projection.PERSPECTIVE
+    set projection(value: Projection) {
+        this._projection = value
+        this.invalidate()
     }
 
     getCanvasView() {
@@ -116,5 +182,81 @@ export class CanvasContext {
         const zFar = 100.0
         this.sceneUniforms.perspective(fieldOfView, aspect, zNear, zFar)
         this.sceneUniforms.writeTo(this.device)
+    }
+
+    /**
+     * setup handling of pointer, keyboard and resize event
+     */
+    private setupEventHandling(canvas: HTMLCanvasElement) {
+
+        //
+        // resize
+        //
+        // new ResizeObserver(this.paint).observe(canvas)
+
+        //
+        // pointer
+        //
+        let downX = 0, downY = 0, buttonDown = false
+        canvas.oncontextmenu = (ev: MouseEvent) => {
+            ev.preventDefault()
+        }
+        canvas.onpointerdown = (ev: PointerEvent) => {
+            for (let i = this._controllerStack.length - 1; i >= 0; --i) {
+                this._controllerStack[i]!.pointerdown(ev)
+                if (ev.defaultPrevented) {
+                    return
+                }
+            }
+            ev.preventDefault()
+
+
+            canvas.setPointerCapture(ev.pointerId)
+            buttonDown = true
+            downX = ev.x
+            downY = ev.y
+        }
+        canvas.onpointerup = (ev: PointerEvent) => {
+            for (let i = this._controllerStack.length - 1; i >= 0; --i) {
+                this._controllerStack[i]!.pointerup(ev)
+                if (ev.defaultPrevented) {
+                    return
+                }
+            }
+            ev.preventDefault()
+            buttonDown = false
+        }
+        canvas.onpointermove = (ev: PointerEvent) => {
+            for (let i = this._controllerStack.length - 1; i >= 0; --i) {
+                this._controllerStack[i]!.pointermove(ev)
+                if (ev.defaultPrevented) {
+                    return
+                }
+            }
+            ev.preventDefault()
+        }
+
+        //
+        // keyboard
+        //
+        window.onkeyup = (ev: KeyboardEvent) => {
+            for (let i = this._controllerStack.length - 1; i >= 0; --i) {
+                this._controllerStack[i]!.keyup(ev)
+                if (ev.defaultPrevented) {
+                    break
+                }
+            }
+            // ev.preventDefault()
+        }
+
+        window.onkeydown = (ev: KeyboardEvent) => {
+            for (let i = this._controllerStack.length - 1; i >= 0; --i) {
+                this._controllerStack[i]!.keydown(ev)
+                if (ev.defaultPrevented) {
+                    break
+                }
+            }
+            // ev.preventDefault()
+        }
     }
 }

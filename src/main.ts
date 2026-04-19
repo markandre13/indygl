@@ -15,6 +15,7 @@ import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { cube_P3N3, cube_P4N4T2 } from './geom-cube'
 import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
 import { ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
+import { BasicMode } from './gl/controllers/BasicController'
 
 // next steps:
 // [ ] update vertex buffer
@@ -32,6 +33,7 @@ async function main() {
     const device = new Device()
     await device.init()
     const context = new CanvasContext(device, canvas)
+    context.pushController(new BasicMode(context))
     const modelUniforms = new ModelUniform(device)
 
     // Fetch the image and upload it into a GPUTexture.
@@ -56,11 +58,12 @@ async function main() {
     function frame() {
         const now = Date.now()
         const deltaTime = (now - lastFrameMS) / 4000
-        cubeRotation += deltaTime
+        // cubeRotation += deltaTime
         lastFrameMS = now
 
         const modelViewMatrix = modelUniforms.modelViewMatrix
-        mat4.identity(modelViewMatrix)
+        // mat4.identity(modelViewMatrix)
+        mat4.copy(modelViewMatrix, context.camera)
         mat4.translate(modelViewMatrix, modelViewMatrix, vec3.fromValues(0, 0, -6))
         mat4.rotateZ(modelViewMatrix, modelViewMatrix, cubeRotation)
         mat4.rotateY(modelViewMatrix, modelViewMatrix, cubeRotation * 0.7)
