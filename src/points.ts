@@ -48,16 +48,6 @@ const bindGroupLayout = device.createBindGroupLayout({
             visibility: GPUShaderStage.VERTEX,
             buffer: {},
         },
-        {
-            binding: 1,
-            visibility: GPUShaderStage.FRAGMENT,
-            sampler: {},
-        },
-        {
-            binding: 2,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: {},
-        },
     ],
 })
 
@@ -72,21 +62,7 @@ const shaderModules = Object.fromEntries(
             @fragment fn fs() -> @location(0) vec4f {
                 return vec4f(1, 0.5, 0.2, 1);
             }`,
-        texturedFragWGSL: /*wgsl*/`
-            struct VSOutput {
-                @location(0) texcoord: vec2f,
-                };
-
-                @group(0) @binding(1) var s: sampler;
-                @group(0) @binding(2) var t: texture_2d<f32>;
-
-                @fragment fn fs(vsOut: VSOutput) -> @location(0) vec4f {
-                let color = textureSample(t, s, vsOut.texcoord);
-                if (color.a < 0.1) {
-                    discard;
-                }
-                return color;}`,
-        distanceSizedPointsVertWGSL: /*wgsl*/`
+        fixedSizePointsVertWGSL: /*wgsl*/`
             struct Vertex {
                 @location(0) position: vec4f,
             };
@@ -119,111 +95,60 @@ const shaderModules = Object.fromEntries(
             var vsOut: VSOutput;
             let pos = points[vNdx];
             let clipPos = uni.matrix * vert.position;
-            let pointPos = vec4f(pos * uni.size / uni.resolution, 0, 0);
+            let pointPos = vec4f(pos * uni.size / uni.resolution * clipPos.w, 0, 0);
             vsOut.position = clipPos + pointPos;
             vsOut.texcoord = pos * 0.5 + 0.5;
             return vsOut;
             }`,
-        fixedSizePointsVertWGSL: /*wgsl*/`
-            struct Vertex {
-                @location(0) position: vec4f,
-                };
-
-                struct Uniforms {
-                matrix: mat4x4f,
-                resolution: vec2f,
-                size: f32,
-                };
-
-                struct VSOutput {
-                @builtin(position) position: vec4f,
-                @location(0) texcoord: vec2f,
-                };
-
-                @group(0) @binding(0) var<uniform> uni: Uniforms;
-
-                @vertex fn vs(
-                    vert: Vertex,
-                    @builtin(vertex_index) vNdx: u32,
-                ) -> VSOutput {
-                let points = array(
-                    vec2f(-1, -1),
-                    vec2f( 1, -1),
-                    vec2f(-1,  1),
-                    vec2f(-1,  1),
-                    vec2f( 1, -1),
-                    vec2f( 1,  1),
-                );
-                var vsOut: VSOutput;
-                let pos = points[vNdx];
-                let clipPos = uni.matrix * vert.position;
-                let pointPos = vec4f(pos * uni.size / uni.resolution * clipPos.w, 0, 0);
-                vsOut.position = clipPos + pointPos;
-                vsOut.texcoord = pos * 0.5 + 0.5;
-                return vsOut;
-                }`,
     }).map(([key, code]) => [key, device.createShaderModule({ code })])
 )
-
-const fragModules = [
-    shaderModules.orangeFragWGSL,
-    shaderModules.texturedFragWGSL,
-]
-
-const vertModules = [
-    shaderModules.distanceSizedPointsVertWGSL,
-    shaderModules.fixedSizePointsVertWGSL,
-]
 
 const depthFormat = 'depth24plus'
 
 // make pipelines for each combination
-const pipelines = vertModules.map((vertModule) =>
-    fragModules.map((fragModule) =>
-        device.createRenderPipeline({
-            layout: pipelineLayout,
-            vertex: {
-                module: vertModule,
-                buffers: [
-                    {
-                        arrayStride: 3 * 4, // 3 floats, 4 bytes each
-                        stepMode: 'instance',
-                        attributes: [
-                            { shaderLocation: 0, offset: 0, format: 'float32x3' }, // position
-                        ],
-                    },
-                ],
-            },
-            fragment: {
-                module: fragModule,
-                targets: [
-                    {
-                        format: presentationFormat,
-                        blend: {
-                            color: {
-                                srcFactor: 'one',
-                                dstFactor: 'one-minus-src-alpha',
-                            },
-                            alpha: {
-                                srcFactor: 'one',
-                                dstFactor: 'one-minus-src-alpha',
-                            },
+const pipeline =
+    device.createRenderPipeline({
+        layout: pipelineLayout,
+        vertex: {
+            module: shaderModules.fixedSizePointsVertWGSL,
+            buffers: [
+                {
+                    arrayStride: 3 * 4, // 3 floats, 4 bytes each
+                    stepMode: 'instance',
+                    attributes: [
+                        { shaderLocation: 0, offset: 0, format: 'float32x3' }, // position
+                    ],
+                },
+            ],
+        },
+        fragment: {
+            module: shaderModules.orangeFragWGSL,
+            targets: [
+                {
+                    format: presentationFormat,
+                    blend: {
+                        color: {
+                            srcFactor: 'one',
+                            dstFactor: 'one-minus-src-alpha',
+                        },
+                        alpha: {
+                            srcFactor: 'one',
+                            dstFactor: 'one-minus-src-alpha',
                         },
                     },
-                ],
-            },
-            depthStencil: {
-                depthWriteEnabled: true,
-                depthCompare: 'less',
-                format: depthFormat,
-            },
-        })
-    )
-)
+                },
+            ],
+        },
+        depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: 'less',
+            format: depthFormat,
+        },
+    })
 
 const vertexData = createFibonacciSphereVertices({
     radius: 1,
-    numSamples: 1000,
+    numSamples: 100,
 })
 const kNumPoints = vertexData.length / 3
 
@@ -249,34 +174,10 @@ const resolutionValue = uniformValues.subarray(
 )
 const sizeValue = uniformValues.subarray(kSizeOffset, kSizeOffset + 1)
 
-// Use canvas 2d to make texture data
-const ctx = new OffscreenCanvas(64, 64).getContext('2d')!
-ctx.font = '60px sans-serif'
-ctx.textAlign = 'center'
-ctx.textBaseline = 'middle'
-ctx.fillText('🦋', 32, 32)
-
-const sampler = device.createSampler()
-const texture = device.createTexture({
-    size: [ctx.canvas.width, ctx.canvas.height],
-    format: 'rgba8unorm',
-    usage:
-        GPUTextureUsage.COPY_DST |
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.RENDER_ATTACHMENT,
-})
-device.queue.copyExternalImageToTexture(
-    { source: ctx.canvas, flipY: true },
-    { texture },
-    [ctx.canvas.width, ctx.canvas.height]
-)
-
 const bindGroup = device.createBindGroup({
     layout: bindGroupLayout,
     entries: [
         { binding: 0, resource: uniformBuffer },
-        { binding: 1, resource: sampler },
-        { binding: 2, resource: texture.createView() },
     ],
 })
 
@@ -334,8 +235,6 @@ function render(time: number) {
     renderPassDescriptor.depthStencilAttachment!.view = depthTexture.createView()
 
     const { size, fixedSize, textured } = settings
-
-    const pipeline = pipelines[fixedSize ? 1 : 0][textured ? 1 : 0]
 
     // Set the size in the uniform values
     sizeValue[0] = size
