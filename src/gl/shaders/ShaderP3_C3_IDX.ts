@@ -1,15 +1,12 @@
+import { ColorBuffer } from "../buffers/ColorBuffer"
+import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
-import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
-import type { Texture } from "../buffers/Texture"
-import type { VertexBuffer } from "../buffers/VertexBuffer"
+import { PositionBuffer } from "../buffers/PositionBuffer"
 import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
-/**
- * single vertex consisting of: point4f, normal4f, texCoord2
- */
-export class Shader_P4N4T2 extends Shader {
+export class ShaderP3_C3_IDX extends Shader {
     pipeline: GPURenderPipeline
     constructor(device: Device,
         context: CanvasContext
@@ -19,11 +16,14 @@ export class Shader_P4N4T2 extends Shader {
             layout: 'auto',
             vertex: {
                 buffers: [{
-                    arrayStride: FLOAT32_NUM_BYTES * 10,
+                    arrayStride: PositionBuffer.bytesPerVertex,
                     attributes: [
-                        { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x4' },
-                        { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 4, format: 'float32x4' },
-                        { shaderLocation: 2, offset: FLOAT32_NUM_BYTES * 8, format: 'float32x2' }
+                        { shaderLocation: 0, ...PositionBuffer.position },
+                    ]
+                }, {
+                    arrayStride: ColorBuffer.bytesPerVertex,
+                    attributes: [
+                        { shaderLocation: 1, ...ColorBuffer.color },
                     ]
                 }],
                 module: this.module
@@ -44,9 +44,7 @@ export class Shader_P4N4T2 extends Shader {
         }
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
-
-
-    texture?: GPUTexture
+    
     bindGroup?: GPUBindGroup
     private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
         if (this.bindGroup === undefined) {
@@ -54,9 +52,7 @@ export class Shader_P4N4T2 extends Shader {
                 layout: this.pipeline.getBindGroupLayout(0),
                 entries: [
                     { binding: 0, resource: context.sceneUniforms.buffer },
-                    { binding: 1, resource: modelUniforms.buffer },
-                    { binding: 2, resource: context.sampler },
-                    { binding: 3, resource: this.texture!.createView() },
+                    { binding: 1, resource: modelUniforms.buffer }
                 ],
             })
         }
@@ -66,21 +62,20 @@ export class Shader_P4N4T2 extends Shader {
     draw(pass: GPURenderPassEncoder,
         context: CanvasContext,
         modelUniforms: ModelUniform,
-        positions: VertexBuffer,
-        texture: Texture
+        positions: PositionBuffer,
+        colors: ColorBuffer,
+        indices: IndexBuffer
     ) {
-        if (texture.texture !== this.texture) {
-            this.texture = texture.texture
-            this.bindGroup = undefined
-        }
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
         pass.setVertexBuffer(0, positions.buffer)
-        pass.draw(positions.buffer.size / FLOAT32_NUM_BYTES / 10)
+        pass.setVertexBuffer(1, colors.buffer)
+        pass.setIndexBuffer(indices.buffer, 'uint32')
+        pass.drawIndexed(indices.length)
     }
 }
 
-const code = /* wgsl */`
+const code = /* wgsl */ `
     struct SceneUniforms { 
         uProjectionMatrix: mat4x4f,
     };
@@ -90,46 +85,25 @@ const code = /* wgsl */`
     };
     @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
     @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
-    @group(0) @binding(2) var mySampler: sampler;
-    @group(0) @binding(3) var myTexture: texture_2d<f32>;
 
     struct Vertex2Fragment {
         @builtin(position) Position: vec4f,
-        @location(0) fragUV: vec2f,
-        @location(1) vLighting: vec3f
+        @location(0) rgb: vec3f
     }
 
     @vertex
     fn vertex_main(
-        @location(0) position: vec4f,
-        @location(1) normal: vec4f,
-        @location(2) uv: vec2f
+        @location(0) position: vec3f,
+        @location(1) rgb: vec3f
     ) -> Vertex2Fragment {
-
-        let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * position;
-
-        let ambientLight = vec3f(0.3, 0.3, 0.3);
-        let directionalLightColor = vec3f(1, 1, 1);
-        let directionalVector = normalize(vec3f(0.85, 0.8, 0.75));
-
-        let transformedNormal = modelUniforms.uNormalMatrix * vec4f(normal.xyz, 1);
-
-        let directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-        let vLighting = ambientLight + (directionalLightColor * directional);
-
-        return Vertex2Fragment(
-            gl_Position,
-            uv,
-            vLighting
-        );
+        let pos = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(position, 1);
+        return Vertex2Fragment(pos, rgb);
     }
 
     @fragment
     fn fragment_main(
         vin: Vertex2Fragment
     ) -> @location(0) vec4f {
-        // let color = vec3f(1, 0.5, 0);
-        let color = textureSample(myTexture, mySampler, vin.fragUV).rgb;
-        return vec4f(color * vin.vLighting, 1);
+        return vec4f(vin.rgb, 1);
     }
 `

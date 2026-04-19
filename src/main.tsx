@@ -8,9 +8,9 @@ import { Texture } from './gl/buffers/Texture'
 import { IndexBuffer } from './gl/buffers/IndexBuffer'
 import { PositionBuffer } from './gl/buffers/PositionBuffer'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
-import { Shader_XYZ_RGB_IDX } from './gl/shaders/Shader_XYZ_RGB_IDX'
+import { ShaderP3_C3_IDX } from './gl/shaders/ShaderP3_C3_IDX'
 import { cube_IDX, cube_RGB, cube_XYZ } from './cube'
-import { Shader_P4N4T2 } from './gl/shaders/Shader_P4N4T2'
+import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { cube_P3N3, cube_P4N4T2 } from './geom-cube'
 import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
@@ -44,8 +44,8 @@ async function main() {
     const posColUv = new VertexBuffer(device, cube_P4N4T2)
     const posNorm = new VertexBuffer(device, cube_P3N3)
 
-    const shaderColor = new Shader_XYZ_RGB_IDX(device, context)
-    const shaderShadedTexture = new Shader_P4N4T2(device, context)
+    const shaderColor = new ShaderP3_C3_IDX(device, context)
+    const shaderShadedTexture = new ShaderP4N4T2(device, context)
     const shaderShadedMono = new ShaderP3N3(device, context)
 
     let cubeRotation = 0
