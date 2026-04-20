@@ -1,12 +1,13 @@
 import { ColorUniform } from "../buffers/ColorUniform"
+import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
-import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
-import type { VertexBuffer } from "../buffers/VertexBuffer"
+import { PositionBuffer } from "../buffers/PositionBuffer"
 import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
-export class ShaderP3N3 extends Shader {
+
+export class Shader_P3 extends Shader {
     pipeline: GPURenderPipeline
     colorUniform: ColorUniform
     constructor(device: Device,
@@ -18,10 +19,9 @@ export class ShaderP3N3 extends Shader {
             layout: 'auto',
             vertex: {
                 buffers: [{
-                    arrayStride: FLOAT32_NUM_BYTES * 6,
+                    arrayStride: PositionBuffer.bytesPerVertex,
                     attributes: [
-                        { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
-                        { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 3, format: 'float32x3' },
+                        { shaderLocation: 0, ...PositionBuffer.position },
                     ]
                 }],
                 module: this.module
@@ -42,7 +42,7 @@ export class ShaderP3N3 extends Shader {
         }
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
-
+    
     bindGroup?: GPUBindGroup
     private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
         if (this.bindGroup === undefined) {
@@ -51,7 +51,7 @@ export class ShaderP3N3 extends Shader {
                 entries: [
                     { binding: 0, resource: context.sceneUniforms.buffer },
                     { binding: 1, resource: modelUniforms.buffer },
-                    { binding: 2, resource: this.colorUniform.buffer },
+                    { binding: 2, resource: this.colorUniform.buffer }
                 ],
             })
         }
@@ -61,20 +61,22 @@ export class ShaderP3N3 extends Shader {
     draw(pass: GPURenderPassEncoder,
         context: CanvasContext,
         modelUniforms: ModelUniform,
-        vertices: VertexBuffer,
-        rgba: number[]
+        positions: PositionBuffer,
+        indices: IndexBuffer,
+        rgba: ArrayLike<number>
     ) {
         this.colorUniform.rgba = rgba
         this.colorUniform.writeTo(this.device)
 
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
-        pass.setVertexBuffer(0, vertices.buffer)
-        pass.draw(vertices.buffer.size / FLOAT32_NUM_BYTES / 6)
+        pass.setVertexBuffer(0, positions.buffer)
+        pass.setIndexBuffer(indices.buffer, 'uint32')
+        pass.drawIndexed(indices.length)
     }
 }
 
-const code = /* wgsl */`
+const code = /* wgsl */ `
     struct SceneUniforms { 
         uProjectionMatrix: mat4x4f,
     };
@@ -84,43 +86,27 @@ const code = /* wgsl */`
     };
     struct ColorUniforms {
         uColor: vec4f
-    }
+    };
     @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
     @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
     @group(0) @binding(2) var<uniform> colorUniforms: ColorUniforms;
 
     struct Vertex2Fragment {
-        @builtin(position) Position: vec4f,
-        @location(0) vLighting: vec3f
+        @builtin(position) Position: vec4f
     }
 
     @vertex
     fn vertex_main(
-        @location(0) position: vec4f,
-        @location(1) normal: vec4f,
+        @location(0) position: vec3f
     ) -> Vertex2Fragment {
-
-        let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * position;
-
-        let ambientLight = vec3f(0.3, 0.3, 0.3);
-        let directionalLightColor = vec3f(1, 1, 1);
-        let directionalVector = normalize(vec3f(0.85, 0.8, 0.75));
-
-        let transformedNormal = modelUniforms.uNormalMatrix * vec4f(normal.xyz, 1);
-
-        let directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-        let vLighting = ambientLight + (directionalLightColor * directional);
-
-        return Vertex2Fragment(
-            gl_Position,
-            vLighting
-        );
+        let pos = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(position, 1);
+        return Vertex2Fragment(pos);
     }
 
     @fragment
     fn fragment_main(
         vin: Vertex2Fragment
     ) -> @location(0) vec4f {
-        return vec4f(colorUniforms.uColor.xyz * vin.vLighting, colorUniforms.uColor.w);
+        return colorUniforms.uColor;
     }
 `
