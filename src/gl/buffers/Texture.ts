@@ -1,6 +1,7 @@
 
 export class Texture {
     texture?: GPUTexture
+    
     async load(device: GPUDevice, filename: string) {
         const response = await fetch(filename)
         if (response.ok == false) {

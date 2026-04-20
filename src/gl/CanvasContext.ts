@@ -172,9 +172,11 @@ export class CanvasContext {
         return this.depthTextureView!
     }
 
-    getRenderPassDescriptor() {
+    getRenderPassDescriptor(textureView?: GPUTextureView) {
+        this.renderPassDescriptor.colorAttachments[0]!.clearValue = this.backgroundColor
         // set render destination
-        this.renderPassDescriptor.colorAttachments[0]!.view = this.getCanvasView()
+        this.renderPassDescriptor.colorAttachments[0]!.view =
+            textureView ? textureView : this.getCanvasView()
         this.renderPassDescriptor.depthStencilAttachment!.view = this.getDepthTextureView()
         return this.renderPassDescriptor
     }

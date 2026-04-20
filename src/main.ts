@@ -38,8 +38,8 @@ async function main() {
     const modelUniforms = new ModelUniform(device)
 
     // Fetch the image and upload it into a GPUTexture.
-    const cubeTexture = new Texture()
-    await cubeTexture.load(device.device!!, "Di-3d.png")
+    // const cubeTexture = new Texture()
+    // await cubeTexture.load(device.device!!, "Di-3d.png")
 
     const positions = new PositionBuffer(device, cube_XYZ)
     const colors = new ColorBuffer(device, cube_RGB)
@@ -56,6 +56,54 @@ async function main() {
 
     mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -6))
 
+    const pickTexture = new Texture()
+    pickTexture.texture = device.device.createTexture({
+        size: [canvas.width, canvas.height],
+        format: 'rgba8unorm',
+        usage:
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.RENDER_ATTACHMENT,
+    })
+    {
+        const modelViewMatrix = modelUniforms.modelViewMatrix
+        mat4.copy(modelViewMatrix, context.camera)
+
+        const normalMatrix = modelUniforms.normalMatrix
+        mat4.invert(normalMatrix, modelViewMatrix)
+        mat4.transpose(normalMatrix, normalMatrix)
+
+        modelUniforms.writeTo(device)
+        context.ajustSize()
+        const texview = pickTexture.texture.createView()
+
+        const cl = context.backgroundColor
+        const pf = context.presentationFormat
+
+        context.presentationFormat = pickTexture.texture.format
+        context.backgroundColor = [0,0,0,1]
+
+        const commandEncoder = device.device!.createCommandEncoder()
+        const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
+
+        const shader0 = new ShaderP3_PickPoint(device, context)
+        const shader1 = new ShaderP3N3(device, context)
+        shader0.draw(pass, context, modelUniforms, positions)
+        shader1.draw(pass, context, modelUniforms, posNorm, [0, 0, 0, 1])
+
+        pass.end()
+        const commandBuffer = commandEncoder.finish()
+        device.device.queue.submit([commandBuffer])
+        await device.device.queue.onSubmittedWorkDone()
+
+        context.presentationFormat = pf
+        context.backgroundColor = cl
+
+        // can we read the texture?
+        // => for testing: when not rotating after reload, we can use this texture and the mouse positions
+        //    to print the clicked colors
+    }
+
     context.paint = () => {
 
         const modelViewMatrix = modelUniforms.modelViewMatrix
@@ -69,13 +117,13 @@ async function main() {
         context.ajustSize()
 
         const commandEncoder = device.device!.createCommandEncoder()
-        const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor()) // this is were we could ask to render into a texture
+        const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
         shaderPickPoint.draw(pass, context, modelUniforms, positions)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
-        // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, cubeTexture)
+        shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
         // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
-        shaderMono.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
+        // shaderMono.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
