@@ -58,10 +58,12 @@ async function main() {
 
     const pickTexture = new Texture()
     pickTexture.texture = device.device.createTexture({
+        label: "pick texture",
         size: [canvas.width, canvas.height],
         format: 'rgba8unorm',
         usage:
             GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.COPY_SRC |
             GPUTextureUsage.TEXTURE_BINDING |
             GPUTextureUsage.RENDER_ATTACHMENT,
     })
@@ -81,7 +83,7 @@ async function main() {
         const pf = context.presentationFormat
 
         context.presentationFormat = pickTexture.texture.format
-        context.backgroundColor = [0,0,0,1]
+        context.backgroundColor = [0, 0, 0, 1]
 
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
@@ -92,9 +94,33 @@ async function main() {
         shader1.draw(pass, context, modelUniforms, posNorm, [0, 0, 0, 1])
 
         pass.end()
+
+        function roundTo(a: number, r: number) {
+            return a + (r - a % r)
+        }
+
+        const bytesPerRow = roundTo(canvas.width * 4, 256)
+
+        const readbackBuffer = device.device.createBuffer({
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            size: bytesPerRow * canvas.height,
+        })
+
+        commandEncoder.copyTextureToBuffer(
+            { texture: pickTexture.texture },
+            { buffer: readbackBuffer, offset: 0, bytesPerRow, rowsPerImage: canvas.height },
+            { width: canvas.width, height: canvas.height }
+        )
+
         const commandBuffer = commandEncoder.finish()
         device.device.queue.submit([commandBuffer])
         await device.device.queue.onSubmittedWorkDone()
+
+        await readbackBuffer.mapAsync(GPUMapMode.READ);
+        const data = readbackBuffer.getMappedRange();
+        const rgba = new Uint8Array(data)
+        console.log(`${rgba[0]}, ${rgba[1]}, ${rgba[2]}`)
+        readbackBuffer.unmap()
 
         context.presentationFormat = pf
         context.backgroundColor = cl
