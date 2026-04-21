@@ -57,87 +57,75 @@ async function main() {
 
     mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -6))
 
-    const pickTexture = new Texture()
-    pickTexture.texture = device.device.createTexture({
-        label: "pick texture",
-        size: [canvas.width, canvas.height],
-        format: 'rgba8unorm',
-        usage:
-            GPUTextureUsage.COPY_DST |
-            GPUTextureUsage.COPY_SRC |
-            GPUTextureUsage.TEXTURE_BINDING |
-            GPUTextureUsage.RENDER_ATTACHMENT,
-    })
-    {
-        const modelViewMatrix = modelUniforms.modelViewMatrix
-        mat4.copy(modelViewMatrix, context.camera)
+    context.pushController(new class extends Controller {
+        override async pointerdown(ev: PointerEvent) {
+     
+            const pickTexture = new Texture()
+            pickTexture.texture = device.device.createTexture({
+                label: "pick texture",
+                size: [canvas.width, canvas.height],
+                format: 'rgba8unorm',
+                usage:
+                    GPUTextureUsage.COPY_DST |
+                    GPUTextureUsage.COPY_SRC |
+                    GPUTextureUsage.TEXTURE_BINDING |
+                    GPUTextureUsage.RENDER_ATTACHMENT,
+            })
+            const texview = pickTexture.texture.createView()
 
-        const normalMatrix = modelUniforms.normalMatrix
-        mat4.invert(normalMatrix, modelViewMatrix)
-        mat4.transpose(normalMatrix, normalMatrix)
+            const cl = context.backgroundColor
+            const pf = context.presentationFormat
 
-        modelUniforms.writeTo(device)
-        context.ajustSize()
-        const texview = pickTexture.texture.createView()
+            context.presentationFormat = pickTexture.texture.format
+            context.backgroundColor = [0, 0, 0, 1]
 
-        const cl = context.backgroundColor
-        const pf = context.presentationFormat
+            const commandEncoder = device.device!.createCommandEncoder()
+            const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
 
-        context.presentationFormat = pickTexture.texture.format
-        context.backgroundColor = [0, 0, 0, 1]
+            const shader0 = new ShaderP3_PickPoint(device, context)
+            const shader1 = new ShaderP3N3(device, context)
+            shader0.draw(pass, context, modelUniforms, positions)
+            shader1.draw(pass, context, modelUniforms, posNorm, [0, 0, 0, 1])
 
-        const commandEncoder = device.device!.createCommandEncoder()
-        const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
+            pass.end()
 
-        const shader0 = new ShaderP3_PickPoint(device, context)
-        const shader1 = new ShaderP3N3(device, context)
-        shader0.draw(pass, context, modelUniforms, positions)
-        shader1.draw(pass, context, modelUniforms, posNorm, [0, 0, 0, 1])
-
-        pass.end()
-
-        function roundTo(a: number, r: number) {
-            return a + (r - a % r)
-        }
-
-        const bytesPerRow = roundTo(canvas.width * 4, 256)
-
-        const readbackBuffer = device.device.createBuffer({
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-            size: bytesPerRow * canvas.height,
-        })
-
-        commandEncoder.copyTextureToBuffer(
-            { texture: pickTexture.texture },
-            { buffer: readbackBuffer, offset: 0, bytesPerRow, rowsPerImage: canvas.height },
-            { width: canvas.width, height: canvas.height }
-        )
-
-        const commandBuffer = commandEncoder.finish()
-        device.device.queue.submit([commandBuffer])
-        await device.device.queue.onSubmittedWorkDone()
-
-        await readbackBuffer.mapAsync(GPUMapMode.READ);
-        const data = readbackBuffer.getMappedRange();
-        const rgba = new Uint8Array(data)
-        // readbackBuffer.unmap()
-
-        context.pushController(new class extends Controller {
-            override pointerdown(ev: PointerEvent): void {
-                const x = Math.round(ev.x)
-                const y = Math.round(ev.y)
-                const idx = x * 4 + y * bytesPerRow
-                console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[idx]}, ${rgba[idx+1]}, ${rgba[idx+2]}`)
+            function roundTo(a: number, r: number) {
+                return a + (r - a % r)
             }
-        })
 
-        context.presentationFormat = pf
-        context.backgroundColor = cl
+            const bytesPerRow = roundTo(canvas.width * 4, 256)
 
-        // can we read the texture?
-        // => for testing: when not rotating after reload, we can use this texture and the mouse positions
-        //    to print the clicked colors
-    }
+            const readbackBuffer = device.device.createBuffer({
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+                size: bytesPerRow * canvas.height,
+            })
+
+            commandEncoder.copyTextureToBuffer(
+                { texture: pickTexture.texture },
+                { buffer: readbackBuffer, offset: 0, bytesPerRow, rowsPerImage: canvas.height },
+                { width: canvas.width, height: canvas.height }
+            )
+
+            const commandBuffer = commandEncoder.finish()
+            device.device.queue.submit([commandBuffer])
+            await device.device.queue.onSubmittedWorkDone()
+
+            await readbackBuffer.mapAsync(GPUMapMode.READ)
+            const data = readbackBuffer.getMappedRange()
+            const rgba = new Uint8Array(data)
+
+            const x = Math.round(ev.x)
+            const y = Math.round(ev.y)
+            const idx = x * 4 + y * bytesPerRow
+            console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[idx]}, ${rgba[idx + 1]}, ${rgba[idx + 2]}`)
+
+            readbackBuffer.unmap()
+            pickTexture.texture.destroy()
+
+            context.presentationFormat = pf
+            context.backgroundColor = cl
+        }
+    })
 
     context.paint = () => {
 
@@ -156,8 +144,8 @@ async function main() {
 
         shaderPickPoint.draw(pass, context, modelUniforms, positions)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
-        shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
-        // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
+        // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
+        shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
         // shaderMono.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
 
         pass.end()

@@ -195,6 +195,7 @@ export class CanvasContext {
         this.canvas.width = pixelWidth
         this.canvas.height = pixelHeight
 
+        this.depthTexture?.destroy()
         this.depthTexture = undefined
 
         const fieldOfView = (45 * Math.PI) / 180 // in radians

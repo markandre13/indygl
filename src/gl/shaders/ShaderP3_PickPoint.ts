@@ -60,7 +60,7 @@ export class ShaderP3_PickPoint extends Shader {
         modelUniforms: ModelUniform,
         positions: PositionBuffer
     ) {
-        const pickSize = 50
+        const pickSize = 5
         this.pickUniform.values[0][0] = pickSize / context.canvas.clientWidth
         this.pickUniform.values[0][1] = pickSize / context.canvas.clientHeight
         this.pickUniform.writeTo(this.device)
