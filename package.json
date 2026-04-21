@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "NODE_ENV=production vite --open",
     "build": "tsgo && vite build",
     "preview": "vite preview",
     "dev:build": "tsgo --watch",

@@ -17,6 +17,7 @@ import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
 import { ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
 import { BasicMode } from './gl/controllers/BasicController'
 import { Shader_P3 } from './gl/shaders/Shader_P3'
+import { Controller } from './gl/controllers/Controller'
 
 // next steps:
 // [ ] update vertex buffer
@@ -119,8 +120,16 @@ async function main() {
         await readbackBuffer.mapAsync(GPUMapMode.READ);
         const data = readbackBuffer.getMappedRange();
         const rgba = new Uint8Array(data)
-        console.log(`${rgba[0]}, ${rgba[1]}, ${rgba[2]}`)
-        readbackBuffer.unmap()
+        // readbackBuffer.unmap()
+
+        context.pushController(new class extends Controller {
+            override pointerdown(ev: PointerEvent): void {
+                const x = Math.round(ev.x)
+                const y = Math.round(ev.y)
+                const idx = x * 4 + y * bytesPerRow
+                console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[idx]}, ${rgba[idx+1]}, ${rgba[idx+2]}`)
+            }
+        })
 
         context.presentationFormat = pf
         context.backgroundColor = cl
