@@ -107,10 +107,13 @@ const code = /* wgsl */ `
         let indexPos = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(vert, 1);
         // position of a point of the rectangle to draw for the pick point
         let pointPos = vec4f(rectangle[vNdx] * pickUniforms.scale * indexPos.w, 0, 0) + indexPos;
+
         // encode instance index as rgb color
-        // TODO: do it proper
-        let color = vec4f(f32(iNdx + 1) / 255, 0, 0, 1);
-        return VSOutput(pointPos, color);
+        let i = iNdx + 1;
+        let r = f32(i & 0xff) / 255;
+        let g = f32((i>>8) & 0xff) / 255;
+        let b = f32((i>>16) & 0xff) / 255;
+        return VSOutput(pointPos, vec4f(r, g, b, 1));
     }
 
     @fragment

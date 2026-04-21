@@ -127,11 +127,12 @@ async function main() {
 
             const x = Math.round(ev.x)
             const y = Math.round(ev.y)
-            const idx = x * 4 + y * bytesPerRow
+            const pickIdx = x * 4 + y * bytesPerRow
 
-            const idx2 = rgba[idx] + rgba[idx + 1] * 256 + rgba[idx + 2] * 256 * 256 - 1
-            const idx3 = idx2 * 3
-            console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[idx]}, ${rgba[idx + 1]}, ${rgba[idx + 2]}, idx2=${idx2}, idx3=${idx3}`)
+            // TODO: search area around mouse click!!!
+            const edgeIdx = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16) - 1
+            const edgeColorIdx = edgeIdx * 3
+            console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[pickIdx]}, ${rgba[pickIdx + 1]}, ${rgba[pickIdx + 2]}, idx2=${edgeIdx}, idx3=${edgeColorIdx}`)
 
             readbackBuffer.unmap()
             pickTexture.texture.destroy()
@@ -139,12 +140,12 @@ async function main() {
             context.presentationFormat = pf
             context.backgroundColor = cl
 
-            if (idx2 >= 0) {
-                const v = edgeColors[idx3] ? 0 : 1
-                edgeColors[idx3] = v
-                edgeColors[idx3 + 1] = v
-                edgeColors[idx3 + 2] = v
-                device.device.queue.writeBuffer(edgeColorBuffer.buffer, FLOAT32_NUM_BYTES * idx3, edgeColors, idx3, 3)
+            if (edgeIdx >= 0) {
+                const v = edgeColors[edgeColorIdx] ? 0 : 1
+                edgeColors[edgeColorIdx] = v
+                edgeColors[edgeColorIdx + 1] = v
+                edgeColors[edgeColorIdx + 2] = v
+                device.device.queue.writeBuffer(edgeColorBuffer.buffer, FLOAT32_NUM_BYTES * edgeColorIdx, edgeColors, edgeColorIdx, 3)
                 context.invalidate()
             }
         }
