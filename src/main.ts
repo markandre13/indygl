@@ -18,6 +18,9 @@ import { ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
 import { BasicMode } from './gl/controllers/BasicController'
 import { Shader_P3 } from './gl/shaders/Shader_P3'
 import { Controller } from './gl/controllers/Controller'
+import { ShaderP3_C3_Point } from './gl/shaders/ShaderP3_C3_Point'
+import { MouseButton } from './gl/controllers/details/MouseButton'
+import { FLOAT32_NUM_BYTES } from './gl/buffers/sizeof'
 
 // next steps:
 // [ ] update vertex buffer
@@ -43,6 +46,8 @@ async function main() {
     // await cubeTexture.load(device.device!!, "Di-3d.png")
 
     const positions = new PositionBuffer(device, cube_XYZ)
+    const edgeColors = new Float32Array(3 * 8)
+    const edgeColorBuffer = new ColorBuffer(device, edgeColors)
     const colors = new ColorBuffer(device, cube_RGB)
     const indices = new IndexBuffer(device, cube_IDX)
 
@@ -50,6 +55,7 @@ async function main() {
     const posNorm = new VertexBuffer(device, cube_P3N3)
 
     const shaderPickPoint = new ShaderP3_PickPoint(device, context)
+    const shaderPoint = new ShaderP3_C3_Point(device, context)
     const shaderMono = new Shader_P3(device, context)
     const shaderColor = new ShaderP3_C3_IDX(device, context)
     const shaderShadedTexture = new ShaderP4N4T2(device, context)
@@ -57,9 +63,14 @@ async function main() {
 
     mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -6))
 
+    let updateEdgeColors = false
+
     context.pushController(new class extends Controller {
         override async pointerdown(ev: PointerEvent) {
-     
+            if (ev.button !== MouseButton.LEFT) {
+                return
+            }
+
             const pickTexture = new Texture()
             pickTexture.texture = device.device.createTexture({
                 label: "pick texture",
@@ -117,13 +128,25 @@ async function main() {
             const x = Math.round(ev.x)
             const y = Math.round(ev.y)
             const idx = x * 4 + y * bytesPerRow
-            console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[idx]}, ${rgba[idx + 1]}, ${rgba[idx + 2]}`)
+
+            const idx2 = rgba[idx] + rgba[idx + 1] * 256 + rgba[idx + 2] * 256 * 256 - 1
+            const idx3 = idx2 * 3
+            console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[idx]}, ${rgba[idx + 1]}, ${rgba[idx + 2]}, idx2=${idx2}, idx3=${idx3}`)
 
             readbackBuffer.unmap()
             pickTexture.texture.destroy()
 
             context.presentationFormat = pf
             context.backgroundColor = cl
+
+            if (idx2 >= 0) {
+                const v = edgeColors[idx3] ? 0 : 1
+                edgeColors[idx3] = v
+                edgeColors[idx3 + 1] = v
+                edgeColors[idx3 + 2] = v
+                device.device.queue.writeBuffer(edgeColorBuffer.buffer, FLOAT32_NUM_BYTES * idx3, edgeColors, idx3, 3)
+                context.invalidate()
+            }
         }
     })
 
@@ -142,7 +165,13 @@ async function main() {
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
-        shaderPickPoint.draw(pass, context, modelUniforms, positions)
+        // if (updateEdgeColors) {
+        //     device.device.queue.writeBuffer(edgeColorBuffer.buffer, 0, edgeColors) // TODO: write just the color
+        //     updateEdgeColors = false
+        // }
+
+        // shaderPickPoint.draw(pass, context, modelUniforms, positions)
+        shaderPoint.draw(pass, context, modelUniforms, positions, edgeColorBuffer)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
         shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])

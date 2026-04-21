@@ -1,3 +1,4 @@
+import { ColorBuffer } from "../buffers/ColorBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { PositionBuffer } from "../buffers/PositionBuffer"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
@@ -6,7 +7,7 @@ import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
-export class ShaderP3_PickPoint extends Shader {
+export class ShaderP3_C3_Point extends Shader {
     pipeline: GPURenderPipeline
     pickUniform: Uniform
     constructor(device: Device,
@@ -21,6 +22,12 @@ export class ShaderP3_PickPoint extends Shader {
                     stepMode: 'instance',
                     attributes: [
                         { shaderLocation: 0, ...PositionBuffer.position },
+                    ]
+                }, {
+                    arrayStride: ColorBuffer.bytesPerVertex,
+                    stepMode: 'instance',
+                    attributes: [
+                        { shaderLocation: 1, ...ColorBuffer.color },
                     ]
                 }],
                 module: this.module
@@ -39,7 +46,7 @@ export class ShaderP3_PickPoint extends Shader {
 
         this.pickUniform = new Uniform(device.device, ["vec2f"])
     }
-    
+
     bindGroup?: GPUBindGroup
     private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
         if (this.bindGroup === undefined) {
@@ -58,7 +65,8 @@ export class ShaderP3_PickPoint extends Shader {
     draw(pass: GPURenderPassEncoder,
         context: CanvasContext,
         modelUniforms: ModelUniform,
-        positions: PositionBuffer
+        positions: PositionBuffer,
+        colors: ColorBuffer
     ) {
         const pickSize = 30
         this.pickUniform.values[0][0] = pickSize / context.canvas.clientWidth
@@ -68,6 +76,7 @@ export class ShaderP3_PickPoint extends Shader {
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
         pass.setVertexBuffer(0, positions.buffer)
+        pass.setVertexBuffer(1, colors.buffer)
         pass.draw(6, positions.buffer.size / 3 / FLOAT32_NUM_BYTES)
     }
 }
@@ -95,6 +104,7 @@ const code = /* wgsl */ `
     @vertex
     fn vertex_main(
         @location(0) vert: vec3f,
+        @location(1) color: vec3f,
         @builtin(vertex_index) vNdx: u32,
         @builtin(instance_index) iNdx: u32,
     ) -> VSOutput {
@@ -109,8 +119,8 @@ const code = /* wgsl */ `
         let pointPos = vec4f(rectangle[vNdx] * pickUniforms.scale * indexPos.w, 0, 0) + indexPos;
         // encode instance index as rgb color
         // TODO: do it proper
-        let color = vec4f(f32(iNdx + 1) / 255, 0, 0, 1);
-        return VSOutput(pointPos, color);
+        // let color = vec4f(f32(iNdx) / 8.0, 0, 0, 1);
+        return VSOutput(pointPos, vec4(color, 1));
     }
 
     @fragment

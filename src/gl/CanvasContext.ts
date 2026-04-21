@@ -191,7 +191,7 @@ export class CanvasContext {
     }
 
     adjustSizeCore(pixelWidth: number, pixelHeight: number) {
-        console.log(`adjust canvas size: canvas.width=${this.canvas.width}, pixelWidth=${pixelWidth}; canvas.height=${this.canvas.height}, pixelHeight=${pixelHeight}`)
+        // console.log(`adjust canvas size: canvas.width=${this.canvas.width}, pixelWidth=${pixelWidth}; canvas.height=${this.canvas.height}, pixelHeight=${pixelHeight}`)
         this.canvas.width = pixelWidth
         this.canvas.height = pixelHeight
 
