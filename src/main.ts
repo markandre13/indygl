@@ -14,7 +14,7 @@ import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { cube_P3N3, cube_P4N4T2 } from './geom-cube'
 import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
-import { ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
+import { PICK_SIZE, ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
 import { BasicMode } from './gl/controllers/BasicController'
 import { Shader_P3 } from './gl/shaders/Shader_P3'
 import { Controller } from './gl/controllers/Controller'
@@ -125,14 +125,37 @@ async function main() {
             const data = readbackBuffer.getMappedRange()
             const rgba = new Uint8Array(data)
 
-            const x = Math.round(ev.x)
-            const y = Math.round(ev.y)
-            const pickIdx = x * 4 + y * bytesPerRow
+            //
+            // find edge closest to pointer position
+            //
+            let edgeIdx: number = 0
+            let distance = Number.MAX_VALUE
+            
+            let cx = Math.round(ev.x)
+            let cy = Math.round(ev.y) - 2 // FIXME
+            let left = Math.max(0, cx - PICK_SIZE)
+            let top = Math.max(0, cy - PICK_SIZE)
+            let right = Math.min(cx + PICK_SIZE, canvas.width)
+            let bottom = Math.min(cy + PICK_SIZE, canvas.height)
+            for (let y = top; y < bottom; ++y) {
+                for (let x = left; x < right; ++x) {
+                    const pickIdx = x * 4 + y * bytesPerRow
+                    const edge = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16)
+                    if (edge > 0) {
+                        const d = Math.sqrt( Math.pow(cx - x, 2) + Math.pow(cy - y, 2) )
+                        if (d < distance) {
+                            distance = d
+                            edgeIdx = edge
+                        }
+                    }
+                }
+            }
+            --edgeIdx
 
             // TODO: search area around mouse click!!!
-            const edgeIdx = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16) - 1
+            // const edgeIdx = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16) - 1
             const edgeColorIdx = edgeIdx * 3
-            console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[pickIdx]}, ${rgba[pickIdx + 1]}, ${rgba[pickIdx + 2]}, idx2=${edgeIdx}, idx3=${edgeColorIdx}`)
+            // console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[pickIdx]}, ${rgba[pickIdx + 1]}, ${rgba[pickIdx + 2]}, idx2=${edgeIdx}, idx3=${edgeColorIdx}`)
 
             readbackBuffer.unmap()
             pickTexture.texture.destroy()
@@ -140,12 +163,16 @@ async function main() {
             context.presentationFormat = pf
             context.backgroundColor = cl
 
+
             if (edgeIdx >= 0) {
+                // toggle color of edge
+
                 const v = edgeColors[edgeColorIdx] ? 0 : 1
                 edgeColors[edgeColorIdx] = v
                 edgeColors[edgeColorIdx + 1] = v
                 edgeColors[edgeColorIdx + 2] = v
                 device.device.queue.writeBuffer(edgeColorBuffer.buffer, FLOAT32_NUM_BYTES * edgeColorIdx, edgeColors, edgeColorIdx, 3)
+
                 context.invalidate()
             }
         }

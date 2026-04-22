@@ -6,6 +6,8 @@ import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
+export const PICK_SIZE = 5
+
 export class ShaderP3_PickPoint extends Shader {
     pipeline: GPURenderPipeline
     pickUniform: Uniform
@@ -60,9 +62,8 @@ export class ShaderP3_PickPoint extends Shader {
         modelUniforms: ModelUniform,
         positions: PositionBuffer
     ) {
-        const pickSize = 30
-        this.pickUniform.values[0][0] = pickSize / context.canvas.clientWidth
-        this.pickUniform.values[0][1] = pickSize / context.canvas.clientHeight
+        this.pickUniform.values[0][0] = PICK_SIZE / context.canvas.clientWidth
+        this.pickUniform.values[0][1] = PICK_SIZE / context.canvas.clientHeight
         this.pickUniform.writeTo(this.device)
 
         pass.setPipeline(this.pipeline)
