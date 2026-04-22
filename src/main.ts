@@ -9,18 +9,21 @@ import { IndexBuffer } from './gl/buffers/IndexBuffer'
 import { PositionBuffer } from './gl/buffers/PositionBuffer'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
 import { ShaderP3_C3_IDX } from './gl/shaders/ShaderP3_C3_IDX'
-import { cube_IDX, cube_RGB, cube_XYZ } from './cube'
+import { cube_IDX, cube_quads, cube_RGB, cube_XYZ } from './cube'
 import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { cube_P3N3, cube_P4N4T2 } from './geom-cube'
 import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
 import { PICK_SIZE, ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
 import { BasicMode } from './gl/controllers/BasicController'
-import { Shader_P3 } from './gl/shaders/Shader_P3'
+import { ShaderP3_IDX } from './gl/shaders/ShaderP3_IDX'
 import { Controller } from './gl/controllers/Controller'
 import { ShaderP3_C3_Point } from './gl/shaders/ShaderP3_C3_Point'
 import { MouseButton } from './gl/controllers/details/MouseButton'
 import { FLOAT32_NUM_BYTES } from './gl/buffers/sizeof'
+import { quadsToFlatTriangles } from './gl/algorithms/quadsToFlatTriangles'
+import { ShaderP3_N3_IDX } from './gl/shaders/ShaderP3_N3_IDX'
+import { ShaderP3 } from './gl/shaders/ShaderP3'
 
 // next steps:
 // [ ] update vertex buffer
@@ -45,25 +48,32 @@ async function main() {
     // const cubeTexture = new Texture()
     // await cubeTexture.load(device.device!!, "Di-3d.png")
 
-    const positions = new PositionBuffer(device, cube_XYZ)
-    const edgeColors = new Float32Array(3 * 8)
+    const cube = quadsToFlatTriangles(cube_XYZ, cube_quads)
+    const positions = new PositionBuffer(device, cube.positions)
+    const normals = new VertexBuffer(device, cube.normals)
+    const indices = new IndexBuffer(device, cube.indices)
+
+
+    // const positions = new PositionBuffer(device, cube_XYZ)
+    const edgeColors = new Float32Array(3 * cube.positions.length)
     const edgeColorBuffer = new ColorBuffer(device, edgeColors)
-    const colors = new ColorBuffer(device, cube_RGB)
-    const indices = new IndexBuffer(device, cube_IDX)
+    // const colors = new ColorBuffer(device, cube_RGB)
+    // const indices = new IndexBuffer(device, cube_IDX)
 
-    const posColUv = new VertexBuffer(device, cube_P4N4T2)
-    const posNorm = new VertexBuffer(device, cube_P3N3)
+    // const posColUv = new VertexBuffer(device, cube_P4N4T2)
+    // const posNorm = new VertexBuffer(device, cube_P3N3)
 
-    const shaderPickPoint = new ShaderP3_PickPoint(device, context)
+    const shaderShadedMono = new ShaderP3_N3_IDX(device, context)
+    // const shaderPickPoint = new ShaderP3_PickPoint(device, context)
     const shaderPoint = new ShaderP3_C3_Point(device, context)
-    const shaderMono = new Shader_P3(device, context)
-    const shaderColor = new ShaderP3_C3_IDX(device, context)
-    const shaderShadedTexture = new ShaderP4N4T2(device, context)
-    const shaderShadedMono = new ShaderP3N3(device, context)
+    // const shaderMono = new Shader_P3(device, context)
+    // const shaderColor = new ShaderP3_C3_IDX(device, context)
+    // const shaderShadedTexture = new ShaderP4N4T2(device, context)
+    // const shaderShadedMono = new ShaderP3N3(device, context)
+    // const shaderX = new ShaderP3_IDX(device, context)
+
 
     mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -6))
-
-    let updateEdgeColors = false
 
     context.pushController(new class extends Controller {
         override async pointerdown(ev: PointerEvent) {
@@ -94,9 +104,9 @@ async function main() {
             const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
 
             const shader0 = new ShaderP3_PickPoint(device, context)
-            const shader1 = new ShaderP3N3(device, context)
+            const shader1 = new ShaderP3_IDX(device, context)
             shader0.draw(pass, context, modelUniforms, positions)
-            shader1.draw(pass, context, modelUniforms, posNorm, [0, 0, 0, 1])
+            shader1.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
 
             pass.end()
 
@@ -130,7 +140,7 @@ async function main() {
             //
             let edgeIdx: number = 0
             let distance = Number.MAX_VALUE
-            
+
             let cx = Math.round(ev.x)
             let cy = Math.round(ev.y) - 2 // FIXME
             let left = Math.max(0, cx - PICK_SIZE)
@@ -142,7 +152,7 @@ async function main() {
                     const pickIdx = x * 4 + y * bytesPerRow
                     const edge = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16)
                     if (edge > 0) {
-                        const d = Math.sqrt( Math.pow(cx - x, 2) + Math.pow(cy - y, 2) )
+                        const d = Math.sqrt(Math.pow(cx - x, 2) + Math.pow(cy - y, 2))
                         if (d < distance) {
                             distance = d
                             edgeIdx = edge
@@ -162,7 +172,6 @@ async function main() {
 
             context.presentationFormat = pf
             context.backgroundColor = cl
-
 
             if (edgeIdx >= 0) {
                 // toggle color of edge
@@ -193,26 +202,19 @@ async function main() {
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
-        // if (updateEdgeColors) {
-        //     device.device.queue.writeBuffer(edgeColorBuffer.buffer, 0, edgeColors) // TODO: write just the color
-        //     updateEdgeColors = false
-        // }
-
         // shaderPickPoint.draw(pass, context, modelUniforms, positions)
         shaderPoint.draw(pass, context, modelUniforms, positions, edgeColorBuffer)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
-        shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
+        // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
         // shaderMono.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
+        shaderShadedMono.draw(pass, context, modelUniforms, positions, normals, indices, [0, 1, 0, 1])
+        // shaderX.draw(pass, context, modelUniforms, positions, indices, [0, 0, 1, 1])
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
         device.device.queue.submit([commandBuffer])
-
-        // context.invalidate()
-        // requestAnimationFrame(frame)
     }
-    // requestAnimationFrame(frame)
 }
 
 main()

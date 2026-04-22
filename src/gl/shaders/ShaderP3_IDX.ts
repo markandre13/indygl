@@ -6,8 +6,7 @@ import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
-
-export class Shader_P3 extends Shader {
+export class ShaderP3_IDX extends Shader {
     pipeline: GPURenderPipeline
     colorUniform: ColorUniform
     constructor(device: Device,
