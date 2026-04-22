@@ -16,7 +16,7 @@ import { cube_P3N3, cube_P4N4T2 } from './geom-cube'
 import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
 import { PICK_SIZE, ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
 import { BasicMode } from './gl/controllers/BasicController'
-import { ShaderP3_IDX } from './gl/shaders/ShaderP3_IDX'
+import { ShaderP3_IDX_LineList } from './gl/shaders/ShaderP3_IDX_LineList'
 import { Controller } from './gl/controllers/Controller'
 import { ShaderP3_C3_Point } from './gl/shaders/ShaderP3_C3_Point'
 import { MouseButton } from './gl/controllers/details/MouseButton'
@@ -24,6 +24,7 @@ import { FLOAT32_NUM_BYTES } from './gl/buffers/sizeof'
 import { quadsToFlatTriangles } from './gl/algorithms/quadsToFlatTriangles'
 import { ShaderP3_N3_IDX } from './gl/shaders/ShaderP3_N3_IDX'
 import { ShaderP3 } from './gl/shaders/ShaderP3'
+import { quadsToEdges } from './gl/algorithms/quadsToEdges'
 
 // next steps:
 // [ ] update vertex buffer
@@ -49,11 +50,14 @@ async function main() {
     // await cubeTexture.load(device.device!!, "Di-3d.png")
 
     const cube = quadsToFlatTriangles(cube_XYZ, cube_quads)
-    const positions = new PositionBuffer(device, cube.positions)
+    const edges = quadsToEdges(cube_quads)
+    const edgePositions = new PositionBuffer(device, cube_XYZ)
+
+    const edgeIndices = new IndexBuffer(device, edges)
+    const positions = new PositionBuffer(device, cube.positions)  // FIXME: quadsToFlatTriangles() should return suitable positions
     const normals = new VertexBuffer(device, cube.normals)
     const indices = new IndexBuffer(device, cube.indices)
-
-
+  
     // const positions = new PositionBuffer(device, cube_XYZ)
     const edgeColors = new Float32Array(3 * cube.positions.length)
     const edgeColorBuffer = new ColorBuffer(device, edgeColors)
@@ -70,8 +74,7 @@ async function main() {
     // const shaderColor = new ShaderP3_C3_IDX(device, context)
     // const shaderShadedTexture = new ShaderP4N4T2(device, context)
     // const shaderShadedMono = new ShaderP3N3(device, context)
-    // const shaderX = new ShaderP3_IDX(device, context)
-
+    const shaderX = new ShaderP3_IDX_LineList(device, context)
 
     mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -6))
 
@@ -104,7 +107,7 @@ async function main() {
             const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
 
             const shader0 = new ShaderP3_PickPoint(device, context)
-            const shader1 = new ShaderP3_IDX(device, context)
+            const shader1 = new ShaderP3_IDX_LineList(device, context)
             shader0.draw(pass, context, modelUniforms, positions)
             shader1.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
 
@@ -209,7 +212,7 @@ async function main() {
         // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
         // shaderMono.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
         shaderShadedMono.draw(pass, context, modelUniforms, positions, normals, indices, [0, 1, 0, 1])
-        // shaderX.draw(pass, context, modelUniforms, positions, indices, [0, 0, 1, 1])
+        shaderX.draw(pass, context, modelUniforms, edgePositions, edgeIndices, [0, 0, 0, 1])
 
         pass.end()
         const commandBuffer = commandEncoder.finish()

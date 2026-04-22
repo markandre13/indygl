@@ -6,7 +6,7 @@ import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
-export class ShaderP3_IDX extends Shader {
+export class ShaderP3_IDX_LineList extends Shader {
     pipeline: GPURenderPipeline
     colorUniform: ColorUniform
     constructor(device: Device,
@@ -30,12 +30,12 @@ export class ShaderP3_IDX extends Shader {
                 targets: [{ format: context.presentationFormat }]
             },
             primitive: {
-                topology: 'triangle-list',
+                topology: 'line-list',
                 cullMode: 'none',
             },
             depthStencil: {
                 depthWriteEnabled: true,
-                depthCompare: 'less',
+                depthCompare: 'less-equal',
                 format: context.depthTextureFormat,
             },
         }
