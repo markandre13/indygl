@@ -1,4 +1,4 @@
-import { ColorBuffer } from "../buffers/ColorBuffer"
+import { ColorUniform } from "../buffers/ColorUniform"
 import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { PositionBuffer } from "../buffers/PositionBuffer"
@@ -6,8 +6,9 @@ import type { CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
-export class ShaderP3_C3_IDX extends Shader {
+export class ShaderP3_IDX extends Shader {
     pipeline: GPURenderPipeline
+    colorUniform: ColorUniform
     constructor(device: Device,
         context: CanvasContext,
         cullMode: GPUCullMode | undefined = "back",
@@ -15,6 +16,7 @@ export class ShaderP3_C3_IDX extends Shader {
         depthCompare: GPUCompareFunction | undefined = 'less'
     ) {
         super(device, code)
+        this.colorUniform = new ColorUniform(device)
         const pipelineDef: GPURenderPipelineDescriptor = {
             layout: 'auto',
             vertex: {
@@ -22,11 +24,6 @@ export class ShaderP3_C3_IDX extends Shader {
                     arrayStride: PositionBuffer.bytesPerVertex,
                     attributes: [
                         { shaderLocation: 0, ...PositionBuffer.position },
-                    ]
-                }, {
-                    arrayStride: ColorBuffer.bytesPerVertex,
-                    attributes: [
-                        { shaderLocation: 1, ...ColorBuffer.color },
                     ]
                 }],
                 module: this.module
@@ -47,7 +44,7 @@ export class ShaderP3_C3_IDX extends Shader {
         }
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
-
+    
     bindGroup?: GPUBindGroup
     private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
         if (this.bindGroup === undefined) {
@@ -55,7 +52,8 @@ export class ShaderP3_C3_IDX extends Shader {
                 layout: this.pipeline.getBindGroupLayout(0),
                 entries: [
                     { binding: 0, resource: context.sceneUniforms.buffer },
-                    { binding: 1, resource: modelUniforms.buffer }
+                    { binding: 1, resource: modelUniforms.buffer },
+                    { binding: 2, resource: this.colorUniform.buffer }
                 ],
             })
         }
@@ -66,13 +64,15 @@ export class ShaderP3_C3_IDX extends Shader {
         context: CanvasContext,
         modelUniforms: ModelUniform,
         positions: PositionBuffer,
-        colors: ColorBuffer,
-        indices: IndexBuffer
+        indices: IndexBuffer,
+        rgba: ArrayLike<number>
     ) {
+        this.colorUniform.rgba = rgba
+        this.colorUniform.writeTo(this.device)
+
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
         pass.setVertexBuffer(0, positions.buffer)
-        pass.setVertexBuffer(1, colors.buffer)
         pass.setIndexBuffer(indices.buffer, 'uint32')
         pass.drawIndexed(indices.length)
     }
@@ -86,27 +86,29 @@ const code = /* wgsl */ `
         uModelViewMatrix: mat4x4f,
         uNormalMatrix: mat4x4f,
     };
+    struct ColorUniforms {
+        uColor: vec4f
+    };
     @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
     @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
+    @group(0) @binding(2) var<uniform> colorUniforms: ColorUniforms;
 
     struct Vertex2Fragment {
-        @builtin(position) Position: vec4f,
-        @location(0) rgb: vec3f
+        @builtin(position) Position: vec4f
     }
 
     @vertex
     fn vertex_main(
-        @location(0) position: vec3f,
-        @location(1) rgb: vec3f
+        @location(0) position: vec3f
     ) -> Vertex2Fragment {
         let pos = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(position, 1);
-        return Vertex2Fragment(pos, rgb);
+        return Vertex2Fragment(pos);
     }
 
     @fragment
     fn fragment_main(
         vin: Vertex2Fragment
     ) -> @location(0) vec4f {
-        return vec4f(vin.rgb, 1);
+        return colorUniforms.uColor;
     }
 `

@@ -26,6 +26,7 @@ import { ShaderP3_N3_IDX } from './gl/shaders/ShaderP3_N3_IDX'
 import { PICK_SIZE, ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
 import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 import { ShaderP3_IDX } from './gl/shaders/ShaderP3_IDX'
+import { ShaderP3_C3_IDX_LineList } from './gl/shaders/ShaderP3_C3_IDX_LineList'
 
 // next steps:
 // [ ] update vertex buffer
@@ -69,12 +70,12 @@ async function main() {
 
     const shaderShadedMono = new ShaderP3_N3_IDX(device, context)
     // const shaderPickPoint = new ShaderP3_PickPoint(device, context)
-    const shaderPoints = new ShaderP3_C3_Point(device, context)
+    const shaderPickPoints = new ShaderP3_C3_Point(device, context)
     // const shaderMono = new Shader_P3(device, context)
     // const shaderColor = new ShaderP3_C3_IDX(device, context)
     // const shaderShadedTexture = new ShaderP4N4T2(device, context)
     // const shaderShadedMono = new ShaderP3N3(device, context)
-    const shaderLines = new ShaderP3_IDX_LineList(device, context)
+    const shaderLines = new ShaderP3_C3_IDX_LineList(device, context) // need ShaderP3_C3_IDX_LineList
 
     mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -6))
 
@@ -103,13 +104,14 @@ async function main() {
             context.presentationFormat = pickTexture.texture.format
             context.backgroundColor = [0, 0, 0, 1]
 
+            const shaderPickPoints = new ShaderP3_PickPoint(device, context)
+            const shaderPickFaces = new ShaderP3_IDX(device, context)
+
             const commandEncoder = device.device!.createCommandEncoder()
             const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
 
-            const shaderPickPoint = new ShaderP3_PickPoint(device, context)
-            const shader1 = new ShaderP3_IDX(device, context) // FIXME: this is wrong, needs to be triangles ShaderP3_IDX
-            shaderPickPoint.draw(pass, context, modelUniforms, positions, 0, cube_XYZ.length / 3)
-            shader1.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
+            shaderPickPoints.draw(pass, context, modelUniforms, positions, 0, cube_XYZ.length / 3)
+            shaderPickFaces.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
 
             pass.end()
 
@@ -206,13 +208,13 @@ async function main() {
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
         // shaderPickPoint.draw(pass, context, modelUniforms, positions)
-        shaderPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, cube_XYZ.length / 3)
+        shaderPickPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, cube_XYZ.length / 3)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
         // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
         // shaderMono.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
         shaderShadedMono.draw(pass, context, modelUniforms, positions, normals, indices, [0, 1, 0, 1])
-        shaderLines.draw(pass, context, modelUniforms, positions, edgeIndices, [0, 0, 0, 1])
+        shaderLines.draw(pass, context, modelUniforms, positions, edgeColorBuffer, edgeIndices)
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
