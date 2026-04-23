@@ -67,7 +67,9 @@ export class ShaderP3_C3_Point extends Shader {
         context: CanvasContext,
         modelUniforms: ModelUniform,
         positions: PositionBuffer,
-        colors: ColorBuffer
+        colors: ColorBuffer,
+        offset?: number,
+        length?: number
     ) {
         this.pickUniform.values[0][0] = PICK_SIZE / context.canvas.clientWidth
         this.pickUniform.values[0][1] = PICK_SIZE / context.canvas.clientHeight
@@ -77,7 +79,9 @@ export class ShaderP3_C3_Point extends Shader {
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
         pass.setVertexBuffer(0, positions.buffer)
         pass.setVertexBuffer(1, colors.buffer)
-        pass.draw(6, positions.buffer.size / 3 / FLOAT32_NUM_BYTES)
+        const firstInstance = offset ? offset : 0
+        const instanceCount = length ? length : (positions.buffer.size / 3 / FLOAT32_NUM_BYTES) - firstInstance
+        pass.draw(6, instanceCount, 0, firstInstance)
     }
 }
 

@@ -60,7 +60,9 @@ export class ShaderP3_PickPoint extends Shader {
     draw(pass: GPURenderPassEncoder,
         context: CanvasContext,
         modelUniforms: ModelUniform,
-        positions: PositionBuffer
+        positions: PositionBuffer,
+        offset?: number,
+        length?: number
     ) {
         this.pickUniform.values[0][0] = PICK_SIZE / context.canvas.clientWidth
         this.pickUniform.values[0][1] = PICK_SIZE / context.canvas.clientHeight
@@ -69,7 +71,9 @@ export class ShaderP3_PickPoint extends Shader {
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
         pass.setVertexBuffer(0, positions.buffer)
-        pass.draw(6, positions.buffer.size / 3 / FLOAT32_NUM_BYTES)
+        const firstInstance = offset ? offset : 0
+        const instanceCount = length ? length : (positions.buffer.size / 3 / FLOAT32_NUM_BYTES) - firstInstance
+        pass.draw(6, instanceCount, 0, firstInstance)
     }
 }
 

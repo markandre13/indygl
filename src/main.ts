@@ -58,7 +58,7 @@ async function main() {
     const edgeIndices = new IndexBuffer(device, edges)
   
     // const positions = new PositionBuffer(device, cube_XYZ)
-    const edgeColors = new Float32Array(3 * cube.positions.length)
+    const edgeColors = new Float32Array(3 * cube_XYZ.length)
     const edgeColorBuffer = new ColorBuffer(device, edgeColors)
     // const colors = new ColorBuffer(device, cube_RGB)
     // const indices = new IndexBuffer(device, cube_IDX)
@@ -105,9 +105,9 @@ async function main() {
             const commandEncoder = device.device!.createCommandEncoder()
             const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
 
-            const shader0 = new ShaderP3_PickPoint(device, context)
-            const shader1 = new ShaderP3_IDX_LineList(device, context)
-            shader0.draw(pass, context, modelUniforms, positions)
+            const shaderPickPoint = new ShaderP3_PickPoint(device, context)
+            const shader1 = new ShaderP3_IDX_LineList(device, context) // FIXME: this is wrong, needs to be triangles ShaderP3_IDX
+            shaderPickPoint.draw(pass, context, modelUniforms, positions, 0, cube_XYZ.length / 3)
             shader1.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
 
             pass.end()
@@ -205,8 +205,7 @@ async function main() {
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
         // shaderPickPoint.draw(pass, context, modelUniforms, positions)
-        // TODO: only draw the 1st 8 points of positions!!!
-        shaderPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer)
+        shaderPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, cube_XYZ.length / 3)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
         // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
