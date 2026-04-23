@@ -25,6 +25,7 @@ import { ShaderP3_IDX_LineList } from './gl/shaders/ShaderP3_IDX_LineList'
 import { ShaderP3_N3_IDX } from './gl/shaders/ShaderP3_N3_IDX'
 import { PICK_SIZE, ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
 import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
+import { ShaderP3_IDX } from './gl/shaders/ShaderP3_IDX'
 
 // next steps:
 // [ ] update vertex buffer
@@ -106,7 +107,7 @@ async function main() {
             const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
 
             const shaderPickPoint = new ShaderP3_PickPoint(device, context)
-            const shader1 = new ShaderP3_IDX_LineList(device, context) // FIXME: this is wrong, needs to be triangles ShaderP3_IDX
+            const shader1 = new ShaderP3_IDX(device, context) // FIXME: this is wrong, needs to be triangles ShaderP3_IDX
             shaderPickPoint.draw(pass, context, modelUniforms, positions, 0, cube_XYZ.length / 3)
             shader1.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
 
