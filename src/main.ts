@@ -1,30 +1,30 @@
 // import { cubeData, FLOAT32_SIZE, type VertexData } from './geom-cube'
 
 import { mat4, vec3 } from 'gl-matrix'
-import { Device } from './gl/Device'
-import { CanvasContext } from './gl/CanvasContext'
-import { ModelUniform } from './gl/buffers/ModelUniform'
-import { Texture } from './gl/buffers/Texture'
-import { IndexBuffer } from './gl/buffers/IndexBuffer'
-import { PositionBuffer } from './gl/buffers/PositionBuffer'
-import { ColorBuffer } from './gl/buffers/ColorBuffer'
-import { ShaderP3_C3_IDX } from './gl/shaders/ShaderP3_C3_IDX'
 import { cube_IDX, cube_quads, cube_RGB, cube_XYZ } from './cube'
-import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
-import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { cube_P3N3, cube_P4N4T2 } from './geom-cube'
-import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
-import { PICK_SIZE, ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
-import { BasicMode } from './gl/controllers/BasicController'
-import { ShaderP3_IDX_LineList } from './gl/shaders/ShaderP3_IDX_LineList'
-import { Controller } from './gl/controllers/Controller'
-import { ShaderP3_C3_Point } from './gl/shaders/ShaderP3_C3_Point'
-import { MouseButton } from './gl/controllers/details/MouseButton'
-import { FLOAT32_NUM_BYTES } from './gl/buffers/sizeof'
-import { quadsToFlatTriangles } from './gl/algorithms/quadsToFlatTriangles'
-import { ShaderP3_N3_IDX } from './gl/shaders/ShaderP3_N3_IDX'
-import { ShaderP3 } from './gl/shaders/ShaderP3'
+import { CanvasContext } from './gl/CanvasContext'
+import { Device } from './gl/Device'
 import { quadsToEdges } from './gl/algorithms/quadsToEdges'
+import { quadsToFlatTriangles } from './gl/algorithms/quadsToFlatTriangles'
+import { ColorBuffer } from './gl/buffers/ColorBuffer'
+import { IndexBuffer } from './gl/buffers/IndexBuffer'
+import { ModelUniform } from './gl/buffers/ModelUniform'
+import { PositionBuffer } from './gl/buffers/PositionBuffer'
+import { Texture } from './gl/buffers/Texture'
+import { VertexBuffer } from './gl/buffers/VertexBuffer'
+import { FLOAT32_NUM_BYTES } from './gl/buffers/sizeof'
+import { BasicMode } from './gl/controllers/BasicController'
+import { Controller } from './gl/controllers/Controller'
+import { MouseButton } from './gl/controllers/details/MouseButton'
+import { ShaderP3 } from './gl/shaders/ShaderP3'
+import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
+import { ShaderP3_C3_IDX } from './gl/shaders/ShaderP3_C3_IDX'
+import { ShaderP3_C3_Point } from './gl/shaders/ShaderP3_C3_Point'
+import { ShaderP3_IDX_LineList } from './gl/shaders/ShaderP3_IDX_LineList'
+import { ShaderP3_N3_IDX } from './gl/shaders/ShaderP3_N3_IDX'
+import { PICK_SIZE, ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
+import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 
 // next steps:
 // [ ] update vertex buffer
@@ -50,13 +50,12 @@ async function main() {
     // await cubeTexture.load(device.device!!, "Di-3d.png")
 
     const cube = quadsToFlatTriangles(cube_XYZ, cube_quads)
-    const edges = quadsToEdges(cube_quads)
-    const edgePositions = new PositionBuffer(device, cube_XYZ)
-
-    const edgeIndices = new IndexBuffer(device, edges)
-    const positions = new PositionBuffer(device, cube.positions)  // FIXME: quadsToFlatTriangles() should return suitable positions
+    const positions = new PositionBuffer(device, cube.positions)
     const normals = new VertexBuffer(device, cube.normals)
     const indices = new IndexBuffer(device, cube.indices)
+
+    const edges = quadsToEdges(cube_quads)
+    const edgeIndices = new IndexBuffer(device, edges)
   
     // const positions = new PositionBuffer(device, cube_XYZ)
     const edgeColors = new Float32Array(3 * cube.positions.length)
@@ -69,12 +68,12 @@ async function main() {
 
     const shaderShadedMono = new ShaderP3_N3_IDX(device, context)
     // const shaderPickPoint = new ShaderP3_PickPoint(device, context)
-    const shaderPoint = new ShaderP3_C3_Point(device, context)
+    const shaderPoints = new ShaderP3_C3_Point(device, context)
     // const shaderMono = new Shader_P3(device, context)
     // const shaderColor = new ShaderP3_C3_IDX(device, context)
     // const shaderShadedTexture = new ShaderP4N4T2(device, context)
     // const shaderShadedMono = new ShaderP3N3(device, context)
-    const shaderX = new ShaderP3_IDX_LineList(device, context)
+    const shaderLines = new ShaderP3_IDX_LineList(device, context)
 
     mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -6))
 
@@ -206,13 +205,14 @@ async function main() {
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
         // shaderPickPoint.draw(pass, context, modelUniforms, positions)
-        shaderPoint.draw(pass, context, modelUniforms, positions, edgeColorBuffer)
+        // TODO: only draw the 1st 8 points of positions!!!
+        shaderPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
         // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
         // shaderMono.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
         shaderShadedMono.draw(pass, context, modelUniforms, positions, normals, indices, [0, 1, 0, 1])
-        shaderX.draw(pass, context, modelUniforms, edgePositions, edgeIndices, [0, 0, 0, 1])
+        shaderLines.draw(pass, context, modelUniforms, positions, edgeIndices, [0, 0, 0, 1])
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
