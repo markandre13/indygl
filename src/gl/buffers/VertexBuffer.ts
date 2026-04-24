@@ -1,5 +1,5 @@
-import { FLOAT32_SIZE } from "../../geom-cube"
 import type { Device } from "../Device"
+import { FLOAT32_NUM_BYTES } from "./sizeof"
 
 /**
  * WebGPU vectices hold arbitrary data like position, normal, uv, color, ...
@@ -9,7 +9,7 @@ export class VertexBuffer {
     constructor(device: Device, data: ArrayLike<number>) {
         this.buffer = device.device.createBuffer({
             label: "vertexbuffer",
-            size: data.length * FLOAT32_SIZE,
+            size: data.length * FLOAT32_NUM_BYTES,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
             mappedAtCreation: true,
         })

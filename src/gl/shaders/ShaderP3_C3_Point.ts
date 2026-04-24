@@ -39,7 +39,7 @@ export class ShaderP3_C3_Point extends Shader {
             },
             depthStencil: {
                 depthWriteEnabled: true,
-                depthCompare: 'less',
+                depthCompare: 'less-equal',
                 format: context.depthTextureFormat,
             },
         }

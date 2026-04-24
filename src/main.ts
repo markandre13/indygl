@@ -1,8 +1,6 @@
 // import { cubeData, FLOAT32_SIZE, type VertexData } from './geom-cube'
 
 import { mat4, vec3 } from 'gl-matrix'
-import { cube_IDX, cube_quads, cube_RGB, cube_XYZ } from './cube'
-import { cube_P3N3, cube_P4N4T2 } from './geom-cube'
 import { CanvasContext } from './gl/CanvasContext'
 import { Device } from './gl/Device'
 import { quadsToEdges } from './gl/algorithms/quadsToEdges'
@@ -17,6 +15,7 @@ import { FLOAT32_NUM_BYTES } from './gl/buffers/sizeof'
 import { BasicMode } from './gl/controllers/BasicController'
 import { Controller } from './gl/controllers/Controller'
 import { MouseButton } from './gl/controllers/details/MouseButton'
+
 import { ShaderP3 } from './gl/shaders/ShaderP3'
 import { ShaderP3N3 } from './gl/shaders/ShaderP3N3'
 import { ShaderP3_C3_IDX } from './gl/shaders/ShaderP3_C3_IDX'
@@ -27,15 +26,42 @@ import { PICK_SIZE, ShaderP3_PickPoint } from './gl/shaders/ShaderP3_PickPoint'
 import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 import { ShaderP3_IDX } from './gl/shaders/ShaderP3_IDX'
 import { ShaderP3_C3_IDX_LineList } from './gl/shaders/ShaderP3_C3_IDX_LineList'
+import { WavefrontObj } from './gl/file/WavefrontObj'
+
+// add some ui element from blender and extend toad.js with a blender like style for that (smaller ui elements)
+// could write a screenshot test for that in toad.js too!!!
 
 // next steps:
 // [ ] update vertex buffer
-// [ ] draw lines
-// [ ] pick points
+// [X] draw lines
+// [X] pick points
 // [ ] transformation pipelines
 // [X] rotate, fly mode
 
+// for the rest: try to build something usable for the morph editor.
+// [ ] import some meshes
+
+// [ ] edit mode: mesh symmetry: x, y, z
+// [ ] select via click, circle, rectangle
+
+// mimic some more things from the blender ui:
+// [ ] wireframe, solid, 
+// [ ] x-ray
+// [ ] interaction mode: object, edit, ...
+// [ ] select mode: vertex, line, face
+// [ ] draw ground
+
 async function main() {
+    // const r = await fetch("obj/arkit/Neutral.obj")
+    // const r = await fetch("obj/mh/cube.obj")
+    const r = await fetch("obj/mh/base.obj")
+
+    if (!r.ok) {
+        console.log(`${r.status} ${r.statusText}: ${await r.text()}`)
+    }
+    const neutral = new WavefrontObj("Neutra.obj", await r.text())
+    // console.log(mesh)
+
     const canvas = document.querySelector<HTMLCanvasElement>('canvas')
     if (canvas === null) {
         throw Error("#canvas not found")
@@ -51,16 +77,25 @@ async function main() {
     // const cubeTexture = new Texture()
     // await cubeTexture.load(device.device!!, "Di-3d.png")
 
-    const cube = quadsToFlatTriangles(cube_XYZ, cube_quads)
+    // const mesh = {
+    //     positions: cube_XYZ,
+    //     quads: cube_quads
+    // }
+    const mesh = {
+        positions: neutral.xyz,
+        quads: neutral.fxyz
+    }
+
+    const cube = quadsToFlatTriangles(mesh.positions, mesh.quads)
     const positions = new PositionBuffer(device, cube.positions)
     const normals = new VertexBuffer(device, cube.normals)
     const indices = new IndexBuffer(device, cube.indices)
 
-    const edges = quadsToEdges(cube_quads)
+    const edges = quadsToEdges(mesh.quads)
     const edgeIndices = new IndexBuffer(device, edges)
   
     // const positions = new PositionBuffer(device, cube_XYZ)
-    const edgeColors = new Float32Array(3 * cube_XYZ.length)
+    const edgeColors = new Float32Array(mesh.positions.length /*3 * cube_XYZ.length*/)
     const edgeColorBuffer = new ColorBuffer(device, edgeColors)
     // const colors = new ColorBuffer(device, cube_RGB)
     // const indices = new IndexBuffer(device, cube_IDX)
@@ -77,7 +112,7 @@ async function main() {
     // const shaderShadedMono = new ShaderP3N3(device, context)
     const shaderLines = new ShaderP3_C3_IDX_LineList(device, context) // need ShaderP3_C3_IDX_LineList
 
-    mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -6))
+    mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -24))
 
     context.pushController(new class extends Controller {
         override async pointerdown(ev: PointerEvent) {
@@ -110,7 +145,7 @@ async function main() {
             const commandEncoder = device.device!.createCommandEncoder()
             const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
 
-            shaderPickPoints.draw(pass, context, modelUniforms, positions, 0, cube_XYZ.length / 3)
+            shaderPickPoints.draw(pass, context, modelUniforms, positions, 0, mesh.positions.length / 3)
             shaderPickFaces.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
 
             pass.end()
@@ -208,7 +243,7 @@ async function main() {
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
         // shaderPickPoint.draw(pass, context, modelUniforms, positions)
-        shaderPickPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, cube_XYZ.length / 3)
+        shaderPickPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, mesh.positions.length / 3)
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
         // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
