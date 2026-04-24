@@ -1,3 +1,4 @@
 # IndyGL
 
-class library on top of WebGPU to create 3D editors.
+* A class library to build 3D modeling software.
+* Uses WebGPU

@@ -19,30 +19,120 @@
         }
     </script>
     <style>
+        @font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            src: url(font/Inter.woff2)
+        }
+
         :root {
             color-scheme: light dark;
+
+            font-size: 100%;
+            text-size-adjust: none;
+            -webkit-text-size-adjust: none;
+
+            --tx-font-family: 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            --tx-font-size: calc((12/16) * 1rem);
+            /* equivalent to 12pt on paper */
+            --tx-font-size-info: calc((11/16) * 1rem);
         }
 
         html,
         body {
-            margin: 0;
             /* remove default margin */
+            margin: 0;
             /* height: 100%; */
             /* make body fill the browser window */
+            /* display: flex; */
+            /* place-content: center center; */
+        }
+
+        body {
+            /* background-color: bisque; */
+            overflow: hidden;
+        }
+
+        .menubar {
             display: flex;
-            place-content: center center;
+            background-color: #191919;
+            height: 28px;
+            /* position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 28px; */
         }
-        canvas {
-            width: 100vw;
-            height: 100vh;
-            /* max-width: 100%; */
-            /* display: block; */
+
+        .menubar>div {
+            font-family: 'Inter';
+            font-weight: 100;
+            font-size: calc((11/16) * 1rem);
+            letter-spacing: 0.05rem;
+
+            height: 22px;
+            background-color: #181818;
+            /* background-color: #202020; */
+            /* background-color: #303030; */
+            border: #202020 1px solid;
+            border-radius: 4px;
+            padding: 6px 9px 0px 9px;
         }
+
+        .toolbar {
+            display: flex;
+            background-color: #363636;
+            height: 28px;
+
+            /* position: absolute;
+            left: 0;
+            right: 0;
+            top: 28px;
+            height: 28px; */
+        }
+
+        .toolbar>div {
+            font-family: 'Inter';
+            font-weight: 100;
+            font-size: calc((11/16) * 1rem);
+            letter-spacing: 0.05rem;
+
+            background-color: #282828;
+            border: #3e3e3e3e solid 1px;
+            border-radius: 4px;
+            padding: 6px 9px 0px 9px;
+        }
+
+        /* .canvas { */
+            /* display: inline-block; */
+            /* background-color: #ccaa88;
+            border: #f00 1px solid; */
+            /* position: absolute;
+            left: 0px;
+            right: 0px;
+            top: 56px;
+            bottom: 10px; */
+        /* } */
     </style>
 </head>
 
 <body onload="run()">
-    <canvas></canvas>
+    <div style="
+        width: 100vw;
+        height: 100vh;
+        ">
+    <div class="menubar">
+        <div>File</div>
+        <div>Edit</div>
+        <div>Render</div>
+        <div>Window</div>
+        <div>Help</div>
+    </div>
+    <div class="toolbar">
+        <div>tool</div>
+    </div>
+    <canvas class="canvas"></canvas>
+    </div>
 </body>
 
 </html>

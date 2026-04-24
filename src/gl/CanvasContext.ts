@@ -27,7 +27,7 @@ export class CanvasContext {
     pushController(controller: Controller) {
         this._controllerStack.push(controller)
         this.invalidate()
-        console.log(controller.info())
+        // console.log(controller.info())
     }
     popController() {
         this._controllerStack.pop()
@@ -37,6 +37,7 @@ export class CanvasContext {
     constructor(device: Device, canvas: HTMLCanvasElement) {
         this.device = device
         this.canvas = canvas
+        this.invalidate = this.invalidate.bind(this)
 
         this.setupEventHandling(canvas)
 
@@ -214,7 +215,15 @@ export class CanvasContext {
         //
         // resize
         //
-        // new ResizeObserver(this.paint).observe(canvas)
+        // const r = new ResizeObserver((e) => {
+        //     console.log(e)
+        // })
+        // r.observe(document.body)
+        // console.log(r)
+        // window.addEventListener("resize", (e) => {console.log(e)})
+        canvas.style.width = '640px'
+        canvas.style.height = '480px'
+
 
         //
         // pointer

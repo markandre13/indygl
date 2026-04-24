@@ -27,6 +27,7 @@ import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 import { ShaderP3_IDX } from './gl/shaders/ShaderP3_IDX'
 import { ShaderP3_C3_IDX_LineList } from './gl/shaders/ShaderP3_C3_IDX_LineList'
 import { WavefrontObj } from './gl/file/WavefrontObj'
+import { SpringLayout } from './SpringLayout'
 
 // add some ui element from blender and extend toad.js with a blender like style for that (smaller ui elements)
 // could write a screenshot test for that in toad.js too!!!
@@ -52,7 +53,26 @@ import { WavefrontObj } from './gl/file/WavefrontObj'
 // [ ] draw ground
 
 async function main() {
-    // const r = await fetch("obj/arkit/Neutral.obj")
+    const menubar = document.querySelector<HTMLDivElement>('.menubar')
+    if (menubar === null) {
+        throw Error(".menubar not found")
+    }
+    const toolbar = document.querySelector<HTMLDivElement>('.toolbar')
+    if (toolbar === null) {
+        throw Error(".menubar not found")
+    }
+    const canvas = document.querySelector<HTMLCanvasElement>('canvas')
+    if (canvas === null) {
+        throw Error("#canvas not found")
+    }
+    new SpringLayout([
+        { element: menubar, where: ["top", "left", "right"] },
+        { element: toolbar, where: ["top"], which: menubar },
+        { element: toolbar, where: ["left", "right"] },
+        { element: canvas, where: ["top"], which: toolbar },
+        { element: canvas, where: ["left", "right", "bottom"] },
+    ])
+   // const r = await fetch("obj/arkit/Neutral.obj")
     // const r = await fetch("obj/mh/cube.obj")
     const r = await fetch("obj/mh/base.obj")
 
@@ -62,14 +82,12 @@ async function main() {
     const neutral = new WavefrontObj("Neutra.obj", await r.text())
     // console.log(mesh)
 
-    const canvas = document.querySelector<HTMLCanvasElement>('canvas')
-    if (canvas === null) {
-        throw Error("#canvas not found")
-    }
-
     const device = new Device()
     await device.init()
     const context = new CanvasContext(device, canvas)
+
+    new ResizeObserver(context.invalidate).observe(canvas)
+
     context.pushController(new BasicMode(context))
     const modelUniforms = new ModelUniform(device)
 
@@ -93,7 +111,7 @@ async function main() {
 
     const edges = quadsToEdges(mesh.quads)
     const edgeIndices = new IndexBuffer(device, edges)
-  
+
     // const positions = new PositionBuffer(device, cube_XYZ)
     const edgeColors = new Float32Array(mesh.positions.length /*3 * cube_XYZ.length*/)
     const edgeColorBuffer = new ColorBuffer(device, edgeColors)
