@@ -27,9 +27,10 @@ const Side = ["TOP", "BOTTOM", "LEFT", "RIGHT"]
 
 class FormNode {
     element: HTMLElement = undefined as any
+    shape!: DOMRect
     how: How[] = [How.NONE, How.NONE, How.NONE, How.NONE]
     which: (HTMLElement | undefined)[] = [undefined, undefined, undefined, undefined]
-    dist: number[] = [0, 0, 0, 0]
+    dist: number[] = [0, 0, 0, 0] // nope, that's what margin is for
     coord: number[] = [0, 0, 0, 0]
     w: number = 0
     h: number = 0
@@ -45,21 +46,15 @@ const debug = false
  * 
  */
 export class SpringLayout {
-    private flist = new Map<HTMLElement, FormNode>()
-    p!: HTMLElement
+    private def = new Map<HTMLElement, FormNode>()
+    parent!: HTMLElement
 
-    parent: HTMLElement
-    canvas: HTMLElement
     constructor(def: SpringDefinition[]) {
         this.initialize(def)
         this.resize = this.resize.bind(this)
-        this.canvas = document.querySelector<HTMLCanvasElement>('canvas')!
-        if (this.canvas === null) {
-            throw Error("#canvas not found")
-        }
-        this.parent = this.canvas.parentElement!
-        new ResizeObserver(this.resize).observe(this.canvas.parentElement!)
-        requestAnimationFrame(this.resize)
+        this.arrange = this.arrange.bind(this)
+        new ResizeObserver(this.resize).observe(this.parent)
+        this.resize()
     }
     initialize(def: SpringDefinition[]) {
         let p: HTMLElement | undefined
@@ -69,18 +64,18 @@ export class SpringLayout {
                     throw Error(`element needs parent`)
                 }
                 p = d.element.parentElement
-                this.p = p
+                this.parent = p
             } else {
                 if (d.element.parentElement !== p) {
                     throw Error('children have different parents')
                 }
             }
 
-            let node = this.flist.get(d.element)
+            let node = this.def.get(d.element)
             if (node === undefined) {
                 node = new FormNode()
                 node.element = d.element
-                this.flist.set(d.element, node)
+                this.def.set(d.element, node)
             }
             if (d.where.includes("top")) {
                 node.which[TOP] = d.which
@@ -100,29 +95,28 @@ export class SpringLayout {
             }
         }
     }
+    private _invalidated = false
     resize() {
+        if (this._invalidated) {
+            return
+        }
+        this._invalidated = true
+        requestAnimationFrame(this.arrange)
+    }
+    arrange() {
+        this._invalidated = false
         debug && console.log("==========================================================================")
-        // console.log(`resize 2`)
-        // const p = this.parent.getBoundingClientRect()
-        // console.log(p)
-
-        // const c = this.canvas.getBoundingClientRect()
-        // console.log(c)
-
-        // this.canvas.style.top = `56px`
-        // this.canvas.style.width = `${p.width - 2}px`
-        // this.canvas.style.height = `${p.height - 2 - 56}px`
 
         // initialize data structures
         //---------------------------- 
-        for (const ptr of this.flist.values()) {
+        for (const ptr of this.def.values()) {
             ptr.done = 0
             ptr.nflag = 0
-            const shape = ptr.element.getBoundingClientRect()
-            ptr.coord[TOP] = shape.top
-            ptr.coord[BOTTOM] = shape.top + shape.height
-            ptr.coord[LEFT] = shape.left
-            ptr.coord[RIGHT] = shape.left + shape.width
+            ptr.shape = ptr.element.getBoundingClientRect()
+            ptr.coord[TOP] = ptr.shape.top
+            ptr.coord[BOTTOM] = ptr.shape.top + ptr.shape.height
+            ptr.coord[LEFT] = ptr.shape.left
+            ptr.coord[RIGHT] = ptr.shape.left + ptr.shape.width
             for (let i = 0; i < 4; i++) {
                 if (ptr.how[i] === How.NONE) {
                     ptr.nflag |= (1 << i)
@@ -142,7 +136,7 @@ export class SpringLayout {
         }
         const form = [0, 0, 0, 0]
         {
-            const shape = this.p.getBoundingClientRect()
+            const shape = this.parent.getBoundingClientRect()
             form[TOP] = shape.top
             form[BOTTOM] = shape.top + shape.height
             form[LEFT] = shape.left
@@ -152,14 +146,23 @@ export class SpringLayout {
         // arrange children
         //+-----------------
 
-        const nChildren = this.flist.size
+        const nChildren = this.def.size
         let bKeepOwnBorder = true
         let nBorderOverlap = 0
 
         let count = 0
         let done = 0 // we're done when `done' equals `nChildren'
 
-        for (const ptr of this.flist.values()) {
+        let iterator = this.def.values()
+
+        while(true) {
+            let next = iterator.next()
+            if (next.done) {
+                iterator = this.def.values()
+                next = iterator.next()
+            }
+            const ptr = next.value!
+
             ++count
             if (ptr.done != HAS_ALL) {
                 // window has non attached sides
@@ -195,7 +198,7 @@ export class SpringLayout {
                             } break
                             case How.ELEMENT: {
                                 debug && console.log(`${ename}: attach ${Side[i]} to element`)
-                                const ptr2 = this.flist.get(ptr.which[i]!)! // opposite window
+                                const ptr2 = this.def.get(ptr.which[i]!)! // opposite window
                                 if ((ptr2.done) & (1 << (i ^ 1))) {    // opposite side is set
                                     ptr.done |= (1 << i)
                                     ptr.coord[i] = ptr2.coord[i ^ 1]
@@ -227,37 +230,41 @@ export class SpringLayout {
                     // can be calculated from the objects size
                     //------------------------------------------------------------
                     // console.log(`2nd strategy`)
-                    const shape = ptr.element.getBoundingClientRect()
 
                     //         printf("Placing %s now:\n",ptr->name.c_str());
                     //         #endif
                     //         // no top and/or left attachment
                     //         #ifdef DEBUG
                     if (ptr.nflag & HAS_T) {
-                        debug && console.log(`${ename}: has no top attachment, calculating it from bottom(${ptr.coord[BOTTOM]}) - height(${shape.height})`)
-                        ptr.coord[TOP] = ptr.coord[BOTTOM] - shape.height
+                        debug && console.log(`${ename}: has no top attachment, calculating it from bottom(${ptr.coord[BOTTOM]}) - height(${ptr.shape.height})`)
+                        ptr.coord[TOP] = ptr.coord[BOTTOM] - ptr.shape.height
                     }
                     if (ptr.nflag & HAS_B) {
-                        debug && console.log(`${ename}: has no bottom attachment, calculating it from top(${ptr.coord[TOP]}) + height(${shape.height})`)
-                        ptr.coord[BOTTOM] = ptr.coord[TOP] + shape.height
+                        debug && console.log(`${ename}: has no bottom attachment, calculating it from top(${ptr.coord[TOP]}) + height(${ptr.shape.height})`)
+                        ptr.coord[BOTTOM] = ptr.coord[TOP] + ptr.shape.height
                     }
                     if (ptr.nflag & HAS_L) {
-                        debug && console.log(`${ename}: has no left attachment, calculating it from right(${ptr.coord[RIGHT]}) - width(${shape.width})`)
-                        ptr.coord[LEFT] = ptr.coord[RIGHT] - shape.width
+                        debug && console.log(`${ename}: has no left attachment, calculating it from right(${ptr.coord[RIGHT]}) - width(${ptr.shape.width})`)
+                        ptr.coord[LEFT] = ptr.coord[RIGHT] - ptr.shape.width
                     }
                     if (ptr.nflag & HAS_R) {
-                        debug && console.log(`${ename}: has no right attachment, calculating it from left(${ptr.coord[RIGHT]}) + width(${shape.width})`)
-                        ptr.coord[RIGHT] = ptr.coord[LEFT] + shape.width
+                        debug && console.log(`${ename}: has no right attachment, calculating it from left(${ptr.coord[RIGHT]}) + width(${ptr.shape.width})`)
+                        ptr.coord[RIGHT] = ptr.coord[LEFT] + ptr.shape.width
                     }
 
                     // (here has been a part in the C++ implementation, were we set the size, calculate again, then set the position)
+
+                    // const style = getComputedStyle(ptr.element)
+                    // console.log(parseFloat(style.paddingLeft))
 
                     const x = ptr.coord[LEFT]
                     const y = ptr.coord[TOP]
                     const w = ptr.coord[RIGHT] - ptr.coord[LEFT]
                     const h = ptr.coord[BOTTOM] - ptr.coord[TOP]
                     debug && console.log(`<${ptr.element.nodeName.toLowerCase()} class="${ptr.element.className}" /> -> ${x}, ${y}, ${w}, ${h}`)
+                    // ptr.element.style.
                     ptr.element.style.position = 'absolute'
+                    ptr.element.style.boxSizing = 'border-box'
                     ptr.element.style.left = `${x}px`
                     ptr.element.style.top = `${y}px`
                     ptr.element.style.width = `${w}px`
@@ -351,7 +358,6 @@ export class SpringLayout {
             //       count = 0;
             //     }
             //     ptr = ptr->next;
-            // break
         }
         // for (const ptr of this.flist.values()) {
         //     const x = ptr.coord[LEFT]

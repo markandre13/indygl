@@ -65,14 +65,50 @@ async function main() {
     if (canvas === null) {
         throw Error("#canvas not found")
     }
+    const panel = document.querySelector<HTMLDivElement>('.panel')
+    if (panel === null) {
+        throw Error(".panel not found")
+    }
+        const status = document.querySelector<HTMLDivElement>('.status')
+    if (status === null) {
+        throw Error(".panel not found")
+    }
+    //  the definition below sucks. how about ascii art:
+    //
+    //    menubar
+    //    toolbar
+    //    canvas panel
+    //    status
+    //
+    // or 
+    //
+    //  menubar { form <- top, left, right }
+    //  toolbar { menubar <- top, left, form <- right }
+    //  canvas { toolbar <- top, status <- bottom -> status, form <- left, panel <- right }
+    //  panel { toolbar <- top, status <- bottom , form <- right }
+    //  status { form <- bottom, left, right  }
+    //
+
+    // new SpringLayout()
+    //   .attach(menubar).to("top", "left", "right")
+    //   .attach(toolbar).to(menubar, "top", "left").to("right")
+    //   ...
+
     new SpringLayout([
         { element: menubar, where: ["top", "left", "right"] },
         { element: toolbar, where: ["top"], which: menubar },
         { element: toolbar, where: ["left", "right"] },
         { element: canvas, where: ["top"], which: toolbar },
-        { element: canvas, where: ["left", "right", "bottom"] },
+        { element: canvas, where: ["left"] },
+        { element: canvas, where: ["bottom"], which: status },
+        { element: canvas, where: ["right"], which: panel },
+        { element: panel, where: ["top"], which: toolbar },
+        { element: panel, where: ["right"] },
+        { element: panel, where: ["bottom"], which: status },
+        { element: status, where: ["bottom", "left", "right"] },
+
     ])
-   // const r = await fetch("obj/arkit/Neutral.obj")
+    // const r = await fetch("obj/arkit/Neutral.obj")
     // const r = await fetch("obj/mh/cube.obj")
     const r = await fetch("obj/mh/base.obj")
 

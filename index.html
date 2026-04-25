@@ -13,17 +13,19 @@
     <link rel="stylesheet" type="text/css" href="style/tx-static.css" />
     <link rel="stylesheet" type="text/css" href="style/tx-dark.css" />
     <link rel="stylesheet" type="text/css" href="style/tx.css" /> -->
-    <script>
-        function run() {
-            import("./src/main.ts")
-        }
-    </script>
+    <link rel="stylesheet" href="font/inter/inter.css">
     <style>
-        @font-face {
-            font-family: 'Inter';
+        /* https://github.com/rsms/inter */
+        /* @font-face {
+            font-family: 'InterDisplay';
             font-style: normal;
-            src: url(font/Inter.woff2)
-        }
+            src: url(font/Inter-Light.woff2)
+        } */
+        /* @font-face {
+            font-family: 'SFPro';
+            font-style: normal;
+            src: url(font/SF-Pro-Text-Thin.otf)
+        } */
 
         :root {
             color-scheme: light dark;
@@ -34,22 +36,27 @@
 
             --tx-font-family: 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             --tx-font-size: calc((12/16) * 1rem);
-            /* equivalent to 12pt on paper */
             --tx-font-size-info: calc((11/16) * 1rem);
+
+            /* font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; */
+            font-family: Tahoma;
+            font-size: calc((12/16) * 1rem);
+            font-weight: 100;
+            letter-spacing: 0.02rem;
         }
+
+        /* @supports (font-variation-settings: normal) {
+            :root {
+                font-family: 'Inter var', sans-serif;
+            }
+        } */
 
         html,
         body {
-            /* remove default margin */
             margin: 0;
-            /* height: 100%; */
-            /* make body fill the browser window */
-            /* display: flex; */
-            /* place-content: center center; */
         }
 
         body {
-            /* background-color: bisque; */
             overflow: hidden;
         }
 
@@ -57,19 +64,9 @@
             display: flex;
             background-color: #191919;
             height: 28px;
-            /* position: absolute;
-            left: 0;
-            right: 0;
-            top: 0;
-            height: 28px; */
         }
 
         .menubar>div {
-            font-family: 'Inter';
-            font-weight: 100;
-            font-size: calc((11/16) * 1rem);
-            letter-spacing: 0.05rem;
-
             height: 22px;
             background-color: #181818;
             /* background-color: #202020; */
@@ -82,7 +79,7 @@
         .toolbar {
             display: flex;
             background-color: #363636;
-            height: 28px;
+            /* height: 28px; */
 
             /* position: absolute;
             left: 0;
@@ -91,19 +88,42 @@
             height: 28px; */
         }
 
-        .toolbar>div {
-            font-family: 'Inter';
-            font-weight: 100;
-            font-size: calc((11/16) * 1rem);
-            letter-spacing: 0.05rem;
-
+        /* .toolbar>div {
             background-color: #282828;
             border: #3e3e3e3e solid 1px;
             border-radius: 4px;
             padding: 6px 9px 0px 9px;
+        } */
+
+        .panel {
+            background-color: #3e3e3e;
+            border: #4a4a4a solid 1px;
+            border-radius: 4px;
+            width: 250px;
+            padding: 8px;
         }
 
-        /* .canvas { */
+        .X,
+        .Y,
+        .Z {
+            background-color: #545454;
+            padding: 4px;
+            padding-left: 15px;
+            margin: 1px;
+        }
+
+        .X {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+
+        .Z {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
+        .canvas {
+            border-radius: 4px;
             /* display: inline-block; */
             /* background-color: #ccaa88;
             border: #f00 1px solid; */
@@ -112,26 +132,135 @@
             right: 0px;
             top: 56px;
             bottom: 10px; */
-        /* } */
+        }
+
+        .status {
+            background-color: #181818;
+            color: #ccc;
+            height: 16px;
+            padding: 4px;
+            padding-left: 18px;
+        }
     </style>
+    <script>
+        function run() {
+            import("./src/main.ts")
+        }
+    </script>
 </head>
 
+<!-- M 18 8 L 26 3 L 34 8 -->
+
 <body onload="run()">
+    <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1"
+        xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <defs>
+            <symbol id="icon-select-object" viewBox="0 0 52 52">
+                <path stroke="#d4d4d4" stroke-width="2.5" fill="none"
+                    d="M 12 18 L 26 11 L 40 18 L 40 35 L 26 43 L 12 35 L 12 18 M 12 18 L 26 26 L 40 18 M 26 26 L 26 43" />
+                    <path stroke="#ffffff" stroke-width="3.5" fill="none"
+                    d="M 6 24 v -9 l 6 -4 M 46 24 v -9 l -6 -4 M 6 31 v 8 l 6 4 M 46 31 v 8 l -6 4
+                    " />
+            </symbol>
+            <symbol id="icon-select-point" viewBox="0 0 52 52">
+                <path stroke="#d4d4d4" stroke-width="2.5" fill="none"
+                    d="M 12 18 L 26 11 L 40 18 L 40 35 L 26 43 L 12 35 L 12 18" />
+                <circle cx="26" cy="26" r="3.5" fill="#fff" stroke="none" />
+            </symbol>
+            <symbol id="icon-select-edge" viewBox="0 0 52 52">
+                <path stroke="#d4d4d4" stroke-width="2.5" fill="none"
+                    d="M 21 40 L 12 35 L 12 18 L 26 11 L 40 18 L 40 35 L 31 40" />
+                <rect x="24" y="23" width="4" height="21" fill="#fff" stroke="none" />
+            </symbol>
+            <symbol id="icon-select-face" viewBox="0 0 52 52">
+                <path stroke="#d4d4d4" stroke-width="2.5" fill="none" d="M 23 41 L 12 35 L 12 18 L 26 11 L 35 15" />
+                <path stroke="none" fill="#ffffff" d="M 26 24 L 40 17 L 40 36 L 26 44" />
+            </symbol>
+        </defs>
+    </svg>
     <div style="
         width: 100vw;
         height: 100vh;
         ">
-    <div class="menubar">
-        <div>File</div>
-        <div>Edit</div>
-        <div>Render</div>
-        <div>Window</div>
-        <div>Help</div>
-    </div>
-    <div class="toolbar">
-        <div>tool</div>
-    </div>
-    <canvas class="canvas"></canvas>
+        <div class="menubar">
+            <div>File</div>
+            <div>Edit</div>
+            <div>Render</div>
+            <div>Window</div>
+            <div>Help</div>
+        </div>
+        <style>
+            .toolbar {
+                box-sizing: border-box;
+                padding: 3px;
+                height: 32px;
+            }
+
+            .toolbar>div {
+                box-sizing: border-box;
+                background-color: #545454;
+                border: 1px solid #3d3d3d;
+                /* border: 1px solid #f00; */
+                box-shadow: 1px 1px 1px #2d2d2d;
+                padding: 1px;
+                height: 28px;
+                width: 28px;
+                align-content: center;
+            }
+
+            .tool-icon {
+                display: block;
+                margin: auto;
+                color: #fff;
+                width: 24px;
+                height: 24px;
+            }
+        </style>
+        <div class="toolbar">
+            <div title="Object Selection Mode"
+                style="border-top-left-radius: 4px; border-bottom-left-radius: 4px; border-right: none;">
+                <svg class="tool-icon">
+                    <use xlink:href="#icon-select-object" />
+                </svg>
+            </div>
+            <div title="Point Selection Mode" style="border-right: none;">
+                <svg class="tool-icon">
+                    <use xlink:href="#icon-select-point" />
+                </svg>
+            </div>
+            <div title="Edge Selection Mode" style="border-right: none; background-color: #4771b3;">
+                <svg class="tool-icon">
+                    <use xlink:href="#icon-select-edge" />
+                </svg>
+            </div>
+            <div title="Face Selection Mode" style="border-top-right-radius: 4px; border-bottom-right-radius: 4px;">
+                <svg class="tool-icon">
+                    <use xlink:href="#icon-select-face" />
+                </svg>
+            </div>
+        </div>
+        <canvas class="canvas"></canvas>
+        <div class="panel">
+            Transform<br />
+            Location:<br />
+            <div class="X">X 0m</div>
+            <div class="Y">Y 0m</div>
+            <div class="Z">Z 0m</div>
+            Rotation<br />
+            <div class="X">X 0°</div>
+            <div class="Y">Y 0°</div>
+            <div class="Z">Z 0°</div>
+            XZY Euler<br />
+            Scale<br />
+            <div class="X">X 1.000</div>
+            <div class="Y">Y 1.000</div>
+            <div class="Z">Z 1.000</div>
+            Dimensions<br />
+            <div class="X">X 2 m</div>
+            <div class="Y">Y 2 m</div>
+            <div class="Z">Z 2 m</div>
+        </div>
+        <div class="status">Select Rotate View Options</div>
     </div>
 </body>
 
