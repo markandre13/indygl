@@ -76,25 +76,6 @@
             padding: 6px 9px 0px 9px;
         }
 
-        .toolbar {
-            display: flex;
-            background-color: #363636;
-            /* height: 28px; */
-
-            /* position: absolute;
-            left: 0;
-            right: 0;
-            top: 28px;
-            height: 28px; */
-        }
-
-        /* .toolbar>div {
-            background-color: #282828;
-            border: #3e3e3e3e solid 1px;
-            border-radius: 4px;
-            padding: 6px 9px 0px 9px;
-        } */
-
         .panel {
             background-color: #3e3e3e;
             border: #4a4a4a solid 1px;
@@ -148,8 +129,6 @@
         }
     </script>
 </head>
-
-<!-- M 18 8 L 26 3 L 34 8 -->
 
 <body onload="run()">
     <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1"
@@ -223,8 +202,7 @@
                 <path stroke-linecap="round" stroke="#ffffff" stroke-width="2.5" fill="#ffffff"
                     d="M 12 18 L 29 24 L 29 45 L 12 37 Z" />
                 <!-- top -->
-                <path stroke="#d4d4d4" stroke-width="2.5" fill="#d4d4d4"
-                    d="M 12 18 L 23 13 L 40 18 L 29 24 Z" />
+                <path stroke="#d4d4d4" stroke-width="2.5" fill="#d4d4d4" d="M 12 18 L 23 13 L 40 18 L 29 24 Z" />
                 <path stroke="none" fill="#d40000" d="M 10 17.5 L 17 14 L 26.5 17 L 19 21 Z" />
                 <path stroke="none" fill="#d40000" d="M 26 17 L 33 14 L 44 17.5 L 37 21 Z" />
                 <!-- front right  -->
@@ -249,81 +227,102 @@
         </div>
         <style>
             .toolbar {
+                display: flex;
+                background-color: #363636;
                 box-sizing: border-box;
                 padding: 2px;
                 height: 32px;
             }
 
             .toolbar>div {
+                display: flex;
+                padding-left: 3px;
+                padding-right: 3px;
+            }
+
+            .toolbar>div>div {
                 box-sizing: border-box;
                 background-color: #545454;
                 border: 1px solid #3d3d3d;
-                /* border: 1px solid #f00; */
                 box-shadow: 1px 1px 1px #2d2d2d;
                 padding: 1px;
                 height: 28px;
                 width: 28px;
-                align-content: center;
+                border-right: none;
+            }
+
+            .toolbar>div>div:first-child {
+                border-top-left-radius: 4px;
+                border-bottom-left-radius: 4px;
+                border-right: none;
+            }
+
+            .toolbar>div>div:last-child {
+                border-top-right-radius: 4px;
+                border-bottom-right-radius: 4px;
+            }
+
+            .toolbar>div>div.tx-active {
+                background-color: #4771b3;
             }
 
             .tool-icon {
-                display: block;
-                margin: auto;
+                /* display: block;
+                margin: auto; */
                 color: #fff;
                 width: 24px;
                 height: 24px;
             }
         </style>
         <div class="toolbar">
-            &nbsp;
-            <div title="Object Selection Mode"
-                style="border-top-left-radius: 4px; border-bottom-left-radius: 4px; border-right: none;">
-                <svg class="tool-icon">
-                    <use xlink:href="#icon-select-object" />
-                </svg>
+            <div>
+                <div title="Object Selection Mode">
+                    <svg class="tool-icon">
+                        <use xlink:href="#icon-select-object" />
+                    </svg>
+                </div>
+                <div title="Point Selection Mode" style="border-right: none;">
+                    <svg class="tool-icon">
+                        <use xlink:href="#icon-select-point" />
+                    </svg>
+                </div>
+                <div title="Edge Selection Mode" class="tx-active">
+                    <svg class="tool-icon">
+                        <use xlink:href="#icon-select-edge" />
+                    </svg>
+                </div>
+                <div title="Face Selection Mode">
+                    <svg class="tool-icon">
+                        <use xlink:href="#icon-select-face" />
+                    </svg>
+                </div>
             </div>
-            <div title="Point Selection Mode" style="border-right: none;">
-                <svg class="tool-icon">
-                    <use xlink:href="#icon-select-point" />
-                </svg>
-            </div>
-            <div title="Edge Selection Mode" style="border-right: none; background-color: #4771b3;">
-                <svg class="tool-icon">
-                    <use xlink:href="#icon-select-edge" />
-                </svg>
-            </div>
-            <div title="Face Selection Mode" style="border-top-right-radius: 4px; border-bottom-right-radius: 4px;">
-                <svg class="tool-icon">
-                    <use xlink:href="#icon-select-face" />
-                </svg>
-            </div>
-            &nbsp;
-            <div title="Viewport Shading Wireframe X-Ray"
-                style="border-top-left-radius: 4px; border-bottom-left-radius: 4px; border-right: none;">
-                <svg class="tool-icon">
-                    <use xlink:href="#icon-shading-wireframe-xray" />
-                </svg>
-            </div>
-            <div title="Viewport Shading Wireframe" style="border-right: none;">
-                <svg class="tool-icon">
-                    <use xlink:href="#icon-shading-wireframe" />
-                </svg>
-            </div>
-            <div title="Viewport Shading Solid X-Ray" style="border-right: none;">
-                <svg class="tool-icon">
-                    <use xlink:href="#icon-shading-solid-xray" />
-                </svg>
-            </div>
-            <div title="Viewport Shading Solid" style="border-right: none; background-color: #4771b3;">
-                <svg class="tool-icon">
-                    <use xlink:href="#icon-shading-solid" />
-                </svg>
-            </div>
-            <div title="Viewport Shading Textured"
-                style="border-top-right-radius: 4px; border-bottom-right-radius: 4px;">
-                <svg class="tool-icon">
-                    <use xlink:href="#icon-shading-textured" />
-                </svg>
+            <div>
+                <div title="Viewport Shading Wireframe X-Ray">
+                    <svg class="tool-icon">
+                        <use xlink:href="#icon-shading-wireframe-xray" />
+                    </svg>
+                </div>
+                <div title="Viewport Shading Wireframe" style="border-right: none;">
+                    <svg class="tool-icon">
+                        <use xlink:href="#icon-shading-wireframe" />
+                    </svg>
+                </div>
+                <div title="Viewport Shading Solid X-Ray" style="border-right: none;">
+                    <svg class="tool-icon">
+                        <use xlink:href="#icon-shading-solid-xray" />
+                    </svg>
+                </div>
+                <div title="Viewport Shading Solid" class="tx-active">
+                    <svg class="tool-icon">
+                        <use xlink:href="#icon-shading-solid" />
+                    </svg>
+                </div>
+                <div title="Viewport Shading Textured">
+                    <svg class="tool-icon">
+                        <use xlink:href="#icon-shading-textured" />
+                    </svg>
+                </div>
             </div>
         </div>
         <canvas class="canvas"></canvas>
