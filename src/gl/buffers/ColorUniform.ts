@@ -1,4 +1,4 @@
-import type { mat4, vec4 } from "gl-matrix"
+import type { vec4 } from "gl-matrix"
 import type { Device } from "../Device"
 import { Uniform } from "./Uniform"
 

@@ -52,7 +52,7 @@ import { SpringLayout } from './SpringLayout'
 // [ ] select mode: vertex, line, face
 // [ ] draw ground
 
-async function main() {
+export async function main() {
     const menubar = document.querySelector<HTMLDivElement>('.menubar')
     if (menubar === null) {
         throw Error(".menubar not found")
@@ -310,7 +310,4 @@ async function main() {
         device.device.queue.submit([commandBuffer])
     }
 }
-
-main()
-
 

@@ -9,7 +9,7 @@
         ],
         "skipLibCheck": true,
         "jsx": "react-jsx",
-        "jsxImportSource": "toad.jsx/lib",
+        "jsxImportSource": "toad.jsx",
         "types": ["@webgpu/types"],
         // "typeRoots": [
         //     "./node_modules/@webgpu/types",

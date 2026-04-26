@@ -76,6 +76,54 @@
             padding: 6px 9px 0px 9px;
         }
 
+        .toolbar {
+            display: flex;
+            background-color: #363636;
+            box-sizing: border-box;
+            padding: 2px;
+            height: 32px;
+        }
+
+        .toolbar>div {
+            display: flex;
+            padding-left: 3px;
+            padding-right: 3px;
+        }
+
+        .toolbar>div>div {
+            box-sizing: border-box;
+            background-color: #545454;
+            border: 1px solid #3d3d3d;
+            box-shadow: 1px 1px 1px #2d2d2d;
+            padding: 1px;
+            height: 28px;
+            width: 28px;
+            border-right: none;
+        }
+
+        .toolbar>div>div:first-child {
+            border-top-left-radius: 4px;
+            border-bottom-left-radius: 4px;
+            border-right: none;
+        }
+
+        .toolbar>div>div:last-child {
+            border-top-right-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
+        .toolbar>div>div.tx-active {
+            background-color: #4771b3;
+        }
+
+        .tool-icon {
+            /* display: block;
+                margin: auto; */
+            color: #fff;
+            width: 24px;
+            height: 24px;
+        }
+
         .panel {
             background-color: #3e3e3e;
             border: #4a4a4a solid 1px;
@@ -105,14 +153,6 @@
 
         .canvas {
             border-radius: 4px;
-            /* display: inline-block; */
-            /* background-color: #ccaa88;
-            border: #f00 1px solid; */
-            /* position: absolute;
-            left: 0px;
-            right: 0px;
-            top: 56px;
-            bottom: 10px; */
         }
 
         .status {
@@ -123,231 +163,10 @@
             padding-left: 18px;
         }
     </style>
-    <script>
-        function run() {
-            import("./src/main.ts")
-        }
-    </script>
 </head>
 
-<body onload="run()">
-    <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1"
-        xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-        <defs>
-            <symbol id="icon-select-object" viewBox="0 0 52 52">
-                <path stroke="#d4d4d4" stroke-width="2.5" fill="none"
-                    d="M 12 18 L 26 11 L 40 18 L 40 35 L 26 43 L 12 35 L 12 18 M 12 18 L 26 26 L 40 18 M 26 26 L 26 43" />
-                <path stroke="#ffffff" stroke-width="3.5" fill="none"
-                    d="M 6 24 v -9 l 6 -4 M 46 24 v -9 l -6 -4 M 6 31 v 8 l 6 4 M 46 31 v 8 l -6 4" />
-            </symbol>
-            <symbol id="icon-select-point" viewBox="0 0 52 52">
-                <path stroke="#d4d4d4" stroke-width="2.5" fill="none"
-                    d="M 12 18 L 26 11 L 40 18 L 40 35 L 26 43 L 12 35 L 12 18" />
-                <circle cx="26" cy="26" r="3.5" fill="#fff" stroke="none" />
-            </symbol>
-            <symbol id="icon-select-edge" viewBox="0 0 52 52">
-                <path stroke="#d4d4d4" stroke-width="2.5" fill="none"
-                    d="M 21 40 L 12 35 L 12 18 L 26 11 L 40 18 L 40 35 L 31 40" />
-                <rect x="24" y="23" width="4" height="21" fill="#fff" stroke="none" />
-            </symbol>
-            <symbol id="icon-select-face" viewBox="0 0 52 52">
-                <path stroke="#d4d4d4" stroke-width="2.5" fill="none" d="M 23 41 L 12 35 L 12 18 L 26 11 L 35 15" />
-                <path stroke="none" fill="#ffffff" d="M 26 24 L 40 17 L 40 36 L 26 44" />
-            </symbol>
-
-            <symbol id="icon-shading-wireframe-xray" viewBox="0 0 52 52">
-                <path stroke="#d4d4d4" stroke-width="1.5" fill="none" d="M 23 12 L 23 30 M 12 37 L 23 30 L 40 37" />
-                <path stroke="#ffffff" stroke-width="2.5" fill="none"
-                    d="M 12 18 L 23 13 L 41 18 L 40 37 L 29 45 L 12 37 Z M 12 18 L 29 24 L 41 18 M 29 24 L 29 43" />
-            </symbol>
-            <symbol id="icon-shading-wireframe" viewBox="0 0 52 52">
-                <path stroke="#ffffff" stroke-width="2.5" fill="none"
-                    d="M 12 18 L 23 13 L 41 18 L 41 37 L 29 45 L 12 37 Z M 12 18 L 29 24 L 41 18 M 29 24 L 29 43" />
-            </symbol>
-            <symbol id="icon-shading-solid-xray" viewBox="0 0 52 52">
-                <!-- front right -->
-                <path stroke-linecap="round" stroke="#a9a9a9" stroke-width="2.5" fill="#a9a9a9"
-                    d="M 29 24 L 41 18 L 41 37 L 29 45 Z" />
-                <!-- top -->
-                <path stroke-linecap="round" stroke="#d4d4d4" stroke-width="2.5" fill="#d4d4d4"
-                    d="M 12 18 L 23 13 L 40 18 L 29 24 Z" />
-                <!-- front left -->
-                <path stroke-linecap="round" stroke="#ffffff" stroke-width="2.5" fill="#ffffff"
-                    d="M 12 18 L 29 24 L 29 45 L 12 37 Z" />
-                <!-- wireframe back -->
-                <path stroke="#808080" stroke-width="1.5" fill="none" d="M 23 12 L 23 30 M 12 37 L 23 30 L 40 37" />
-                <!-- wireframe front -->
-                <path stroke="#ffffff" stroke-width="2.5" fill="none"
-                    d="M 12 18 L 23 13 L 41 18 L 40 37 L 29 45 L 12 37 Z M 12 18 L 29 24 L 41 18 M 29 24 L 29 43" />
-            </symbol>
-            <symbol id="icon-shading-solid" viewBox="0 0 52 52">
-                <!-- front right -->
-                <path stroke-linecap="round" stroke="#a9a9a9" stroke-width="2.5" fill="#a9a9a9"
-                    d="M 29 24 L 41 18 L 41 37 L 29 45 Z" />
-                <!-- top -->
-                <path stroke-linecap="round" stroke="#d4d4d4" stroke-width="2.5" fill="#d4d4d4"
-                    d="M 12 18 L 23 13 L 40 18 L 29 24 Z" />
-                <!-- front left -->
-                <path stroke-linecap="round" stroke="#ffffff" stroke-width="2.5" fill="#ffffff"
-                    d="M 12 18 L 29 24 L 29 45 L 12 37 Z" />
-                <!-- white outline -->
-                <!-- <path stroke="#ffffff" stroke-width="2.5" fill="none"
-                    d="M 12 18 L 23 13 L 41 18 L 41 37 L 29 45 L 12 37 Z M 12 18 L 29 24 L 41 18 M 29 24 L 29 43" /> -->
-            </symbol>
-            <symbol id="icon-shading-textured" viewBox="0 0 52 52">
-                <!-- front right -->
-                <path stroke-linecap="round" stroke="#a9a9a9" stroke-width="2.5" fill="#a9a9a9"
-                    d="M 29 24 L 41 18 L 41 37 L 29 45 Z" />
-                <!-- front left -->
-                <path stroke-linecap="round" stroke="#ffffff" stroke-width="2.5" fill="#ffffff"
-                    d="M 12 18 L 29 24 L 29 45 L 12 37 Z" />
-                <!-- top -->
-                <path stroke="#d4d4d4" stroke-width="2.5" fill="#d4d4d4" d="M 12 18 L 23 13 L 40 18 L 29 24 Z" />
-                <path stroke="none" fill="#d40000" d="M 10 17.5 L 17 14 L 26.5 17 L 19 21 Z" />
-                <path stroke="none" fill="#d40000" d="M 26 17 L 33 14 L 44 17.5 L 37 21 Z" />
-                <!-- front right  -->
-                <path stroke="none" fill="#a90000" d="M 29 35 L 37 31 L 37 41 L 29 46.5 Z" />
-                <path stroke="none" fill="#a90000" d="M 37 31 L 42 27.5 L 42 19 L 37 22 Z" />
-                <!-- front left -->
-                <path stroke="none" fill="#ff0000" d="M 11 17.5 L 19 21 L 19 32 L 11 29" />
-                <path stroke="none" fill="#ff0000" d="M 19 31 L 29.5 35 L 29.5 46.5 L 19 41.5" />
-            </symbol>
-        </defs>
-    </svg>
-    <div style="
-        width: 100vw;
-        height: 100vh;
-        ">
-        <div class="menubar">
-            <div>File</div>
-            <div>Edit</div>
-            <div>Render</div>
-            <div>Window</div>
-            <div>Help</div>
-        </div>
-        <style>
-            .toolbar {
-                display: flex;
-                background-color: #363636;
-                box-sizing: border-box;
-                padding: 2px;
-                height: 32px;
-            }
-
-            .toolbar>div {
-                display: flex;
-                padding-left: 3px;
-                padding-right: 3px;
-            }
-
-            .toolbar>div>div {
-                box-sizing: border-box;
-                background-color: #545454;
-                border: 1px solid #3d3d3d;
-                box-shadow: 1px 1px 1px #2d2d2d;
-                padding: 1px;
-                height: 28px;
-                width: 28px;
-                border-right: none;
-            }
-
-            .toolbar>div>div:first-child {
-                border-top-left-radius: 4px;
-                border-bottom-left-radius: 4px;
-                border-right: none;
-            }
-
-            .toolbar>div>div:last-child {
-                border-top-right-radius: 4px;
-                border-bottom-right-radius: 4px;
-            }
-
-            .toolbar>div>div.tx-active {
-                background-color: #4771b3;
-            }
-
-            .tool-icon {
-                /* display: block;
-                margin: auto; */
-                color: #fff;
-                width: 24px;
-                height: 24px;
-            }
-        </style>
-        <div class="toolbar">
-            <div>
-                <div title="Object Selection Mode">
-                    <svg class="tool-icon">
-                        <use xlink:href="#icon-select-object" />
-                    </svg>
-                </div>
-                <div title="Point Selection Mode" style="border-right: none;">
-                    <svg class="tool-icon">
-                        <use xlink:href="#icon-select-point" />
-                    </svg>
-                </div>
-                <div title="Edge Selection Mode" class="tx-active">
-                    <svg class="tool-icon">
-                        <use xlink:href="#icon-select-edge" />
-                    </svg>
-                </div>
-                <div title="Face Selection Mode">
-                    <svg class="tool-icon">
-                        <use xlink:href="#icon-select-face" />
-                    </svg>
-                </div>
-            </div>
-            <div>
-                <div title="Viewport Shading Wireframe X-Ray">
-                    <svg class="tool-icon">
-                        <use xlink:href="#icon-shading-wireframe-xray" />
-                    </svg>
-                </div>
-                <div title="Viewport Shading Wireframe" style="border-right: none;">
-                    <svg class="tool-icon">
-                        <use xlink:href="#icon-shading-wireframe" />
-                    </svg>
-                </div>
-                <div title="Viewport Shading Solid X-Ray" style="border-right: none;">
-                    <svg class="tool-icon">
-                        <use xlink:href="#icon-shading-solid-xray" />
-                    </svg>
-                </div>
-                <div title="Viewport Shading Solid" class="tx-active">
-                    <svg class="tool-icon">
-                        <use xlink:href="#icon-shading-solid" />
-                    </svg>
-                </div>
-                <div title="Viewport Shading Textured">
-                    <svg class="tool-icon">
-                        <use xlink:href="#icon-shading-textured" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-        <canvas class="canvas"></canvas>
-        <div class="panel">
-            Transform<br />
-            Location:<br />
-            <div class="X">X 0m</div>
-            <div class="Y">Y 0m</div>
-            <div class="Z">Z 0m</div>
-            Rotation<br />
-            <div class="X">X 0°</div>
-            <div class="Y">Y 0°</div>
-            <div class="Z">Z 0°</div>
-            XZY Euler<br />
-            Scale<br />
-            <div class="X">X 1.000</div>
-            <div class="Y">Y 1.000</div>
-            <div class="Z">Z 1.000</div>
-            Dimensions<br />
-            <div class="X">X 2 m</div>
-            <div class="Y">Y 2 m</div>
-            <div class="Z">Z 2 m</div>
-        </div>
-        <div class="status">Select Rotate View Options</div>
-    </div>
+<body>
+    <script type="module" src="src/gui.tsx"></script>
 </body>
 
 </html>
