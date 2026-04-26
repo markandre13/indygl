@@ -158,7 +158,7 @@ export class WavefrontObj {
             this.material[this.material.length - 1].length = this.fxyz.length - this.material[this.material.length - 1].startIndex
         }
 
-        this.logStatistics(filename)
+        this.logStatistics()
     }
 
     getFaceGroup(name: string): Group | undefined {
@@ -179,7 +179,7 @@ export class WavefrontObj {
         return x[0]
     }
 
-    logStatistics(filename: string) {
+    logStatistics() {
         let groupNames = ""
         let joints = 0
         let helpers = 0

@@ -1,5 +1,3 @@
-// import { cubeData, FLOAT32_SIZE, type VertexData } from './geom-cube'
-
 import { mat4, vec3 } from 'gl-matrix'
 import { CanvasContext } from './gl/CanvasContext'
 import { Device } from './gl/Device'
@@ -27,8 +25,9 @@ import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 import { ShaderP3_IDX } from './gl/shaders/ShaderP3_IDX'
 import { ShaderP3_C3_IDX_LineList } from './gl/shaders/ShaderP3_C3_IDX_LineList'
 import { WavefrontObj } from './gl/file/WavefrontObj'
-import { MainScreen } from './gui'
 import { replaceChildren } from 'toad.jsx/jsx-runtime'
+import { EditorModel } from './editor/app/EditorModel'
+import { MainScreen } from './editor/view/MainScreen'
 
 // add some ui element from blender and extend toad.js with a blender like style for that (smaller ui elements)
 // could write a screenshot test for that in toad.js too!!!
@@ -54,7 +53,9 @@ import { replaceChildren } from 'toad.jsx/jsx-runtime'
 // [ ] draw ground
 
 export async function main() {
-    replaceChildren(document.body, <MainScreen/>)
+    const editorModel = new EditorModel()
+    replaceChildren(document.body, <MainScreen model={editorModel}/>)
+
     const canvas = document.querySelector<HTMLCanvasElement>('canvas')
     if (canvas === null) {
         throw Error("#canvas not found")

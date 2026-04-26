@@ -1,12 +1,14 @@
-import { SpringLayout } from "./SpringLayout"
+import { SpringLayout } from "../viewkit/SpringLayout"
+import type { EditorModel } from "../app/EditorModel"
+import { SelectionMode } from "../app/SelectionMode"
+import { IconRadioButton } from "../viewkit/IconRadioButton"
+import { ViewportShading } from "../app/ViewportShading"
 
-export function MainScreen() {
+export function MainScreen(props: {model: EditorModel}) {
+    let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement
 
-    let menubar: HTMLElement = undefined as any,
-        toolbar: HTMLElement = undefined as any,
-        canvas: HTMLElement = undefined as any,
-        panel: HTMLElement = undefined as any,
-        status: HTMLElement = undefined as any
+    const selectionMode = props.model.selectionMode
+    const viewportShading = props.model.viewportShading
 
     const root = <div style={{ width: "100vw", height: "100vh" }}>
         <div ref={menubar} class="menubar">
@@ -18,53 +20,17 @@ export function MainScreen() {
         </div>
         <div ref={toolbar} class="toolbar">
             <div>
-                <div title="Object Selection Mode">
-                    <svg class="tool-icon">
-                        <use href="icons.svg#icon-select-object" />
-                    </svg>
-                </div>
-                <div title="Point Selection Mode">
-                    <svg class="tool-icon">
-                        <use href="icons.svg#icon-select-point" />
-                    </svg>
-                </div>
-                <div title="Edge Selection Mode" class="tx-active">
-                    <svg class="tool-icon">
-                        <use href="icons.svg#icon-select-edge" />
-                    </svg>
-                </div>
-                <div title="Face Selection Mode">
-                    <svg class="tool-icon">
-                        <use href="icons.svg#icon-select-face" />
-                    </svg>
-                </div>
+                <IconRadioButton model={selectionMode} value={SelectionMode.OBJECT} title="Object Selection Mode" svgHref="icons.svg#icon-select-object" />
+                <IconRadioButton model={selectionMode} value={SelectionMode.POINT} title="Point Selection Mode" svgHref="icons.svg#icon-select-point" />
+                <IconRadioButton model={selectionMode} value={SelectionMode.EDGE} title="Edge Selection Mode" svgHref="icons.svg#icon-select-edge" />
+                <IconRadioButton model={selectionMode} value={SelectionMode.FACE} title="Face Selection Mode" svgHref="icons.svg#icon-select-face" />
             </div>
             <div>
-                <div title="Viewport Shading Wireframe X-Ray">
-                    <svg class="tool-icon">
-                        <use href="icons.svg#icon-shading-wireframe-xray" />
-                    </svg>
-                </div>
-                <div title="Viewport Shading Wireframe">
-                    <svg class="tool-icon">
-                        <use href="icons.svg#icon-shading-wireframe" />
-                    </svg>
-                </div>
-                <div title="Viewport Shading Solid X-Ray">
-                    <svg class="tool-icon">
-                        <use href="icons.svg#icon-shading-solid-xray" />
-                    </svg>
-                </div>
-                <div title="Viewport Shading Solid" class="tx-active">
-                    <svg class="tool-icon">
-                        <use href="icons.svg#icon-shading-solid" />
-                    </svg>
-                </div>
-                <div title="Viewport Shading Textured">
-                    <svg class="tool-icon">
-                        <use href="icons.svg#icon-shading-textured" />
-                    </svg>
-                </div>
+                <IconRadioButton model={viewportShading} value={ViewportShading.WIREFRAME_XRAY} title="Viewport Shading Wireframe X-Ray" svgHref="icons.svg#icon-shading-wireframe-xray" />
+                <IconRadioButton model={viewportShading} value={ViewportShading.WIREFRAME} title="Viewport Shading Wireframe" svgHref="icons.svg#icon-shading-wireframe" />
+                <IconRadioButton model={viewportShading} value={ViewportShading.SOLID_XRAY} title="Viewport Shading Solid X-Ray" svgHref="icons.svg#icon-shading-solid-xray" />
+                <IconRadioButton model={viewportShading} value={ViewportShading.SOLID} title="Viewport Shading Solid" svgHref="icons.svg#icon-shading-solid" />
+                <IconRadioButton model={viewportShading} value={ViewportShading.TEXTURED} title="Viewport Shading Textured" svgHref="icons.svg#icon-shading-textured" />
             </div>
         </div>
         <canvas ref={canvas} class="canvas"></canvas>
@@ -122,4 +88,3 @@ export function MainScreen() {
 
     return root
 }
-

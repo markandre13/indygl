@@ -4,13 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "NODE_ENV=production vite --open",
+    "start": "vite --mode production --clearScreen false",
+    "lint": "tsgo --watch",
     "build": "tsgo && vite build",
     "preview": "vite preview",
-    "dev:build": "tsgo --watch",
-    "dev:serve": "NODE_ENV=production vite --open",
     "test": "vitest",
-    "lint": "tsgo --watch",
     "update": "npx npm-check-updates -u && npm install"
   },
   "devDependencies": {
