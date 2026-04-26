@@ -27,7 +27,8 @@ import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 import { ShaderP3_IDX } from './gl/shaders/ShaderP3_IDX'
 import { ShaderP3_C3_IDX_LineList } from './gl/shaders/ShaderP3_C3_IDX_LineList'
 import { WavefrontObj } from './gl/file/WavefrontObj'
-import { SpringLayout } from './SpringLayout'
+import { MainScreen } from './gui'
+import { replaceChildren } from 'toad.jsx/jsx-runtime'
 
 // add some ui element from blender and extend toad.js with a blender like style for that (smaller ui elements)
 // could write a screenshot test for that in toad.js too!!!
@@ -53,61 +54,12 @@ import { SpringLayout } from './SpringLayout'
 // [ ] draw ground
 
 export async function main() {
-    const menubar = document.querySelector<HTMLDivElement>('.menubar')
-    if (menubar === null) {
-        throw Error(".menubar not found")
-    }
-    const toolbar = document.querySelector<HTMLDivElement>('.toolbar')
-    if (toolbar === null) {
-        throw Error(".menubar not found")
-    }
+    replaceChildren(document.body, <MainScreen/>)
     const canvas = document.querySelector<HTMLCanvasElement>('canvas')
     if (canvas === null) {
         throw Error("#canvas not found")
     }
-    const panel = document.querySelector<HTMLDivElement>('.panel')
-    if (panel === null) {
-        throw Error(".panel not found")
-    }
-        const status = document.querySelector<HTMLDivElement>('.status')
-    if (status === null) {
-        throw Error(".panel not found")
-    }
-    //  the definition below sucks. how about ascii art:
-    //
-    //    menubar
-    //    toolbar
-    //    canvas panel
-    //    status
-    //
-    // or 
-    //
-    //  menubar { form <- top, left, right }
-    //  toolbar { menubar <- top, left, form <- right }
-    //  canvas { toolbar <- top, status <- bottom -> status, form <- left, panel <- right }
-    //  panel { toolbar <- top, status <- bottom , form <- right }
-    //  status { form <- bottom, left, right  }
-    //
 
-    // new SpringLayout()
-    //   .attach(menubar).to("top", "left", "right")
-    //   .attach(toolbar).to(menubar, "top", "left").to("right")
-    //   ...
-
-    new SpringLayout([
-        { element: menubar, where: ["top", "left", "right"] },
-        { element: toolbar, where: ["top"], which: menubar },
-        { element: toolbar, where: ["left", "right"] },
-        { element: canvas, where: ["top"], which: toolbar },
-        { element: canvas, where: ["left"] },
-        { element: canvas, where: ["bottom"], which: status },
-        { element: canvas, where: ["right"], which: panel },
-        { element: panel, where: ["top"], which: toolbar },
-        { element: panel, where: ["right"] },
-        { element: panel, where: ["bottom"], which: status },
-        { element: status, where: ["bottom", "left", "right"] },
-
-    ])
     // const r = await fetch("obj/arkit/Neutral.obj")
     // const r = await fetch("obj/mh/cube.obj")
     const r = await fetch("obj/mh/base.obj")
@@ -311,3 +263,4 @@ export async function main() {
     }
 }
 
+main()
