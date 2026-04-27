@@ -54,7 +54,7 @@ import { MainScreen } from './editor/view/MainScreen'
 
 export async function main() {
     const editorModel = new EditorModel()
-    replaceChildren(document.body, <MainScreen model={editorModel}/>)
+    replaceChildren(document.body, <MainScreen model={editorModel} />)
 
     const canvas = document.querySelector<HTMLCanvasElement>('canvas')
     if (canvas === null) {
