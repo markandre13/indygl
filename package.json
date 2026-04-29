@@ -17,7 +17,7 @@
         "update": "npx npm-check-updates -u && npm install"
     },
     "devDependencies": {
-        "@typescript/native-preview": "^7.0.0-dev.20260427.1",
+        "@typescript/native-preview": "^7.0.0-dev.20260428.1",
         "@vitest/browser-playwright": "^4.1.5",
         "@webgpu/types": "^0.1.69",
         "vite": "^8.0.10",
@@ -26,6 +26,6 @@
     },
     "dependencies": {
         "gl-matrix": "^3.4.4",
-        "toad.js": "^0.3.3"
+        "toad.js": "^0.3.4"
     }
 }

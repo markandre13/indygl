@@ -25,9 +25,12 @@ import { ShaderP4N4T2 } from './gl/shaders/ShaderP4N4T2'
 import { ShaderP3_IDX } from './gl/shaders/ShaderP3_IDX'
 import { ShaderP3_C3_IDX_LineList } from './gl/shaders/ShaderP3_C3_IDX_LineList'
 import { WavefrontObj } from './gl/file/WavefrontObj'
-import { replaceChildren } from 'toad.jsx/jsx-runtime'
+import { replaceChildren } from 'toad.jsx'
 import { EditorModel } from './editor/app/EditorModel'
 import { MainScreen } from './editor/view/MainScreen'
+import { ViewportShading } from './editor/app/ViewportShading'
+import { SelectionMode } from './editor/app/SelectionMode'
+import { subset_P3_IDX } from './gl/algorithms/subset_P3_IDX'
 
 // add some ui element from blender and extend toad.js with a blender like style for that (smaller ui elements)
 // could write a screenshot test for that in toad.js too!!!
@@ -52,6 +55,19 @@ import { MainScreen } from './editor/view/MainScreen'
 // [ ] select mode: vertex, line, face
 // [ ] draw ground
 
+/*
+
+blender starts with solid
+           object                                          edit
+wireframe  orange edges, gray, not shaded, not smooth    + edges, points, faces
+solid:     orange outline, gray, shaded, smooth          + edges, points, faces (depthbuffer disabled? not quite? hidden e&p have another color)
+
+-> render subset (subset operator? later...) we need the subset to test transparency
+-> do the transparent stuff
+-> transform using the panel on the right
+
+*/
+
 export async function main() {
     const editorModel = new EditorModel()
     replaceChildren(document.body, <MainScreen model={editorModel} />)
@@ -68,7 +84,7 @@ export async function main() {
     if (!r.ok) {
         console.log(`${r.status} ${r.statusText}: ${await r.text()}`)
     }
-    const neutral = new WavefrontObj("Neutra.obj", await r.text())
+    const neutral = new WavefrontObj("Neutral.obj", await r.text())
     // console.log(mesh)
 
     const device = new Device()
@@ -83,15 +99,24 @@ export async function main() {
     // Fetch the image and upload it into a GPUTexture.
     // const cubeTexture = new Texture()
     // await cubeTexture.load(device.device!!, "Di-3d.png")
-
     // const mesh = {
     //     positions: cube_XYZ,
     //     quads: cube_quads
     // }
+
+    const bodyGroup = neutral.getFaceGroup("body")!
+    const body = subset_P3_IDX(neutral.xyz, neutral.fxyz, bodyGroup.startIndex, bodyGroup.startIndex + bodyGroup.length)
+
     const mesh = {
-        positions: neutral.xyz,
-        quads: neutral.fxyz
+        positions: body.xyz,
+        quads: body.fxyz
     }
+
+    // const mesh = {
+    //     positions: neutral.xyz,
+    //     quads: neutral.fxyz.slice(bodyGroup.startIndex, bodyGroup.startIndex + bodyGroup.length)
+    // }
+
 
     const cube = quadsToFlatTriangles(mesh.positions, mesh.quads)
     const positions = new PositionBuffer(device, cube.positions)
@@ -233,6 +258,8 @@ export async function main() {
             }
         }
     })
+    editorModel.selectionMode.signal.add(context.invalidate)
+    editorModel.viewportShading.signal.add(context.invalidate)
 
     context.paint = () => {
 
@@ -250,13 +277,22 @@ export async function main() {
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
         // shaderPickPoint.draw(pass, context, modelUniforms, positions)
-        shaderPickPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, mesh.positions.length / 3)
+        if (editorModel.selectionMode.value !== SelectionMode.OBJECT) {
+            shaderPickPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, mesh.positions.length / 3)
+        }
         // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
         // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
         // shaderMono.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
-        shaderShadedMono.draw(pass, context, modelUniforms, positions, normals, indices, [0, 1, 0, 1])
-        shaderLines.draw(pass, context, modelUniforms, positions, edgeColorBuffer, edgeIndices)
+        if ([ViewportShading.WIREFRAME].includes(editorModel.viewportShading.value)) {
+            shaderShadedMono.draw(pass, context, modelUniforms, positions, normals, indices, [0.6, 0.6, 0.6, 1])
+        }
+        if ([ViewportShading.SOLID_XRAY, ViewportShading.SOLID].includes(editorModel.viewportShading.value)) {
+            shaderShadedMono.draw(pass, context, modelUniforms, positions, normals, indices, [0, 1, 0, 1])
+        }
+        if ([ViewportShading.WIREFRAME_XRAY, ViewportShading.WIREFRAME, ViewportShading.SOLID_XRAY].includes(editorModel.viewportShading.value)) {
+            shaderLines.draw(pass, context, modelUniforms, positions, edgeColorBuffer, edgeIndices)
+        }
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
