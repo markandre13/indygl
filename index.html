@@ -124,6 +124,32 @@
             height: 24px;
         }
 
+        .gl-input {
+            display: flex;
+            flex-flow: row nowrap;
+            align-items: stretch;
+            justify-content: space-between;
+            background-color: #545454;
+            /* padding: 4px; */
+            padding-left: 15px;
+            padding-right: 14px;
+            margin: 1px;
+            cursor: col-resize;
+        }
+
+        .gl-input>* {
+            padding-top: 4px;
+            padding-bottom: 4px;
+        }
+
+        .gl-input>input {
+            border: none;
+        }
+
+        .gl-input:hover {
+            background: #797979;
+        }
+
         .panel {
             background-color: #3e3e3e;
             border: #4a4a4a solid 1px;

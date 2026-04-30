@@ -4,7 +4,18 @@ import { SelectionMode } from "../app/SelectionMode"
 import { IconRadioButton } from "../viewkit/IconRadioButton"
 import { ViewportShading } from "../app/ViewportShading"
 
-export function MainScreen(props: {model: EditorModel}) {
+// number, unit
+// rename Signal into Emitter to avoid name clash with tc39 signals?
+
+export function Input() {
+    return <div class='gl-input'>
+        {/* <div>Y</div>
+        <div>0m</div> */}
+        <input value="0"/>
+    </div>
+}
+
+export function MainScreen(props: { model: EditorModel }) {
     let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement
 
     const selectionMode = props.model.selectionMode
@@ -38,7 +49,8 @@ export function MainScreen(props: {model: EditorModel}) {
             Transform<br />
             Location:<br />
             <div class="X">X 0m</div>
-            <div class="Y">Y 0m</div>
+            <Input />
+            {/* <div class="Y">Y 0m</div> */}
             <div class="Z">Z 0m</div>
             Rotation<br />
             <div class="X">X 0°</div>
