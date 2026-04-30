@@ -1,0 +1,57 @@
+import { vec3 } from "gl-matrix"
+
+// TODO: we can optimize this similar to quadsToFlatTriangles()
+
+/**
+ * 
+ * @param normals output
+ * @param vertex 
+ * @param indices 
+ * @returns 
+ */
+export function calculateNormalsQuads(normals: Float32Array | undefined, vertex: ArrayLike<number>, indices: ArrayLike<number>): Float32Array {
+    if (normals === undefined) {
+        normals = new Float32Array(vertex.length)
+    }
+    normals.fill(0)
+    
+    function addNormal(index: number, normal: vec3) {
+        normals![index] += normal[0]
+        normals![index + 1] += normal[1]
+        normals![index + 2] += normal[2]
+    }
+
+    // add vectors
+    for (let i = 0; i < indices.length;) {
+        const i1 = indices[i++] * 3
+        const i2 = indices[i++] * 3
+        const i3 = indices[i++] * 3
+        const i4 = indices[i++] * 3
+
+        const p1 = vec3.fromValues(vertex[i1], vertex[i1 + 1], vertex[i1 + 2])
+        const p2 = vec3.fromValues(vertex[i2], vertex[i2 + 1], vertex[i2 + 2])
+        const p3 = vec3.fromValues(vertex[i3], vertex[i3 + 1], vertex[i3 + 2])
+
+        const u = vec3.create(), v = vec3.create(), n = vec3.create()
+        vec3.subtract(u, p2, p1)
+        vec3.subtract(v, p3, p1)
+        vec3.cross(n, u, v)
+        vec3.normalize(n, n)
+
+        addNormal(i1, n)
+        addNormal(i2, n)
+        addNormal(i3, n)
+        addNormal(i4, n)
+    }
+
+    // normalize
+    const N = vec3.create()
+    for (let normalIndex = 0; normalIndex < vertex.length; normalIndex += 3) {
+        vec3.set(N, normals[normalIndex], normals[normalIndex + 1], normals[normalIndex + 2])
+        vec3.normalize(N, N)
+        normals[normalIndex] = N[0]
+        normals[normalIndex + 1] = N[1]
+        normals[normalIndex + 2] = N[2]
+    }
+    return normals
+}

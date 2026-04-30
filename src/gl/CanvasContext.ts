@@ -91,6 +91,7 @@ export class CanvasContext {
 
     // paint?: () => void
     backgroundColor = [0.247, 0.247, 0.247, 1.0]
+    // backgroundColor = [0,0,0,1]
     camera = mat4.create()
     private _invalidated = false
     invalidate() {
