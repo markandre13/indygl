@@ -8,23 +8,25 @@ export class Lexer {
     constructor(str: string) {
         this.str = str
     }
-    isspace(c: string) {
+    static isspace(c: string) {
         return c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == '\t'
     }
-    isnumber(c: string) {
+    static isnumber(c: string) {
         const code = c.charCodeAt(0)
         return code >= 0x30 && code <= 0x39
     }
-    isalpha(c: string) {
+    static isalpha(c: string) {
         const code = c.charCodeAt(0)
         // console.log(`isalpha ${c} 0x${code.toString(16).padStart(2, '0')} ${code >= 0x41 && code <= 0x5a || code >= 0x7a && code <= 0x91}`)
         return code >= 0x41 && code <= 0x5a || code >= 0x61 && code <= 0x7a
     }
-    isalnum(c: string) {
-        return this.isnumber(c) || this.isalpha(c)
+    static isalnum(c: string) {
+        return Lexer.isnumber(c) || Lexer.isalpha(c)
     }
-    unlex(node: ExpressionNode) {
-        this.stack.push(node)
+    unlex(node: ExpressionNode | undefined) {
+        if (node !== undefined) {
+            this.stack.push(node)
+        }
     }
     lex() {
         if (this.stack.length > 0) {
@@ -43,16 +45,16 @@ export class Lexer {
                     if (c === undefined) {
                         return undefined
                     }
-                    if (this.isspace(c)) {
+                    if (Lexer.isspace(c)) {
                         ++this.i
                         break
                     }
-                    if (this.isnumber(c)) {
+                    if (Lexer.isnumber(c)) {
                         ++this.i
                         state = 1
                         break
                     }
-                    if (this.isalpha(c)) {
+                    if (Lexer.isalpha(c)) {
                         state = 3
                         break
                     }
@@ -69,7 +71,7 @@ export class Lexer {
                     }
                     return undefined
                 case 1: // [0-9]?
-                    if (c !== undefined && this.isnumber(c)) {
+                    if (c !== undefined && Lexer.isnumber(c)) {
                         ++this.i
                         break
                     }
@@ -80,13 +82,13 @@ export class Lexer {
                     }
                     return new ExpressionNode(BigNumber(this.str.substring(start, this.i)))
                 case 2: // [0-9]+[.eE]?
-                    if (c !== undefined && this.isnumber(c)) {
+                    if (c !== undefined && Lexer.isnumber(c)) {
                         ++this.i
                         break
                     }
                     return new ExpressionNode(BigNumber(this.str.substring(start, this.i)))
                 case 3: // [a-zA-Z]+?
-                    if (c !== undefined && this.isalpha(c)) {
+                    if (c !== undefined && Lexer.isalpha(c)) {
                         ++this.i
                         break
                     }

@@ -1,22 +1,10 @@
 import BigNumber from 'bignumber.js'
 import { ExpressionNode } from './ExpressionNode'
 import { Lexer } from './Lexer'
+import type { Unit } from '../units/Unit'
 
-// export function assignmentExpression(expr: string): ExpressionNode | undefined {
-//     const lexer = new Lexer(expr)
-//     const n0 = lexer.lex()
-//     if (n0 === undefined || n0.value !== '=') {
-//         return undefined
-//     }
-//     return additive_expression(lexer)
-// }
-export function evaluate(expr: string): BigNumber | undefined {
-    const lexer = new Lexer(expr)
-    const n0 = additive_expression(lexer)
-    // console.log(`expression("${expr}") -> %o`, n0)
-    // console.log(value)
-    // return value instanceof BigNumber ? value : undefined
-    return n0?.eval()
+export function evaluate(expr: string, unit?: Unit): BigNumber | undefined {
+    return additive_expression(new Lexer(expr))?.eval(unit)
 }
 export function expression(expr: string): ExpressionNode | undefined {
     const lexer = new Lexer(expr)
@@ -72,6 +60,12 @@ function unary_expression(lexer: Lexer): ExpressionNode | undefined {
         return undefined
     }
     if (n0.value instanceof BigNumber) {
+        const n1 = lexer.lex()
+        if (typeof n1?.value === "string" && Lexer.isalpha(n1.value)) {
+            n0.append(n1)
+        } else {
+            lexer.unlex(n1)
+        }
         return n0
     }
     if (n0.value === "(") {

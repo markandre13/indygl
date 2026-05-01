@@ -4,6 +4,23 @@ import { fit, xit } from '../../../spec'
 import { evaluate, expression } from '../../../../src/editor/appkit/details/expression'
 import BigNumber from 'bignumber.js'
 import type { ExpressionNode } from '../../../../src/editor/appkit/details/ExpressionNode'
+import { Length } from '../../../../src/editor/appkit/units/Length'
+
+function num(node: ExpressionNode | undefined): number {
+    if (node?.value instanceof BigNumber) {
+        return node?.value.toNumber()
+    }
+    throw Error(`${node} is not a number`)
+}
+
+describe("expressions with units", () => {
+    it("1cm", () => {
+        expect(evaluate("1cm", Length)?.toNumber()).equals(0.01)
+    })
+    it("1m + 2cm + 3mm + 4um", () => {
+        expect(evaluate("1m + 2cm + 3mm + 4um", Length)?.toNumber()).equals(1.023004)
+    })
+})
 
 describe("expressions", function () {
     describe("lexer", function () {
@@ -86,17 +103,11 @@ describe("expressions", function () {
         })
     })
     describe("parse", function () {
-        function num(node: ExpressionNode | undefined): number {
-            if (node?.value instanceof BigNumber) {
-                return node?.value.toNumber()
-            }
-            throw Error(`${node} is not a number`)
-        }
         it("1", function () {
             const tree = expression("1")
             expect(num(tree)).to.equal(1)
         })
-        it("1+2", function () {
+        fit("1+2", function () {
             const tree = expression("1+2")
             expect(tree?.value).to.equal('+')
             expect(num(tree?.down)).to.equal(1)
