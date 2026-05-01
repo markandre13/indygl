@@ -13,11 +13,11 @@
         "types": [
             "@webgpu/types"
         ],
-        "paths": {
-            "appkit/*": [
-                "./src/editor/appkit/*"
-            ],
-        },
+        // "paths": {
+        //     "appkit/*": [
+        //         "./src/editor/appkit/*"
+        //     ],
+        // },
         "esModuleInterop": true,
         // "typeRoots": [
         //     "./node_modules/@webgpu/types",

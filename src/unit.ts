@@ -1,6 +1,10 @@
-import { Lexer } from "appkit/details/Lexer"
-import { makeUnit, type Unit } from "appkit/units/Unit"
 import BigNumber from "bignumber.js"
+import { BigNumberModel, type BigNumberModelOptions } from "./editor/appkit/BigNumberModel"
+import { Length } from "./editor/appkit/units/Length"
+
+
+
+
 
 // https://en.wikipedia.org/wiki/Metric_system
 

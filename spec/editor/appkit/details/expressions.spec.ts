@@ -13,15 +13,6 @@ function num(node: ExpressionNode | undefined): number {
     throw Error(`${node} is not a number`)
 }
 
-describe("expressions with units", () => {
-    it("1cm", () => {
-        expect(evaluate("1cm", Length)?.toNumber()).equals(0.01)
-    })
-    it("1m + 2cm + 3mm + 4um", () => {
-        expect(evaluate("1m + 2cm + 3mm + 4um", Length)?.toNumber()).equals(1.023004)
-    })
-})
-
 describe("expressions", function () {
     describe("lexer", function () {
         describe("single token", function () {
@@ -172,7 +163,7 @@ describe("expressions", function () {
             expect(num(tree?.down?.next?.down)).to.equal(2)
         })
     })
-    describe("eval", function () {
+    describe("evalualte", function () {
         it("0.1+0.2", function () {
             expect(evaluate("0.1+0.2")?.toNumber()).to.equal(0.3)
         })
@@ -196,6 +187,14 @@ describe("expressions", function () {
         })
         it("6*2+14/7-3", function () {
             expect(evaluate("6*2+14/7-3")?.toNumber()).to.equal(11)
+        })
+    })
+    describe("expressions with units", () => {
+        it("1cm", () => {
+            expect(evaluate("1cm", Length)?.toNumber()).equals(0.01)
+        })
+        it("1m + 2cm + 3mm + 4um", () => {
+            expect(evaluate("1m + 2cm + 3mm + 4um", Length)?.toNumber()).equals(1.023004)
         })
     })
 })
