@@ -125,30 +125,66 @@
         }
 
         .gl-input {
+            height: 19px;
+            box-sizing: border-box;
             display: flex;
-            flex-flow: row nowrap;
+            flex-flow: row;
             align-items: stretch;
             justify-content: space-between;
             background-color: #545454;
-            /* padding: 4px; */
-            padding-left: 15px;
-            padding-right: 14px;
+            padding: 0;
             margin: 1px;
             cursor: col-resize;
         }
 
-        .gl-input>* {
-            padding-top: 4px;
-            padding-bottom: 4px;
-        }
-
-        .gl-input>input {
+        .gl-input>button {
+            background: none;
+            padding: 0;
+            margin: 0;
             border: none;
+            padding-top: 3px;
         }
 
+        .gl-input>div {
+            flex-grow: 1;
+            display: flex;
+            flex-flow: row;
+            align-items: stretch;
+            padding: 0;
+            padding-top: 2px;
+
+            margin: 0;
+        }
+
+        .gl-input>div>.label {
+            flex-grow: 1;
+        }
+
+        /* .gl-input>*{
+            padding-top:4px;
+            padding-bottom:4px;
+        }
+        .gl-input>input {
+            display: none;
+            flex-grow: 1;
+            border: none;
+            outline: none;
+            background: #222222;
+        }
         .gl-input:hover {
             background: #797979;
         }
+        .gl-input.gl-edit>input {
+            display: inline;
+        }
+        .gl-input.gl-edit>div {
+            display: none;
+        } */
+
+        /*div.gl-edit :not(div.gl-edit)>div {
+            display: none;
+        } */
+
 
         .panel {
             background-color: #3e3e3e;

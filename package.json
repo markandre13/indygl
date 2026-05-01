@@ -22,9 +22,11 @@
         "@webgpu/types": "^0.1.69",
         "vite": "^8.0.10",
         "vite-plugin-solid": "^2.11.12",
+        "vite-tsconfig-paths": "^6.1.1",
         "vitest": "^4.1.5"
     },
     "dependencies": {
+        "bignumber.js": "^11.1.0",
         "gl-matrix": "^3.4.4",
         "toad.js": "^0.3.4"
     }

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import solidPlugin from 'vite-plugin-solid'
+import tsconfigPaths from 'vite-tsconfig-paths'
 // import glsl from 'vite-plugin-glsl'
 
 export default defineConfig({
@@ -10,6 +11,7 @@ export default defineConfig({
             entry: 'src/main.tsx',
         },
     }, plugins: [
-        solidPlugin({ solid: { moduleName: "toad.jsx" } })
+        tsconfigPaths(),
+        solidPlugin({ solid: { moduleName: "toad.jsx" } }),
     ],
 })

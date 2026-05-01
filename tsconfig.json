@@ -10,7 +10,15 @@
         "skipLibCheck": true,
         "jsx": "preserve",
         "jsxImportSource": "toad.jsx",
-        "types": ["@webgpu/types"],
+        "types": [
+            "@webgpu/types"
+        ],
+        "paths": {
+            "appkit/*": [
+                "./src/editor/appkit/*"
+            ],
+        },
+        "esModuleInterop": true,
         // "typeRoots": [
         //     "./node_modules/@webgpu/types",
         //     "./node_modules/@types",
@@ -28,6 +36,7 @@
         "noFallthroughCasesInSwitch": true
     },
     "include": [
-        "src"
+        "src",
+        "spec"
     ]
 }

@@ -6,7 +6,7 @@ describe("foo", () => {
     xit("skip", () => {
 
     })
-    it("only", async () => {
+    xit("only", async () => {
         const div = document.createElement("div")
         div.dataset["testid"] = "hero"
         div.style.width = "100px"
