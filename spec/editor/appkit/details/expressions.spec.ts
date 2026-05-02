@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { Lexer } from 'appkit/details/Lexer'
 import { fit, xit } from '../../../spec'
-import { evaluate, expression } from 'appkit/details/expression'
 import BigNumber from 'bignumber.js'
-import type { ExpressionNode } from 'appkit/details/ExpressionNode'
-import { Length } from 'appkit/units/Length'
+import type { ExpressionNode } from 'src/editor/appkit/details/expressions/ExpressionNode'
+import { evaluate, expression } from 'src/editor/appkit/details/expressions/expression'
+import { LengthUnit } from 'src/editor/appkit/units/LengthModel'
+import { Lexer } from 'src/editor/appkit/details/expressions/Lexer'
 
 function num(node: ExpressionNode | undefined): number {
     if (node?.value instanceof BigNumber) {
@@ -94,11 +94,11 @@ describe("expressions", function () {
         })
     })
     describe("parse", function () {
-        it("1", function () {
+        fit("1", function () {
             const tree = expression("1")
             expect(num(tree)).to.equal(1)
         })
-        fit("1+2", function () {
+        it("1+2", function () {
             const tree = expression("1+2")
             expect(tree?.value).to.equal('+')
             expect(num(tree?.down)).to.equal(1)
@@ -163,7 +163,7 @@ describe("expressions", function () {
             expect(num(tree?.down?.next?.down)).to.equal(2)
         })
     })
-    describe("evalualte", function () {
+    describe("evaluate", function () {
         it("0.1+0.2", function () {
             expect(evaluate("0.1+0.2")?.toNumber()).to.equal(0.3)
         })
@@ -191,10 +191,10 @@ describe("expressions", function () {
     })
     describe("expressions with units", () => {
         it("1cm", () => {
-            expect(evaluate("1cm", Length)?.toNumber()).equals(0.01)
+            expect(evaluate("1cm", LengthUnit)?.toNumber()).equals(0.01)
         })
         it("1m + 2cm + 3mm + 4um", () => {
-            expect(evaluate("1m + 2cm + 3mm + 4um", Length)?.toNumber()).equals(1.023004)
+            expect(evaluate("1m + 2cm + 3mm + 4um", LengthUnit)?.toNumber()).equals(1.023004)
         })
     })
 })

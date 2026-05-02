@@ -136,6 +136,17 @@
             margin: 1px;
             cursor: col-resize;
         }
+        /* round border corners for last and first tuple element */
+        .gl-input:first-child {
+            overflow: hidden;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        .gl-input:last-child {
+            overflow: hidden;
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
 
         .gl-input>button {
             background-color: #545454;
@@ -192,41 +203,30 @@
             font-size: 12px;
             background: #222222;
         }
+
         /* focus */
         .gl-input:focus-within>button {
             background: #222222;
         }
+
         .gl-input:focus-within>button>svg {
             color: #222222;
         }
-        .gl-input>div:focus-within>.label, .gl-input>div:focus-within>.value {
+
+        .gl-input>div:focus-within>.label,
+        .gl-input>div:focus-within>.value {
             display: none;
         }
+
         .gl-input>div>input:focus {
             width: inherit;
             flex-grow: 1;
-        }
-
-        /* .gl-input>*{
-            padding-top:4px;
-            padding-bottom:4px;
-        }
-
-        .gl-input:hover {
-            background: #797979;
-        }*/
-        .gl-input.gl-edit>input {
-            display: inline;
         }
 
         /* hide output in edit mode*/
         .gl-input.gl-edit>div {
             display: none;
         }
-
-        /*div.gl-edit :not(div.gl-edit)>div {
-            display: none;
-        } */
 
 
         .panel {

@@ -1,5 +1,7 @@
 import BigNumber from "bignumber.js"
 
+// blender has this a bit more sophisticated in source/blender/blenkernel/intern/unit.cc
+
 export interface Unit {
     symbol: string
     symbol2scale: Map<string, BigNumber>

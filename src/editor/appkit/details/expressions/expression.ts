@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js'
 import { ExpressionNode } from './ExpressionNode'
 import { Lexer } from './Lexer'
-import type { Unit } from '../units/Unit'
+import type { Unit } from '../../units/Unit'
 
 export function evaluate(expr: string, unit?: Unit): BigNumber | undefined {
     return additive_expression(new Lexer(expr))?.eval(unit)
@@ -60,11 +60,9 @@ function unary_expression(lexer: Lexer): ExpressionNode | undefined {
         return undefined
     }
     if (n0.value instanceof BigNumber) {
-        const n1 = lexer.lex()
-        if (typeof n1?.value === "string" && Lexer.isalpha(n1.value)) {
+        const n1 = identifier(lexer)
+        if (n1 !== undefined) {
             n0.append(n1)
-        } else {
-            lexer.unlex(n1)
         }
         return n0
     }
@@ -88,4 +86,11 @@ function unary_expression(lexer: Lexer): ExpressionNode | undefined {
     }
     lexer.unlex(n0)
     return undefined
+}
+function identifier(lexer: Lexer) {
+    const n1 = lexer.lex()
+    if (typeof n1?.value === "string" && Lexer.isalpha(n1.value)) {
+        return n1
+    }
+    lexer.unlex(n1)
 }

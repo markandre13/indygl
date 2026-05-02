@@ -3,7 +3,10 @@ import { BigNumberModel, type BigNumberModelOptions } from "./editor/appkit/BigN
 import { Length } from "./editor/appkit/units/Length"
 
 
-
+// d
+// rad
+// pi * 1r = 180d
+// pi * 1d 
 
 
 // https://en.wikipedia.org/wiki/Metric_system

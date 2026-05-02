@@ -5,15 +5,20 @@ import { IconRadioButton } from "../viewkit/IconRadioButton"
 import { ViewportShading } from "../app/ViewportShading"
 import { LengthModel } from "appkit/units/LengthModel"
 import type { UnitModel } from "../appkit/units/UnitModel"
+import { RotationModel } from "../appkit/units/RotationModel"
 
 // https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/control/numeric_input.html
 
 // number, unit
 // rename Signal into Emitter to avoid name clash with tc39 signals?
 
-const x = new LengthModel(0, { label: "X", step: 0.01 })
-const y = new LengthModel(0, { label: "Y", step: 0.01 })
-const z = new LengthModel(0, { label: "Z", step: 0.01 })
+const tx = new LengthModel(0, { label: "X", step: 0.01 })
+const ty = new LengthModel(0, { label: "Y", step: 0.01 })
+const tz = new LengthModel(0, { label: "Z", step: 0.01 })
+
+const rx = new RotationModel(0, { label: "X", step: 0.01 })
+const ry = new RotationModel(0, { label: "Y", step: 0.01 })
+const rz = new RotationModel(0, { label: "Z", step: 0.01 })
 
 export function Chevron(props: { rotate?: number }) {
     return (
@@ -26,8 +31,6 @@ export function Chevron(props: { rotate?: number }) {
         </svg>
     )
 }
-
-// d="M 5 4 l 1 0 l 2 2 l 0 1 l -2 2 l -1 0 l 2 -2 l 0 -1 z"
 
 export function TupleInput(props: { model: UnitModel, edit?: boolean }) {
     let input!: HTMLInputElement
@@ -42,20 +45,21 @@ export function TupleInput(props: { model: UnitModel, edit?: boolean }) {
             input.focus()
         }}
     >
-        <button class="arrow"
-            onclick={props.model.decrement}
-        ><Chevron rotate={180} /></button>
+        <button onclick={props.model.decrement}>
+            <Chevron rotate={180} />
+        </button>
         <div>
             <div class="label">{props.model.label}</div>
-            <div class="value">{props.model.value.toString()} {props.model.symbol}</div>
+            <div class="value">{() => `${props.model.value.toString()} ${props.model.symbol}`}</div>
             <input
                 ref={input}
                 value={`${props.model.value} ${props.model.symbol}`}
-                onchange={() => { props.model.value = input.value }}
+                onchange={() => {
+                    props.model.value = input.value
+                }}
             />
         </div>
-
-        <button class="arrow"><Chevron /></button>
+        <button onclick={props.model.increment}><Chevron /></button>
     </div>
     if (props.edit) {
         requestAnimationFrame(() => { input.focus() })
@@ -97,13 +101,17 @@ export function MainScreen(props: { model: EditorModel }) {
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />
-            <TupleInput model={x} />
-            <TupleInput model={y} edit={true} />
-            <TupleInput model={z} />
+            <div>
+                <TupleInput model={tx} />
+                <TupleInput model={ty} />
+                <TupleInput model={tz} />
+            </div>
             Rotation<br />
-            <div class="X">X 0°</div>
-            <div class="Y">Y 0°</div>
-            <div class="Z">Z 0°</div>
+           <div>
+                <TupleInput model={rx} />
+                <TupleInput model={ry} />
+                <TupleInput model={rz} />
+            </div>
             XZY Euler<br />
             Scale<br />
             <div class="X">X 1.000</div>

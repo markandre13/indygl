@@ -1,7 +1,7 @@
 // import { SpreadsheetModel } from "../../table/model/SpreadsheetModel"
 
 import BigNumber from "bignumber.js"
-import type { Unit } from "../units/Unit"
+import type { Unit } from "../../units/Unit"
 
 export class ExpressionNode {
     // string: one of the tokens
