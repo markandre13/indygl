@@ -22,7 +22,6 @@
         "@webgpu/types": "^0.1.69",
         "vite": "^8.0.10",
         "vite-plugin-solid": "^2.11.12",
-        "vite-tsconfig-paths": "^6.1.1",
         "vitest": "^4.1.5"
     },
     "dependencies": {

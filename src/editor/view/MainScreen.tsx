@@ -4,51 +4,63 @@ import { SelectionMode } from "../app/SelectionMode"
 import { IconRadioButton } from "../viewkit/IconRadioButton"
 import { ViewportShading } from "../app/ViewportShading"
 import { NumberModel } from "toad.js/appkit/NumberModel"
+import { LengthModel } from "../appkit/units/LengthModel"
+import type { UnitModel } from "../appkit/units/UnitModel"
 
 // https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/control/numeric_input.html
 
 // number, unit
 // rename Signal into Emitter to avoid name clash with tc39 signals?
 
-const x = new NumberModel(0, {label: "X"})
-const y = new NumberModel(0, {label: "Y"})
-const z = new NumberModel(0, {label: "Z"})
+const x = new LengthModel(0, { label: "X", step: 0.01 })
+const y = new LengthModel(0, { label: "Y", step: 0.01 })
+const z = new LengthModel(0, { label: "Z", step: 0.01 })
 
 export function Chevron(props: { rotate?: number }) {
     return (
         <svg class="tool-icon" style={{
-            padding: 0,
-            boxSizing: 'border-box',
             width: 12,
             height: 12,
-            fill: "none",
-            stroke: "currentColor",
             transform: props.rotate ? `rotate(${props.rotate}deg)` : undefined
         }}>
-            <path
-                d="M 5.5 3.5 l 1 0 l 2 2 l 0 1 l -2 2 l -1 0 l 2 -2 l 0 -1 z"
-            />
+            <path stroke="currentcolor" stroke-width={2} fill="none" d="M 4 3 l 3 3 l -3 3" />
         </svg>
     )
 }
 
-export function TupleInput(props: {model: NumberModel}) {
+// d="M 5 4 l 1 0 l 2 2 l 0 1 l -2 2 l -1 0 l 2 -2 l 0 -1 z"
+
+export function TupleInput(props: { model: UnitModel, edit?: boolean }) {
+    let input!: HTMLInputElement
     const e = <div
-        class='gl-input'
+        classList={{
+            'gl-input': true,
+            'tx-error': false /*props.model.error !== undefined*/
+        }}
         onpointerdown={() => {
-            const h = e as HTMLElement
-            h.classList.toggle("gl-edit")
-            console.log("toggle")
-            console.log(h)
+            console.log(`set focus to`)
+            console.log(input)
+            input.focus()
         }}
     >
-        <button class="arrow"><Chevron rotate={180} /></button>
+        <button class="arrow"
+            onclick={props.model.decrement}
+        ><Chevron rotate={180} /></button>
         <div>
             <div class="label">{props.model.label}</div>
-            <div class="value">{props.model.value}m</div>
+            <div class="value">{props.model.value.toString()} {props.model.symbol}</div>
+            <input
+                ref={input}
+                value={`${props.model.value} ${props.model.symbol}`}
+                onchange={() => { props.model.value = input.value }}
+            />
         </div>
+
         <button class="arrow"><Chevron /></button>
     </div>
+    if (props.edit) {
+        requestAnimationFrame(() => { input.focus() })
+    }
     return e
 }
 
@@ -86,9 +98,9 @@ export function MainScreen(props: { model: EditorModel }) {
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />
-            <TupleInput model={x}/>
-            <TupleInput model={y}/>
-            <TupleInput model={z}/>
+            <TupleInput model={x} />
+            <TupleInput model={y} edit={true} />
+            <TupleInput model={z} />
             Rotation<br />
             <div class="X">X 0°</div>
             <div class="Y">Y 0°</div>

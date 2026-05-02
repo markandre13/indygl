@@ -138,11 +138,28 @@
         }
 
         .gl-input>button {
-            background: none;
+            background-color: #545454;
             padding: 0;
             margin: 0;
             border: none;
             padding-top: 3px;
+            cursor: col-resize;
+        }
+
+        /* hide chevron per default */
+        .gl-input>button>svg {
+            color: #545454;
+        }
+
+        /* show chevron when mouse is inside the tuple button */
+        .gl-input:hover>button>svg {
+            color: #ffffff;
+        }
+
+        /* hover color per button and input area */
+        .gl-input>div:hover,
+        .gl-input>button:hover {
+            background: #797979;
         }
 
         .gl-input>div {
@@ -151,12 +168,42 @@
             flex-flow: row;
             align-items: stretch;
             padding: 0;
-            padding-top: 2px;
-
             margin: 0;
         }
 
+        .gl-input>div>.value {
+            padding-top: 2px;
+            padding-right: 4px;
+        }
+
         .gl-input>div>.label {
+            padding-top: 2px;
+            padding-left: 4px;
+            flex-grow: 1;
+        }
+
+        .gl-input>div>input {
+            /* flex-grow: 1; */
+            width: 0;
+            margin: 0;
+            padding: 0;
+            border: none;
+            outline: none;
+            font-size: 12px;
+            background: #222222;
+        }
+        /* focus */
+        .gl-input:focus-within>button {
+            background: #222222;
+        }
+        .gl-input:focus-within>button>svg {
+            color: #222222;
+        }
+        .gl-input>div:focus-within>.label, .gl-input>div:focus-within>.value {
+            display: none;
+        }
+        .gl-input>div>input:focus {
+            width: inherit;
             flex-grow: 1;
         }
 
@@ -164,22 +211,18 @@
             padding-top:4px;
             padding-bottom:4px;
         }
-        .gl-input>input {
-            display: none;
-            flex-grow: 1;
-            border: none;
-            outline: none;
-            background: #222222;
-        }
+
         .gl-input:hover {
             background: #797979;
-        }
+        }*/
         .gl-input.gl-edit>input {
             display: inline;
         }
+
+        /* hide output in edit mode*/
         .gl-input.gl-edit>div {
             display: none;
-        } */
+        }
 
         /*div.gl-edit :not(div.gl-edit)>div {
             display: none;
