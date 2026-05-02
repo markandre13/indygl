@@ -5,6 +5,7 @@ import solidPlugin from 'vite-plugin-solid'
 export default defineConfig({
     //   plugins: [glsl()]
     resolve: {
+        tsconfig: true,
         tsconfigPaths: true
     },
     build: {

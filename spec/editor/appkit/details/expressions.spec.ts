@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { Lexer } from '../../../../src/editor/appkit/details/Lexer'
+import { Lexer } from 'appkit/details/Lexer'
 import { fit, xit } from '../../../spec'
-import { evaluate, expression } from '../../../../src/editor/appkit/details/expression'
+import { evaluate, expression } from 'appkit/details/expression'
 import BigNumber from 'bignumber.js'
-import type { ExpressionNode } from '../../../../src/editor/appkit/details/ExpressionNode'
-import { Length } from '../../../../src/editor/appkit/units/Length'
+import type { ExpressionNode } from 'appkit/details/ExpressionNode'
+import { Length } from 'appkit/units/Length'
 
 function num(node: ExpressionNode | undefined): number {
     if (node?.value instanceof BigNumber) {

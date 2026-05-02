@@ -3,8 +3,7 @@ import type { EditorModel } from "../app/EditorModel"
 import { SelectionMode } from "../app/SelectionMode"
 import { IconRadioButton } from "../viewkit/IconRadioButton"
 import { ViewportShading } from "../app/ViewportShading"
-import { NumberModel } from "toad.js/appkit/NumberModel"
-import { LengthModel } from "../appkit/units/LengthModel"
+import { LengthModel } from "appkit/units/LengthModel"
 import type { UnitModel } from "../appkit/units/UnitModel"
 
 // https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/control/numeric_input.html

@@ -3,15 +3,15 @@ import { NumericModel, type NumericModelEvent, type NumericModelOptions } from '
 import { evaluate } from './details/expression'
 import type { Unit } from './units/Unit'
 
-function bind(_target: any, context: ClassMemberDecoratorContext) {
-    const methodName = context.name
-    if (context.private) {
-        throw Error(`@bind cannot decorate private properties like ${methodName.toString()}`)
-    }
-    context.addInitializer(function() {
-        (this as any)[methodName] = (this as any)[methodName].bind(this)
-    })
-}
+// function bind(_target: any, context: ClassMemberDecoratorContext) {
+//     const methodName = context.name
+//     if (context.private) {
+//         throw Error(`@bind cannot decorate private properties like ${methodName.toString()}`)
+//     }
+//     context.addInitializer(function() {
+//         (this as any)[methodName] = (this as any)[methodName].bind(this)
+//     })
+// }
 
 export type BigNumberModelEvent = NumericModelEvent
 export type BigNumberModelOptions = NumericModelOptions<BigNumber>
@@ -38,14 +38,14 @@ export class BigNumberModel extends NumericModel<BigNumber> {
                     }
     }
 
-    @bind
+    // @bind
     increment() {
         if (this.step !== undefined) {
             this.value = this.clip(this.value.plus(this.step))
         }
     }
-    
-    @bind
+
+    // @bind
     decrement() {
         if (this.step !== undefined) {
             this.value = this.clip(this.value.minus(this.step))
