@@ -1,6 +1,7 @@
 import { type Unit, makeUnit } from "./Unit"
+import { UnitModel } from "./UnitModel"
 
-export const Volume: Unit = makeUnit([
+export const VolumeUnit: Unit = makeUnit([
     // metric area units
     ["pm³", Math.pow(0.000000000001, 3),],
     ["pm3", Math.pow(0.000000000001, 3)],
@@ -44,3 +45,7 @@ export const Volume: Unit = makeUnit([
     ["mi3", Math.pow(1609.344, 3)],
     // ["m",0.9144],
 ])
+
+export class VolumeModel extends UnitModel {
+    override get unit(): Unit { return VolumeUnit }
+}

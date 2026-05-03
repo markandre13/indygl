@@ -6,19 +6,57 @@ import { ViewportShading } from "../app/ViewportShading"
 import { LengthModel } from "appkit/units/LengthModel"
 import type { UnitModel } from "../appkit/units/UnitModel"
 import { RotationModel } from "../appkit/units/RotationModel"
+import { Signal } from "toad.js/reactive/Signal"
+import { FactorModel } from "../appkit/units/FactorModel"
 
 // https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/control/numeric_input.html
 
 // number, unit
 // rename Signal into Emitter to avoid name clash with tc39 signals?
 
-const tx = new LengthModel(0, { label: "X", step: 0.01 })
-const ty = new LengthModel(0, { label: "Y", step: 0.01 })
-const tz = new LengthModel(0, { label: "Z", step: 0.01 })
+abstract class TripleModel {
+    signal = new  Signal
+    abstract x: UnitModel
+    abstract y: UnitModel
+    abstract z: UnitModel
+    private emit() { this.signal.emit() }
+    protected init() {
+        this.emit = this.emit.bind(this)
+        this.x.signal.add(this.emit)
+        this.y.signal.add(this.emit)
+        this.z.signal.add(this.emit)
+    }
+}
 
-const rx = new RotationModel(0, { label: "X", step: 0.01 })
-const ry = new RotationModel(0, { label: "Y", step: 0.01 })
-const rz = new RotationModel(0, { label: "Z", step: 0.01 })
+class Vec3Model extends TripleModel {
+    readonly x = new LengthModel(0, { label: "X", step: 0.01 })
+    readonly y = new LengthModel(0, { label: "Y", step: 0.01 })
+    readonly z = new LengthModel(0, { label: "Z", step: 0.01 })
+    constructor() {
+        super()
+        this.init()
+    }
+}
+
+class Rot3Model extends TripleModel {
+    readonly x = new RotationModel(0, { label: "X", step: 0.01 })
+    readonly y = new RotationModel(0, { label: "Y", step: 0.01 })
+    readonly z = new RotationModel(0, { label: "Z", step: 0.01 })
+    constructor() {
+        super()
+        this.init()
+    }
+}
+
+class Scale3Model extends TripleModel {
+    readonly x = new FactorModel(0, { label: "X", step: 0.01 })
+    readonly y = new FactorModel(0, { label: "Y", step: 0.01 })
+    readonly z = new FactorModel(0, { label: "Z", step: 0.01 })
+    constructor() {
+        super()
+        this.init()
+    }
+}
 
 export function Chevron(props: { rotate?: number }) {
     return (
@@ -67,8 +105,23 @@ export function TupleInput(props: { model: UnitModel, edit?: boolean }) {
     return e
 }
 
+function Triple(props: { model: TripleModel }) {
+    return (
+        <div>
+            <TupleInput model={props.model.x} />
+            <TupleInput model={props.model.y} />
+            <TupleInput model={props.model.z} />
+        </div>
+    )
+}
+
 export function MainScreen(props: { model: EditorModel }) {
     let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement
+
+    const translation = new Vec3Model()
+    const rotation = new Rot3Model()
+    const scale = new Scale3Model()
+    const dimensions = new Vec3Model()
 
     const selectionMode = props.model.selectionMode
     const viewportShading = props.model.viewportShading
@@ -101,26 +154,14 @@ export function MainScreen(props: { model: EditorModel }) {
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />
-            <div>
-                <TupleInput model={tx} />
-                <TupleInput model={ty} />
-                <TupleInput model={tz} />
-            </div>
+            <Triple model={translation}/>
             Rotation<br />
-           <div>
-                <TupleInput model={rx} />
-                <TupleInput model={ry} />
-                <TupleInput model={rz} />
-            </div>
+            <Triple model={rotation}/>
             XZY Euler<br />
             Scale<br />
-            <div class="X">X 1.000</div>
-            <div class="Y">Y 1.000</div>
-            <div class="Z">Z 1.000</div>
+            <Triple model={scale}/>
             Dimensions<br />
-            <div class="X">X 2 m</div>
-            <div class="Y">Y 2 m</div>
-            <div class="Z">Z 2 m</div>
+            <Triple model={dimensions}/>
         </div>
         <div ref={status} class="status">Select Rotate View Options</div>
     </div>

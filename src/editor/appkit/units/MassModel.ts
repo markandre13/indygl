@@ -1,7 +1,7 @@
 import { type Unit, makeUnit } from "./Unit"
+import { UnitModel } from "./UnitModel"
 
-
-export const Mass: Unit = makeUnit([
+export const MassUnit: Unit = makeUnit([
     // metric mass units
     ["t", 1000], // tonne
     ["ql", 100], // quintal
@@ -18,3 +18,7 @@ export const Mass: Unit = makeUnit([
     ["lb", 0.45359237], // pound
     ["oz", 0.028349523125], // ounce
 ])
+
+export class AccelerationModel extends UnitModel {
+    override get unit(): Unit { return MassUnit }
+}

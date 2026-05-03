@@ -27,7 +27,5 @@ export const LengthUnit: Unit = makeUnit([
 ])
 
 export class LengthModel extends UnitModel {
-    override get unit(): Unit {
-        return LengthUnit
-    }
+    override get unit(): Unit { return LengthUnit }
 }

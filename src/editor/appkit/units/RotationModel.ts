@@ -13,7 +13,5 @@ export const RotationUnit: Unit = makeUnit([
 ])
 
 export class RotationModel extends UnitModel {
-    override get unit(): Unit {
-        return RotationUnit
-    }
+    override get unit(): Unit { return RotationUnit }
 }

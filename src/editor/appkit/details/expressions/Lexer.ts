@@ -16,6 +16,10 @@ export class Lexer {
         return code >= 0x30 && code <= 0x39
     }
     static isalpha(c: string) {
+        // hack to handle units with special symbols
+        if ("²³°%".includes(c)) {
+            return true
+        }
         const code = c.charCodeAt(0)
         // console.log(`isalpha ${c} 0x${code.toString(16).padStart(2, '0')} ${code >= 0x41 && code <= 0x5a || code >= 0x7a && code <= 0x91}`)
         return code >= 0x41 && code <= 0x5a || code >= 0x61 && code <= 0x7a

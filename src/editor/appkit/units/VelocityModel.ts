@@ -1,7 +1,7 @@
 import { type Unit, makeUnit } from "./Unit"
+import { UnitModel } from "./UnitModel"
 
-
-export const Velocity: Unit = makeUnit([
+export const VelocityUnit: Unit = makeUnit([
     // metric velocity units
     ["m/s", 1],
     ["km/h", 1000 / 3600],
@@ -9,3 +9,7 @@ export const Velocity: Unit = makeUnit([
     ["ft/s", 0.3048],
     ["mph", 1609.344 / 3600],
 ])
+
+export class AccelerationModel extends UnitModel {
+    override get unit(): Unit { return VelocityUnit }
+}
