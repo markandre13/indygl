@@ -15,11 +15,20 @@ export class Mat4Model extends ValueModel<mat4> {
 
     override resetToDefault() {
         if (this.default) {
-            this._value = mat4.clone(this.default)
+            this.value = mat4.clone(this.default)
         } else {
-            mat4.identity(this._value)
+            this.value = mat4.create()
         }
         this.signal.emit({ type: VALUE })
+    }
+    rotateX(r: number) {
+        this.value = mat4.rotateX(mat4.create(), this._value, r)
+    }
+    rotateY(r: number) {
+        this.value = mat4.rotateY(mat4.create(), this._value, r)
+    }
+    rotateZ(r: number) {
+        this.value = mat4.rotateZ(mat4.create(), this._value, r)
     }
     rotateTo(x: number, y: number, z: number) {
         const justTranslation = mat4.clone(this._value)

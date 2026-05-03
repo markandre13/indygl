@@ -56,20 +56,16 @@ export class BasicMode extends Controller {
                 // this._context.invalidate()
                 break
             case 'Numpad4':
-                mat4.rotateY(ctx.camera.value, ctx.camera.value, deg2rad(11.25))
-                this.context.invalidate()
+                ctx.camera.rotateY(deg2rad(11.25))
                 break
             case 'Numpad6':
-                mat4.rotateY(ctx.camera.value, ctx.camera.value, deg2rad(-11.25))
-                this.context.invalidate()
+                ctx.camera.rotateY(deg2rad(-11.25))
                 break
             case 'Numpad8':
-                mat4.rotateX(ctx.camera.value, ctx.camera.value, deg2rad(11.25))
-                this.context.invalidate()
+                ctx.camera.rotateX(deg2rad(11.25))
                 break
             case 'Numpad2':
-                mat4.rotateX(ctx.camera.value, ctx.camera.value, deg2rad(-11.25))
-                this.context.invalidate()
+                ctx.camera.rotateX(deg2rad(-11.25))
                 break
             case 'Numpad5': // toggle orthographic/perspective
                 if (ctx.projection === Projection.ORTHOGONAL) {
@@ -139,8 +135,8 @@ export class BasicMode extends Controller {
         mat4.mul(m, m, cameraRotation)
         mat4.rotateY(m, m, deg2rad(x))
         mat4.mul(m, m, backFromRotationCenter)
-
-        mat4.mul(this.context.camera.value, this._camera!, m)
+        mat4.mul(m, this._camera!, m)
+        this.context.camera.value = m
 
         this.context.invalidate()
     }

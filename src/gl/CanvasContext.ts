@@ -40,7 +40,7 @@ export class CanvasContext {
         this.invalidate = this.invalidate.bind(this)
         const defaultCamera = mat4.create()
         mat4.translate(defaultCamera, defaultCamera, [0.0, 0.0, -24.0])
-        this.camera = new Mat4Model(defaultCamera, {default: defaultCamera})
+        this.camera = new Mat4Model(defaultCamera, {default: defaultCamera, local: "camera"})
         this.camera.signal.add(this.invalidate)
 
         this.setupEventHandling(canvas)

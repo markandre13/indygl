@@ -254,10 +254,10 @@ export class FlyMode extends Controller {
             0,
             'syxz'
         )
-        mat4.identity(this._ctx.camera.value)
-        mat4.mul(this._ctx.camera.value, this._ctx.camera.value, this._rotate)
-        mat4.mul(this._ctx.camera.value, this._ctx.camera.value, this._translate)
-        mat4.mul(this._ctx.camera.value, this._ctx.camera.value, this._initial)
+        const camera = mat4.clone(this._rotate)
+        mat4.mul(camera, camera, this._translate)
+        mat4.mul(camera, camera, this._initial)
+        this._ctx.camera.value = camera
 
         this._lastUpdate = now
 
