@@ -269,12 +269,13 @@ export async function main() {
             context.backgroundColor = cl
 
             if (edgeIdx >= 0) {
-                // toggle color of edge
-
-                const v = edgeColors[edgeColorIdx] ? 0 : 1
-                edgeColors[edgeColorIdx] = v
-                edgeColors[edgeColorIdx + 1] = v
-                edgeColors[edgeColorIdx + 2] = v
+                // toggle color of edge 
+                // todo: blender has last selected point in white
+                // todo: blender uses shift to add to selection, non-shift to deselect other points
+                const v = edgeColors[edgeColorIdx] ? [0,0,0] : [1,0.5,0]// #fe7900
+                edgeColors[edgeColorIdx] = v[0]
+                edgeColors[edgeColorIdx + 1] = v[1]
+                edgeColors[edgeColorIdx + 2] = v[2]
                 device.device.queue.writeBuffer(edgeColorBuffer.buffer, FLOAT32_NUM_BYTES * edgeColorIdx, edgeColors, edgeColorIdx, 3)
 
                 context.invalidate()
