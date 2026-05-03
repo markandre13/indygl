@@ -67,8 +67,22 @@ solid:     orange outline, gray, shaded, smooth          + edges, points, faces 
 X render subset (subset operator? later...) we need the subset to test transparency
 X do the transparent stuff
 X smooth shading
--> texture
--> transform using the panel on the right
+X transform using the panel on the right
+[ ] propper styles for headings
+[ ] fix select point (location is of)
+[ ] select multiple tuple elements
+
+[ ] nicer api for SpringLayout
+[ ] propper tests for SpringLayout
+[ ] edges aren't completly visible (persist camera position to debug this)
+[X] status bar icons for mouse buttons and special keys
+[ ] texture
+[ ] draw ground
+[ ] draw axis
+
+[ ] menubar (via toad styles: big and small)
+[ ] undo/redo
+[ ] two objects (MH & ARKit neutral)
 */
 
 export async function main() {

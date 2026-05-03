@@ -4,6 +4,7 @@ import { SelectionMode } from "../app/SelectionMode"
 import { IconRadioButton } from "../viewkit/IconRadioButton"
 import { ViewportShading } from "../app/ViewportShading"
 import { TripleInput } from "../viewkit/TripleInput"
+import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from "../viewkit/InputIcons"
 
 export function MainScreen(props: { model: EditorModel }) {
     let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement
@@ -47,7 +48,17 @@ export function MainScreen(props: { model: EditorModel }) {
             Dimensions<br />
             <TripleInput model={transform.dimensions} />
         </div>
-        <div ref={status} class="status">Select Rotate View Options</div>
+        <div ref={status} class="status">
+            <IconMouseLeft /><span>Select</span>
+            <IconMouseMiddle /><span>Rotate View</span>
+            <IconMouseRight /><span>Options</span>
+            <IconKey key="W" />
+            <IconKey key="A" />
+            <IconKey key="S" />
+            <IconKey key="D" />
+            <IconShift />
+            <IconOption />
+        </div>
     </div>
 
     //  the definition below sucks. how about ascii art:

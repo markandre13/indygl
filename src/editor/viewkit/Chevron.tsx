@@ -1,4 +1,3 @@
-
 export function Chevron(props: { rotate?: number} ) {
     return (
         <svg class="tool-icon" style={{

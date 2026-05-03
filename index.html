@@ -136,12 +136,14 @@
             margin: 1px;
             cursor: col-resize;
         }
+
         /* round border corners for last and first tuple element */
         .gl-input:first-child {
             overflow: hidden;
             border-top-left-radius: 4px;
             border-top-right-radius: 4px;
         }
+
         .gl-input:last-child {
             overflow: hidden;
             border-bottom-left-radius: 4px;
@@ -266,6 +268,17 @@
             height: 16px;
             padding: 4px;
             padding-left: 18px;
+
+            line-height: 16px;
+            /* text-align: center; */
+        }
+
+        .status>span {
+            display: inline-block;
+            vertical-align:top;
+            line-height: normal;
+            padding-left: 2px;
+            padding-right: 2px;
         }
     </style>
 </head>
