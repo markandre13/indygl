@@ -1,3 +1,4 @@
+import BigNumber from "bignumber.js"
 import { makeUnit, type Unit } from "./Unit"
 import { UnitModel } from "./UnitModel"
 
@@ -14,4 +15,13 @@ export const RotationUnit: Unit = makeUnit([
 
 export class RotationModel extends UnitModel {
     override get unit(): Unit { return RotationUnit }
+    override clip(value: BigNumber) {
+        while (value.comparedTo(0)! < 0) { 
+            value = value.plus(360)
+        }
+        while (value.comparedTo(360)! >= 0) { 
+            value = value.minus(360)
+        }
+        return super.clip(value)
+    }
 }

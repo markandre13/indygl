@@ -3,118 +3,10 @@ import type { EditorModel } from "../app/EditorModel"
 import { SelectionMode } from "../app/SelectionMode"
 import { IconRadioButton } from "../viewkit/IconRadioButton"
 import { ViewportShading } from "../app/ViewportShading"
-import { LengthModel } from "appkit/units/LengthModel"
-import type { UnitModel } from "../appkit/units/UnitModel"
-import { RotationModel } from "../appkit/units/RotationModel"
-import { Signal } from "toad.js/reactive/Signal"
-import { FactorModel } from "../appkit/units/FactorModel"
-import { hasFocus } from "toad.js/util/dom"
-
-// https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/control/numeric_input.html
-
-// number, unit
-// rename Signal into Emitter to avoid name clash with tc39 signals?
-
-abstract class TripleModel {
-    signal = new Signal
-    abstract x: UnitModel
-    abstract y: UnitModel
-    abstract z: UnitModel
-    private emit() { this.signal.emit() }
-    protected init() {
-        this.emit = this.emit.bind(this)
-        this.x.signal.add(this.emit)
-        this.y.signal.add(this.emit)
-        this.z.signal.add(this.emit)
-    }
-}
-
-class Vec3Model extends TripleModel {
-    readonly x = new LengthModel(0, { label: "X", step: 0.01 })
-    readonly y = new LengthModel(0, { label: "Y", step: 0.01 })
-    readonly z = new LengthModel(0, { label: "Z", step: 0.01 })
-    constructor() {
-        super()
-        this.init()
-    }
-}
-
-class Rot3Model extends TripleModel {
-    readonly x = new RotationModel(0, { label: "X", step: 1 })
-    readonly y = new RotationModel(0, { label: "Y", step: 1 })
-    readonly z = new RotationModel(0, { label: "Z", step: 1 })
-    constructor() {
-        super()
-        this.init()
-    }
-}
-
-class Scale3Model extends TripleModel {
-    readonly x = new FactorModel(0, { label: "X", step: 0.01 })
-    readonly y = new FactorModel(0, { label: "Y", step: 0.01 })
-    readonly z = new FactorModel(0, { label: "Z", step: 0.01 })
-    constructor() {
-        super()
-        this.init()
-    }
-}
-
-export function Chevron(props: { rotate?: number }) {
-    return (
-        <svg class="tool-icon" style={{
-            width: 12,
-            height: 12,
-            transform: props.rotate ? `rotate(${props.rotate}deg)` : undefined
-        }}>
-            <path stroke="currentcolor" stroke-width={2} fill="none" d="M 4 3 l 3 3 l -3 3" />
-        </svg>
-    )
-}
-
-export function TupleInput(props: { model: UnitModel, edit?: boolean }) {
-    let input!: HTMLInputElement
-    const e = <div
-        classList={{
-            'gl-input': true,
-            'tx-error': false /*props.model.error !== undefined*/
-        }}
-    >
-        <button onclick={props.model.decrement}>
-            <Chevron rotate={180} />
-        </button>
-        <div onpointerdown={(e: PointerEvent) => {
-            if (!hasFocus(input)) {
-                input.focus()
-                e.preventDefault()
-            }
-        }}>
-            <div class="label">{props.model.label}</div>
-            <div class="value">{() => `${props.model.value.toString()} ${props.model.symbol}`.trim()}</div>
-            <input
-                ref={input}
-                value={`${props.model.value} ${props.model.symbol}`.trim()}
-                onchange={() => {
-                    props.model.value = input.value
-                }}
-            />
-        </div>
-        <button onclick={props.model.increment}><Chevron /></button>
-    </div>
-    if (props.edit) {
-        requestAnimationFrame(() => { input.focus() })
-    }
-    return e
-}
-
-function Triple(props: { model: TripleModel }) {
-    return (
-        <div>
-            <TupleInput model={props.model.x} />
-            <TupleInput model={props.model.y} />
-            <TupleInput model={props.model.z} />
-        </div>
-    )
-}
+import { TripleInput } from "../viewkit/TripleInput"
+import { Vec3Model } from "../appkit/Vec3Model"
+import { Rot3Model } from "../appkit/Rot3Model"
+import { Scale3Model } from "../appkit/Scale3Model"
 
 export function MainScreen(props: { model: EditorModel }) {
     let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement
@@ -154,14 +46,14 @@ export function MainScreen(props: { model: EditorModel }) {
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />
-            <Triple model={translation} />
+            <TripleInput model={translation} />
             Rotation<br />
-            <Triple model={rotation} />
+            <TripleInput model={rotation} />
             XZY Euler<br />
             Scale<br />
-            <Triple model={scale} />
+            <TripleInput model={scale} />
             Dimensions<br />
-            <Triple model={dimensions} />
+            <TripleInput model={dimensions} />
         </div>
         <div ref={status} class="status">Select Rotate View Options</div>
     </div>

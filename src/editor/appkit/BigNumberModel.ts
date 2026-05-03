@@ -105,7 +105,7 @@ export class BigNumberModel extends NumericModel<BigNumber> {
         return super.value
     }
 
-    protected clip(value: BigNumber) {
+    clip(value: BigNumber) {
         if (this.min !== undefined && value.comparedTo(this.min)! < 0) {
             value = BigNumber(this.min)
         }
