@@ -236,8 +236,8 @@ export async function main() {
             let edgeIdx: number = 0
             let distance = Number.MAX_VALUE
 
-            let cx = Math.round(ev.x)
-            let cy = Math.round(ev.y) - 2 // FIXME
+            let cx = Math.round(ev.offsetX)
+            let cy = Math.round(ev.offsetY)
             let left = Math.max(0, cx - PICK_SIZE)
             let top = Math.max(0, cy - PICK_SIZE)
             let right = Math.min(cx + PICK_SIZE, canvas.width)
