@@ -8,6 +8,7 @@ import type { UnitModel } from "../appkit/units/UnitModel"
 import { RotationModel } from "../appkit/units/RotationModel"
 import { Signal } from "toad.js/reactive/Signal"
 import { FactorModel } from "../appkit/units/FactorModel"
+import { hasFocus } from "toad.js/util/dom"
 
 // https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/control/numeric_input.html
 
@@ -15,7 +16,7 @@ import { FactorModel } from "../appkit/units/FactorModel"
 // rename Signal into Emitter to avoid name clash with tc39 signals?
 
 abstract class TripleModel {
-    signal = new  Signal
+    signal = new Signal
     abstract x: UnitModel
     abstract y: UnitModel
     abstract z: UnitModel
@@ -39,9 +40,9 @@ class Vec3Model extends TripleModel {
 }
 
 class Rot3Model extends TripleModel {
-    readonly x = new RotationModel(0, { label: "X", step: 0.01 })
-    readonly y = new RotationModel(0, { label: "Y", step: 0.01 })
-    readonly z = new RotationModel(0, { label: "Z", step: 0.01 })
+    readonly x = new RotationModel(0, { label: "X", step: 1 })
+    readonly y = new RotationModel(0, { label: "Y", step: 1 })
+    readonly z = new RotationModel(0, { label: "Z", step: 1 })
     constructor() {
         super()
         this.init()
@@ -77,21 +78,21 @@ export function TupleInput(props: { model: UnitModel, edit?: boolean }) {
             'gl-input': true,
             'tx-error': false /*props.model.error !== undefined*/
         }}
-        onpointerdown={() => {
-            console.log(`set focus to`)
-            console.log(input)
-            input.focus()
-        }}
     >
         <button onclick={props.model.decrement}>
             <Chevron rotate={180} />
         </button>
-        <div>
+        <div onpointerdown={(e: PointerEvent) => {
+            if (!hasFocus(input)) {
+                input.focus()
+                e.preventDefault()
+            }
+        }}>
             <div class="label">{props.model.label}</div>
-            <div class="value">{() => `${props.model.value.toString()} ${props.model.symbol}`}</div>
+            <div class="value">{() => `${props.model.value.toString()} ${props.model.symbol}`.trim()}</div>
             <input
                 ref={input}
-                value={`${props.model.value} ${props.model.symbol}`}
+                value={`${props.model.value} ${props.model.symbol}`.trim()}
                 onchange={() => {
                     props.model.value = input.value
                 }}
@@ -133,7 +134,6 @@ export function MainScreen(props: { model: EditorModel }) {
             <div>Render</div>
             <div>Window</div>
             <div>Help</div>
-            <Chevron />
         </div>
         <div ref={toolbar} class="toolbar">
             <div>
@@ -154,14 +154,14 @@ export function MainScreen(props: { model: EditorModel }) {
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />
-            <Triple model={translation}/>
+            <Triple model={translation} />
             Rotation<br />
-            <Triple model={rotation}/>
+            <Triple model={rotation} />
             XZY Euler<br />
             Scale<br />
-            <Triple model={scale}/>
+            <Triple model={scale} />
             Dimensions<br />
-            <Triple model={dimensions}/>
+            <Triple model={dimensions} />
         </div>
         <div ref={status} class="status">Select Rotate View Options</div>
     </div>
