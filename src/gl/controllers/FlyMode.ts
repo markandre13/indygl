@@ -52,7 +52,7 @@ export class FlyMode extends Controller {
         super()
         this._ctx = context
         // this._view = view
-        this._initial = mat4.clone(context.camera)
+        this._initial = mat4.clone(context.camera.value)
         this._translate = mat4.create()
         this._rotate = mat4.create()
         // this._cartet .setAttributeNS(null, 'cx', `${pixelX}`)
@@ -114,7 +114,7 @@ export class FlyMode extends Controller {
 
         const ctx = this._ctx
 
-        const cameraRotation = mat4.clone(ctx.camera)
+        const cameraRotation = mat4.clone(ctx.camera.value)
         mat4.mul(cameraRotation, cameraRotation, this._rotate)
         cameraRotation[12] = cameraRotation[13] = cameraRotation[14] = 0
         mat4.invert(cameraRotation, cameraRotation)
@@ -201,7 +201,7 @@ export class FlyMode extends Controller {
      * quit fly mode and reset postion to when fly mode was started
      */
     cancel() {
-        this._ctx.camera = this._initial
+        this._ctx.camera.value = this._initial
         this.confirm()
     }
     private invalidate() {
@@ -254,10 +254,10 @@ export class FlyMode extends Controller {
             0,
             'syxz'
         )
-        mat4.identity(this._ctx.camera)
-        mat4.mul(this._ctx.camera, this._ctx.camera, this._rotate)
-        mat4.mul(this._ctx.camera, this._ctx.camera, this._translate)
-        mat4.mul(this._ctx.camera, this._ctx.camera, this._initial)
+        mat4.identity(this._ctx.camera.value)
+        mat4.mul(this._ctx.camera.value, this._ctx.camera.value, this._rotate)
+        mat4.mul(this._ctx.camera.value, this._ctx.camera.value, this._translate)
+        mat4.mul(this._ctx.camera.value, this._ctx.camera.value, this._initial)
 
         this._lastUpdate = now
 

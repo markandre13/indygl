@@ -167,7 +167,7 @@ export async function main() {
     // const shaderShadedMono = new ShaderP3N3(device, context)
     const shaderLines = new ShaderP3_C3_IDX_LineList(device, context) // need ShaderP3_C3_IDX_LineList
 
-    mat4.translate(context.camera, context.camera, vec3.fromValues(0, 0, -24))
+    // mat4.translate(context.camera.value, context.camera.value, vec3.fromValues(0, 0, -24))
 
     context.pushController(new class extends Controller {
         override async pointerdown(ev: PointerEvent) {
@@ -289,7 +289,7 @@ export async function main() {
         const modelViewMatrix = modelUniforms.modelViewMatrix
       
         // mat4.copy(modelViewMatrix, context.camera)
-        mat4.multiply(modelViewMatrix, context.camera, editorModel.transform.value)
+        mat4.multiply(modelViewMatrix, context.camera.value, editorModel.transform.value)
 
         const normalMatrix = modelUniforms.normalMatrix
         mat4.invert(normalMatrix, modelViewMatrix)

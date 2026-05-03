@@ -56,19 +56,19 @@ export class BasicMode extends Controller {
                 // this._context.invalidate()
                 break
             case 'Numpad4':
-                mat4.rotateY(ctx.camera, ctx.camera, deg2rad(11.25))
+                mat4.rotateY(ctx.camera.value, ctx.camera.value, deg2rad(11.25))
                 this.context.invalidate()
                 break
             case 'Numpad6':
-                mat4.rotateY(ctx.camera, ctx.camera, deg2rad(-11.25))
+                mat4.rotateY(ctx.camera.value, ctx.camera.value, deg2rad(-11.25))
                 this.context.invalidate()
                 break
             case 'Numpad8':
-                mat4.rotateX(ctx.camera, ctx.camera, deg2rad(11.25))
+                mat4.rotateX(ctx.camera.value, ctx.camera.value, deg2rad(11.25))
                 this.context.invalidate()
                 break
             case 'Numpad2':
-                mat4.rotateX(ctx.camera, ctx.camera, deg2rad(-11.25))
+                mat4.rotateX(ctx.camera.value, ctx.camera.value, deg2rad(-11.25))
                 this.context.invalidate()
                 break
             case 'Numpad5': // toggle orthographic/perspective
@@ -106,7 +106,7 @@ export class BasicMode extends Controller {
         }
         this.context.canvas.setPointerCapture(ev.pointerId)
         this._down = { x: ev.x, y: ev.y }
-        this._camera = mat4.clone(this.context.camera)
+        this._camera = mat4.clone(this.context.camera.value)
         this._center = this.selectionCenter()
         ev.preventDefault()
     }
@@ -140,7 +140,7 @@ export class BasicMode extends Controller {
         mat4.rotateY(m, m, deg2rad(x))
         mat4.mul(m, m, backFromRotationCenter)
 
-        mat4.mul(this.context.camera, this._camera!, m)
+        mat4.mul(this.context.camera.value, this._camera!, m)
 
         this.context.invalidate()
     }

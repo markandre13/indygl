@@ -1,9 +1,8 @@
 import { mat4 } from 'gl-matrix'
 import { SceneUniform } from './buffers/SceneUniform'
 import type { Device } from './Device'
-import { deg2rad } from './algorithms/deg2rad'
-import { euler2matrix } from './algorithms/euler'
 import type { Controller } from './controllers/Controller'
+import { Mat4Model } from './Mat4Model'
 
 export enum Projection {
     ORTHOGONAL,
@@ -34,10 +33,15 @@ export class CanvasContext {
         this.invalidate()
     }
 
-    constructor(device: Device, canvas: HTMLCanvasElement) {
+    constructor(device: Device, canvas: HTMLCanvasElement) {      
         this.device = device
         this.canvas = canvas
+
         this.invalidate = this.invalidate.bind(this)
+        const defaultCamera = mat4.create()
+        mat4.translate(defaultCamera, defaultCamera, [0.0, 0.0, -24.0])
+        this.camera = new Mat4Model(defaultCamera, {default: defaultCamera})
+        this.camera.signal.add(this.invalidate)
 
         this.setupEventHandling(canvas)
 
@@ -92,7 +96,7 @@ export class CanvasContext {
     // paint?: () => void
     backgroundColor = [0.247, 0.247, 0.247, 1.0]
     // backgroundColor = [0,0,0,1]
-    camera = mat4.create()
+    camera: Mat4Model
     private _invalidated = false
     invalidate() {
         if (this._invalidated) {
@@ -121,27 +125,10 @@ export class CanvasContext {
     }
 
     resetCamera() {
-        // const defaultCamera = this._context.defaultCamera
-        // if (defaultCamera) {
-        mat4.identity(this.camera)
-        mat4.translate(this.camera, this.camera, [0.0, 0.0, -6.0])
-        this.invalidate()
-        //     mat4.copy(this._context.camera, defaultCamera)
-        //     this._context.invalidate()
-        // }
+        this.camera.resetToDefault()
     }
     rotateCameraTo(x: number, y: number, z: number) {
-        const justTranslation = mat4.clone(this.camera)
-        // just rotation
-        justTranslation[12] = justTranslation[13] = justTranslation[14] = 0
-        // inverse rotation
-        mat4.invert(justTranslation, justTranslation)
-        // just translation
-        mat4.mul(justTranslation, justTranslation, this.camera)
-
-        const newRotation = euler2matrix(deg2rad(x), deg2rad(y), deg2rad(z))
-
-        this.camera = mat4.mul(newRotation, newRotation, justTranslation)
+        this.camera.rotateTo(x,y,z)
     }
 
     protected _projection: Projection = Projection.PERSPECTIVE
