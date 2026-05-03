@@ -80,7 +80,6 @@ export class BigNumberModel extends NumericModel<BigNumber> {
                 return
             }
         } else {
-            console.log(`  number to bignumber`)
             number = BigNumber(value)
         }
         // let number = typeof value === "string" ? parseFloat(value) : value

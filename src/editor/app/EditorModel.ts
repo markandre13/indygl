@@ -1,6 +1,7 @@
 import { OptionModel } from "toad.js/appkit/OptionModel"
 import { SelectionMode } from "./SelectionMode"
 import { ViewportShading } from "./ViewportShading"
+import { TransformModel } from "../appkit/TransformModel"
 
 export class EditorModel {
     readonly selectionMode = new OptionModel(
@@ -10,7 +11,7 @@ export class EditorModel {
         [SelectionMode.EDGE, 3],
         [SelectionMode.FACE, 4],
     ], { local: "selection-mode" })
- 
+
     readonly viewportShading = new OptionModel(
         ViewportShading.WIREFRAME_XRAY, [
         [ViewportShading.WIREFRAME_XRAY, 0],
@@ -19,4 +20,6 @@ export class EditorModel {
         [ViewportShading.SOLID, 3],
         [ViewportShading.TEXTURED, 4]
     ], { local: "viewport-shading" })
+
+    readonly transform = new TransformModel()
 }

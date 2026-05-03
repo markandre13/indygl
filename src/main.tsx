@@ -94,6 +94,7 @@ export async function main() {
     await device.init()
     const context = new CanvasContext(device, canvas)
 
+    editorModel.transform.signal.add(context.invalidate)
     new ResizeObserver(context.invalidate).observe(canvas)
 
     context.pushController(new BasicMode(context))
@@ -268,11 +269,13 @@ export async function main() {
     })
     editorModel.selectionMode.signal.add(context.invalidate)
     editorModel.viewportShading.signal.add(context.invalidate)
-
+    
     context.paint = () => {
 
         const modelViewMatrix = modelUniforms.modelViewMatrix
-        mat4.copy(modelViewMatrix, context.camera)
+      
+        // mat4.copy(modelViewMatrix, context.camera)
+        mat4.multiply(modelViewMatrix, context.camera, editorModel.transform.value)
 
         const normalMatrix = modelUniforms.normalMatrix
         mat4.invert(normalMatrix, modelViewMatrix)

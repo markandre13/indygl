@@ -4,20 +4,12 @@ import { SelectionMode } from "../app/SelectionMode"
 import { IconRadioButton } from "../viewkit/IconRadioButton"
 import { ViewportShading } from "../app/ViewportShading"
 import { TripleInput } from "../viewkit/TripleInput"
-import { Vec3Model } from "../appkit/Vec3Model"
-import { Rot3Model } from "../appkit/Rot3Model"
-import { Scale3Model } from "../appkit/Scale3Model"
 
 export function MainScreen(props: { model: EditorModel }) {
     let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement
-
-    const translation = new Vec3Model()
-    const rotation = new Rot3Model()
-    const scale = new Scale3Model()
-    const dimensions = new Vec3Model()
-
     const selectionMode = props.model.selectionMode
     const viewportShading = props.model.viewportShading
+    const transform = props.model.transform
 
     const root = <div style={{ width: "100vw", height: "100vh" }}>
         <div ref={menubar} class="menubar">
@@ -46,14 +38,14 @@ export function MainScreen(props: { model: EditorModel }) {
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />
-            <TripleInput model={translation} />
+            <TripleInput model={transform.translation} />
             Rotation<br />
-            <TripleInput model={rotation} />
+            <TripleInput model={transform.rotation} />
             XZY Euler<br />
             Scale<br />
-            <TripleInput model={scale} />
+            <TripleInput model={transform.scale} />
             Dimensions<br />
-            <TripleInput model={dimensions} />
+            <TripleInput model={transform.dimensions} />
         </div>
         <div ref={status} class="status">Select Rotate View Options</div>
     </div>

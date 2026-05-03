@@ -70,7 +70,7 @@ export function TupleElementInput(props: { model: UnitModel; edit?: boolean }) {
                     step = step.times(10)
                 }
 
-                let value = oldValue.plus(step.times(Math.round(pointerDownX - e.clientX)))
+                let value = oldValue.plus(step.times(Math.round(e.clientX - pointerDownX)))
 
                 if (e.ctrlKey) {
                     value = value.div(step).decimalPlaces(0).times(step)
