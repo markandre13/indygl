@@ -41,6 +41,8 @@ export class ShaderP3_N3_IDX extends Shader {
             },
             depthStencil: {
                 depthWriteEnabled: true,
+                depthBias: 1, // this make points and lines look better
+                depthBiasSlopeScale: 1,
                 depthCompare: 'less',
                 format: context.depthTextureFormat,
             },

@@ -33,7 +33,7 @@ export class ShaderP3_PickPoint extends Shader {
             },
             depthStencil: {
                 depthWriteEnabled: true,
-                depthCompare: 'less-equal',
+                depthCompare: 'less',
                 format: context.depthTextureFormat,
             },
         }
