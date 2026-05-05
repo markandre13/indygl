@@ -17,7 +17,7 @@ export class Texture {
                 GPUTextureUsage.RENDER_ATTACHMENT,
         })
         device.queue.copyExternalImageToTexture(
-            { source: imageBitmap },
+            { source: imageBitmap, flipY: true },
             { texture: this.texture },
             [imageBitmap.width, imageBitmap.height]
         )
