@@ -80,7 +80,9 @@ export class ShaderP3_N3_T2_IDX extends Shader {
         normals: VertexBuffer,
         texcoords: VertexBuffer,
         texture: Texture,
-        indices: IndexBuffer
+        indices: IndexBuffer,
+        offset?: number,
+        length?: number
     ) {
         if (texture.texture !== this.texture) {
             this.texture = texture.texture
@@ -92,7 +94,7 @@ export class ShaderP3_N3_T2_IDX extends Shader {
         pass.setVertexBuffer(1, normals.buffer)
         pass.setVertexBuffer(2, texcoords.buffer)
         pass.setIndexBuffer(indices.buffer, 'uint32')
-        pass.drawIndexed(indices.length)
+        pass.drawIndexed(length === undefined ? indices.length : length, 1, offset)
     }
 }
 

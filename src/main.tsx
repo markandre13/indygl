@@ -212,10 +212,17 @@ export async function main() {
 
     const bodyGroup = neutral.getFaceGroup("body")!
 
-    const body = subset_P3_T2_IDX(
-        neutral.xyz, neutral.fxyz,
-        neutral.uv, neutral.fuv,
-        bodyGroup.startIndex, bodyGroup.startIndex + bodyGroup.length)
+    // const body = subset_P3_T2_IDX(
+    //     neutral.xyz, neutral.fxyz,
+    //     neutral.uv, neutral.fuv,
+    //     bodyGroup.startIndex, bodyGroup.startIndex + bodyGroup.length)
+
+    const body = {
+        xyz: neutral.xyz,
+        fxyz: neutral.fxyz,
+        uv: neutral.uv,
+        fuv: neutral.fuv
+    }
 
     const decoupled = decoupleXYZandUV(body.xyz, body.fxyz, body.uv, body.fuv)
     const decoupledNormals = new Float32Array(decoupled.vertex.length)
@@ -392,8 +399,6 @@ export async function main() {
     editorModel.selectionMode.signal.add(context.invalidate)
     editorModel.viewportShading.signal.add(context.invalidate)
 
-
-
     context.paint = () => {
 
         const modelViewMatrix = modelUniforms.modelViewMatrix
@@ -431,8 +436,11 @@ export async function main() {
 
         // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, cubeTexture)
         // shaderShadedTexture2.draw(pass, context, modelUniforms, points, normals, texcoords, cubeTexture)
-        shaderShadedTexture3.draw(pass, context, modelUniforms, points, normals, texcoords, cubeTexture, indices)
+        // shaderShadedTexture3.draw(pass, context, modelUniforms, points, normals, texcoords, cubeTexture, indices)
 
+        shaderShadedTexture3.draw(pass, context, modelUniforms, points, normals, texcoords, cubeTexture, indices,
+            bodyGroup.startIndex / 4 * 6, bodyGroup.length / 4 * 6)
+    
         pass.end()
         const commandBuffer = commandEncoder.finish()
         device.device.queue.submit([commandBuffer])
