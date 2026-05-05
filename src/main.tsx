@@ -37,6 +37,7 @@ import { quadsToTriangles } from './gl/algorithms/quadsToTriangles'
 import { calculateNormalsQuads } from './gl/algorithms/calculateNormalsQuads'
 import { ShaderP3_N3_T2 } from './gl/shaders/ShaderP3_N3_T2'
 import { ShaderP3_N3_T2_IDX } from './gl/shaders/ShaderP3_N3_T2_IDX'
+import { decoupleXYZandUV } from './gl/algorithms/decoupleXYZandUV'
 
 function split(v: ArrayLike<number>) {
     const points: number[] = []
@@ -178,14 +179,26 @@ export async function main() {
 
     // Fetch the image and upload it into a GPUTexture.
     const cubeTexture = new Texture()
-    await cubeTexture.load(device.device!!, "Di-3d.png")
+    // await cubeTexture.load(device.device!!, "Di-3d.png")
+    await cubeTexture.load(device.device!!, "young_caucasian_female_special_suit.jpg")
+
+    // const bodyTexture = new Texture()
+    // await bodyTexture.load(device.device!!, "young_caucasian_female_special_suit.png")
 
     const posColUv = new VertexBuffer(device, cubeVertexArray)
 
-    const cube = split(cubeVertexArray)
-    const points = new VertexBuffer(device, cube.points)
-    const normals = new VertexBuffer(device, cube.normals)
-    const texcoords = new VertexBuffer(device, cube.texcoords)
+    // const cube = split(cubeVertexArray)
+    // const points = new VertexBuffer(device, cube.points)
+    // const normals = new VertexBuffer(device, cube.normals)
+    // const texcoords = new VertexBuffer(device, cube.texcoords)
+    // const indices = new IndexBuffer(device, [
+    //     0, 1, 2, 0, 2, 3,
+    //     4, 5, 6, 4, 6, 7,
+    //     8, 9, 10, 8, 10, 11,
+    //     12, 13, 14, 12, 14, 15,
+    //     16, 17, 18, 16, 18, 19,
+    //     20, 21, 22, 20, 22, 23
+    // ])
 
     // const mesh = {
     //     positions: cube_XYZ,
@@ -197,14 +210,29 @@ export async function main() {
     //     quads: neutral.fxyz
     // }
 
-    // const bodyTexture = new Texture()
-    // await bodyTexture.load(device.device!!, "young_caucasian_female_special_suit.png")
+    const bodyGroup = neutral.getFaceGroup("body")!
 
-    // const bodyGroup = neutral.getFaceGroup("body")!
-    // const body = subset_P3_T2_IDX(
-    //     neutral.xyz, neutral.fxyz,
-    //     neutral.uv, neutral.fuv,
-    //     bodyGroup.startIndex, bodyGroup.startIndex + bodyGroup.length)
+    const body = subset_P3_T2_IDX(
+        neutral.xyz, neutral.fxyz,
+        neutral.uv, neutral.fuv,
+        bodyGroup.startIndex, bodyGroup.startIndex + bodyGroup.length)
+
+    const decoupled = decoupleXYZandUV(body.xyz, body.fxyz, body.uv, body.fuv)
+    const decoupledNormals = new Float32Array(decoupled.vertex.length)
+    calculateNormalsQuads(decoupledNormals, body.xyz, body.fxyz)
+    // copy normals to additional entries created by decoupleXYZandUV
+    decoupled.idxExtra.forEach((v, i) => {
+        decoupledNormals[body.xyz.length + i * 3] = decoupledNormals[v * 3]
+        decoupledNormals[body.xyz.length + i * 3 + 1] = decoupledNormals[v * 3 + 1]
+        decoupledNormals[body.xyz.length + i * 3 + 2] = decoupledNormals[v * 3 + 2]
+    })
+    const mesh = {
+        points: decoupled.vertex,
+        normals: decoupledNormals,
+        uv: decoupled.texcoord!,
+        indices: decoupled.indices
+    }
+
     // const obj = {
     //     points: body.xyz,
     //     quads: body.fxyz
@@ -218,9 +246,10 @@ export async function main() {
     // }
     // const edges = quadsToEdges(obj.quads)
 
-    // const positions = new PositionBuffer(device, mesh.points)
-    // const normals = new VertexBuffer(device, mesh.normals)
-    // const indices = new IndexBuffer(device, mesh.indices)
+    const points = new PositionBuffer(device, mesh.points)
+    const texcoords = new VertexBuffer(device, mesh.uv)
+    const normals = new VertexBuffer(device, mesh.normals)
+    const indices = new IndexBuffer(device, mesh.indices)
 
     // const edgeIndices = new IndexBuffer(device, edges)
 
@@ -363,14 +392,7 @@ export async function main() {
     editorModel.selectionMode.signal.add(context.invalidate)
     editorModel.viewportShading.signal.add(context.invalidate)
 
-    const indices = new IndexBuffer(device, [
-        0, 1, 2, 0, 2, 3,
-        4, 5, 6, 4, 6, 7,
-        8, 9, 10, 8, 10, 11,
-        12, 13, 14, 12, 14, 15,
-        16, 17, 18, 16, 18, 19,
-        20, 21, 22, 20, 22, 23
-    ])
+
 
     context.paint = () => {
 
