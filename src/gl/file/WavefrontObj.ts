@@ -93,7 +93,9 @@ export class WavefrontObj {
                     for (let i = 1; i < tokens.length; ++i) {
                         const split = tokens[i].split('/')
                         this.fxyz.push(parseInt(split[0], 10) - 1)
-                        this.fuv.push(parseInt(split[1], 10) - 1)
+                        if (split.length > 1) {
+                            this.fuv.push(parseInt(split[1], 10) - 1)
+                        }
                     }
                     break
                 case 'curv': break  // curve
@@ -142,7 +144,7 @@ export class WavefrontObj {
         this.vcount = vcount
         this.xyz = new Float32Array(vertex)
         this.uv = new Float32Array(texcoord)
-        
+
         // set group's lengths
         if (this.groups.length > 0) {
             for (let i = 0; i < this.groups.length - 1; ++i) {

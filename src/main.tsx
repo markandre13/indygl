@@ -39,64 +39,47 @@ import { ShaderP3_N3_T2 } from './gl/shaders/ShaderP3_N3_T2'
 import { ShaderP3_N3_T2_IDX } from './gl/shaders/ShaderP3_N3_T2_IDX'
 import { decoupleXYZandUV } from './gl/algorithms/decoupleXYZandUV'
 import { EdgeSelectController } from './gl/controllers/EdgeSelectController'
+import { Mesh } from './Mesh'
 
-function split(v: ArrayLike<number>) {
-    const points: number[] = []
-    const normals: number[] = []
-    const texcoords: number[] = []
-    for (let i = 0; i < v.length; i += 10) {
-        points.push(v[i], v[i + 1], v[i + 2])
-        normals.push(v[i + 4], v[i + 5], v[+6])
-        texcoords.push(v[i + 8], v[i + 9])
-    }
-    return { points, normals, texcoords }
-}
-
-const p = [
-    1, -1, 1,
-    -1, -1, 1,
-    -1, -1, -1,
-]
-
-// prettier-ignore
-export const cubeVertexArray = [
-    // float4 position, float4 normal, float2 uv,
-    // 0
-    1, -1, 1, 1, 0, -1, 0, 1, 0, 1,
-    -1, -1, 1, 1, 0, -1, 0, 1, 1, 1,
-    -1, -1, -1, 1, 0, -1, 0, 1, 1, 0,
-    1, -1, -1, 1, 0, -1, 0, 1, 0, 0,
-
-    // 4
-    1, 1, 1, 1, 1, 0, 0, 1, 0, 1,
-    1, -1, 1, 1, 1, 0, 0, 1, 1, 1,
-    1, -1, -1, 1, 1, 0, 0, 1, 1, 0,
-    1, 1, -1, 1, 1, 0, 0, 1, 0, 0,
-
-    // 8
-    -1, -1, 1, 1, -1, 0, 0, 1, 0, 1,
-    -1, 1, 1, 1, -1, 0, 0, 1, 1, 1,
-    -1, 1, -1, 1, -1, 0, 0, 1, 1, 0,
-    -1, -1, -1, 1, -1, 0, 0, 1, 0, 0,
-
-    // 12
-    -1, 1, 1, 1, 0, 1, 0, 1, 0, 1,
-    1, 1, 1, 1, 0, 1, 0, 1, 1, 1,
-    1, 1, -1, 1, 0, 1, 0, 1, 1, 0,
-    -1, 1, -1, 1, 0, 1, 0, 1, 0, 0,
-
-    // FRONT
-    1, 1, 1, 1, 0, 0, 1, 1, 0, 1,
-    -1, 1, 1, 1, 0, 0, 1, 1, 1, 1,
-    -1, -1, 1, 1, 0, 0, 1, 1, 1, 0,
-    1, -1, 1, 1, 0, 0, 1, 1, 0, 0,
-
-    // 20
-    1, -1, -1, 1, 0, 0, -1, 1, 0, 1,
-    -1, -1, -1, 1, 0, 0, -1, 1, 1, 1,
-    -1, 1, -1, 1, 0, 0, -1, 1, 1, 0,
-    1, 1, -1, 1, 0, 0, -1, 1, 0, 0,
-]
+// [ ] make rendering more generic: like a mesh object?
+//     https://graphics.cs.utah.edu/teapot/
+//     https://en.wikipedia.org/wiki/Utah_teapot
+//
+//  [ ] have cube, human and teapot a the same time
+//  [ ] select object with pointer
+//  [ ] move object with pointer
+//
+// USD and WavefrontObj have similar data structures for meshes
+//
+// faceVertexCounts: int[]      vcount
+// faceVertexIndices: int[]     fxyz
+// normals: normal3f[]          normal
+// points: point3f[]            xyz
+// primvars:st: texCoord2f[]    uv
+// primvars:st:indices: int[]   fuv
+//
+// but for editing i will need my own internal data format
+//
+// face:
+//    flat/smooth
+//    material <- that's the one we want to distinguish teeth and gum
+// edges:
+//    sharp <-- that's the one we want for fingernails
+//    seam
+//    ...
+//
+// ./source/blender/bmesh/bmesh.hh
+// loops: https://docs.blender.org/manual/en/latest/modeling/meshes/selecting/loops.html
+// class BMesh {
+//   BMVert {
+//      float co[3] // vertex coordinate
+//      float no[3] // vertex normal
+//   }
+//   BMEdge {
+//      v1, v2
+//   }
+//     edge/vert/face/loop
+// }
 
 // add some ui element from blender and extend toad.js with a blender like style for that (smaller ui elements)
 // could write a screenshot test for that in toad.js too!!!
@@ -131,9 +114,6 @@ X render subset (subset operator? later...) we need the subset to test transpare
 X do the transparent stuff
 X smooth shading
 X transform using the panel on the right
-[ ] make rendering more generic: like a mesh object?
-    https://graphics.cs.utah.edu/teapot/
-    https://en.wikipedia.org/wiki/Utah_teapot
 [ ] panel: propper styles for headings
 [X] fix select point (location is of)
 [ ] select multiple tuple elements
@@ -151,6 +131,44 @@ X transform using the panel on the right
 [ ] two objects (MH & ARKit neutral)
 */
 
+class ShaderCollection {
+    readonly p3_idx: ShaderP3_IDX
+    readonly p3_n3_idx: ShaderP3_N3_IDX
+    readonly p3_n3_idx_alpha: ShaderP3_N3_IDX_Alpha
+
+    constructor(context: CanvasContext) {
+        const device = context.device
+        this.p3_n3_idx = new ShaderP3_N3_IDX(device, context)
+        this.p3_n3_idx_alpha = new ShaderP3_N3_IDX_Alpha(device, context)
+        // // const shaderPickPoint = new ShaderP3_PickPoint(device, context)
+        // const shaderPickPoints = new ShaderP3_C3_Point(device, context)
+        this.p3_idx = new ShaderP3_IDX(device, context)
+
+        // // const shaderColor = new ShaderP3_C3_IDX(device, context)
+        // const shaderShadedTexture = new ShaderP4N4T2(device, context)
+        // const shaderShadedTexture2 = new ShaderP3_N3_T2(device, context)
+        // const shaderShadedTexture3 = new ShaderP3_N3_T2_IDX(device, context)
+        // // const shaderShadedMono = new ShaderP3N3(device, context)
+        // const shaderLines = new ShaderP3_C3_IDX_LineList(device, context) // need ShaderP3_C3_IDX_LineList
+    }
+}
+
+async function loadMesh(device: Device, filename: string) {
+    const r = await fetch(filename)
+    if (!r.ok) {
+        throw Error(`failed to load '${filename}': ${r.status} ${r.statusText}: ${await r.text()}`)
+    }
+    const obj = new WavefrontObj(filename, await r.text())
+    const mesh = new Mesh(device, {
+        xyz: obj.xyz,
+        fxyz: obj.fxyz,
+        uv: obj.uv.length > 0 ? obj.uv : undefined,
+        fuv: obj.fuv.length > 0 ? obj.uv : undefined,
+        vcount: obj.vcount
+    })
+    return mesh
+}
+
 export async function main() {
     // start the ui
     const editorModel = new EditorModel()
@@ -162,137 +180,23 @@ export async function main() {
         throw Error("#canvas not found")
     }
 
-    // const r = await fetch("obj/arkit/Neutral.obj")
-    // const r = await fetch("obj/mh/cube.obj")
-    const r = await fetch("obj/mh/base.obj")
-    if (!r.ok) {
-        console.log(`${r.status} ${r.statusText}: ${await r.text()}`)
-    }
-    const neutral = new WavefrontObj("Neutral.obj", await r.text())
-    // console.log(mesh)
-
     const device = new Device()
     await device.init()
     const context = new CanvasContext(device, canvas)
+    const shader = new ShaderCollection(context)
 
     editorModel.transform.signal.add(context.invalidate)
+    editorModel.selectionMode.signal.add(context.invalidate)
+    editorModel.viewportShading.signal.add(context.invalidate)
     new ResizeObserver(context.invalidate).observe(canvas)
-
     context.pushController(new BasicMode(context))
     const modelUniforms = new ModelUniform(device)
 
-    // Fetch the image and upload it into a GPUTexture.
-    const cubeTexture = new Texture()
-    // await cubeTexture.load(device.device!!, "Di-3d.png")
-    await cubeTexture.load(device.device!!, "young_caucasian_female_special_suit.jpg")
-
-    // const bodyTexture = new Texture()
-    // await bodyTexture.load(device.device!!, "young_caucasian_female_special_suit.png")
-
-    const posColUv = new VertexBuffer(device, cubeVertexArray)
-
-    // const cube = split(cubeVertexArray)
-    // const points = new VertexBuffer(device, cube.points)
-    // const normals = new VertexBuffer(device, cube.normals)
-    // const texcoords = new VertexBuffer(device, cube.texcoords)
-    // const indices = new IndexBuffer(device, [
-    //     0, 1, 2, 0, 2, 3,
-    //     4, 5, 6, 4, 6, 7,
-    //     8, 9, 10, 8, 10, 11,
-    //     12, 13, 14, 12, 14, 15,
-    //     16, 17, 18, 16, 18, 19,
-    //     20, 21, 22, 20, 22, 23
-    // ])
-
-    // const mesh = {
-    //     positions: cube_XYZ,
-    //     quads: cube_quads
-    // }
-
-    // const obj = {
-    //     positions: neutral.xyz,
-    //     quads: neutral.fxyz
-    // }
-
-    const bodyGroup = neutral.getFaceGroup("body")!
-
-    // const body = subset_P3_T2_IDX(
-    //     neutral.xyz, neutral.fxyz,
-    //     neutral.uv, neutral.fuv,
-    //     bodyGroup.startIndex, bodyGroup.startIndex + bodyGroup.length)
-
-    const body = {
-        xyz: neutral.xyz,
-        fxyz: neutral.fxyz,
-        uv: neutral.uv,
-        fuv: neutral.fuv
-    }
-
-    const decoupled = decoupleXYZandUV(body.xyz, body.fxyz, body.uv, body.fuv)
-    const decoupledNormals = new Float32Array(decoupled.vertex.length)
-    calculateNormalsQuads(decoupledNormals, body.xyz, body.fxyz)
-    // copy normals to additional entries created by decoupleXYZandUV
-    decoupled.idxExtra.forEach((v, i) => {
-        decoupledNormals[body.xyz.length + i * 3] = decoupledNormals[v * 3]
-        decoupledNormals[body.xyz.length + i * 3 + 1] = decoupledNormals[v * 3 + 1]
-        decoupledNormals[body.xyz.length + i * 3 + 2] = decoupledNormals[v * 3 + 2]
-    })
-    const mesh = {
-        points: decoupled.vertex,
-        normals: decoupledNormals,
-        uv: decoupled.texcoord!,
-        indices: decoupled.indices
-    }
-
-    // const obj = {
-    //     points: body.xyz,
-    //     quads: body.fxyz
-    // }
-    // const mesh = quadsToFlatTriangles(obj.positions, obj.quads)
-
-    // const mesh = {
-    //     points: obj.points,
-    //     indices: quadsToTriangles(obj.quads), // this also needs to...
-    //     normals: calculateNormalsQuads(undefined, obj.points, obj.quads)
-    // }
-    // const edges = quadsToEdges(obj.quads)
-
-    const points = new PositionBuffer(device, mesh.points)
-    const texcoords = new VertexBuffer(device, mesh.uv)
-    const normals = new VertexBuffer(device, mesh.normals)
-    const indices = new IndexBuffer(device, mesh.indices)
-
-    // const edgeIndices = new IndexBuffer(device, edges)
-
-    // const positions = new PositionBuffer(device, cube_XYZ)
-    // const edgeColors = new Float32Array(mesh.points.length /*3 * cube_XYZ.length*/)
-    // const edgeColorBuffer = new ColorBuffer(device, edgeColors)
-    // const colors = new ColorBuffer(device, cube_RGB)
-    // const indices = new IndexBuffer(device, cube_IDX)
-
-    // const posColUv = new VertexBuffer(device, cube_P4N4T2)
-    // const posNorm = new VertexBuffer(device, cube_P3N3)
-
-    const shaderShadedMono = new ShaderP3_N3_IDX(device, context)
-    // const shaderShadedMono = new ShaderP3_N3_IDX_Alpha(device, context)
-    // const shaderPickPoint = new ShaderP3_PickPoint(device, context)
-    const shaderPickPoints = new ShaderP3_C3_Point(device, context)
-    // const shaderMono = new Shader_P3(device, context)
-    // const shaderColor = new ShaderP3_C3_IDX(device, context)
-    const shaderShadedTexture = new ShaderP4N4T2(device, context)
-    const shaderShadedTexture2 = new ShaderP3_N3_T2(device, context)
-    const shaderShadedTexture3 = new ShaderP3_N3_T2_IDX(device, context)
-    // const shaderShadedMono = new ShaderP3N3(device, context)
-    const shaderLines = new ShaderP3_C3_IDX_LineList(device, context) // need ShaderP3_C3_IDX_LineList
-
-    // mat4.translate(context.camera.value, context.camera.value, vec3.fromValues(0, 0, -24))
-
-    // context.pushController(new EdgeSelectController(
-    //     context, modelUniforms, edgeColors, positions, indices, edgeColorBuffer
-    // ))
-
-    editorModel.selectionMode.signal.add(context.invalidate)
-    editorModel.viewportShading.signal.add(context.invalidate)
+    const teapot = await loadMesh(device, "obj/utah_teapot.obj")
+    // const teapot = await loadMesh(device, "obj/teeth.obj")
+    // const teapot = await loadMesh(device, "obj/mh/cube.obj") // quads
+    // const teapot = await loadMesh(device, "obj/dodecahedron.obj")
+    // const teapot = await loadMesh(device, "obj/mh/base.obj")
 
     context.paint = () => {
 
@@ -311,30 +215,7 @@ export async function main() {
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
-        // // shaderPickPoint.draw(pass, context, modelUniforms, positions)
-        // if (editorModel.selectionMode.value !== SelectionMode.OBJECT) {
-        //     shaderPickPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, obj.points.length / 3)
-        // }
-        // // shaderColor.draw(pass, context, modelUniforms, positions, colors, indices)
-        // // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, pickTexture)
-        // // shaderShadedMono.draw(pass, context, modelUniforms, posNorm, [0, 1, 0, 1])
-        // // shaderMono.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
-        // if ([ViewportShading.WIREFRAME].includes(editorModel.viewportShading.value)) {
-        //     shaderShadedMono.draw(pass, context, modelUniforms, positions, normals, indices, [0.6, 0.6, 0.6, 1])
-        // }
-        // if ([ViewportShading.SOLID_XRAY, ViewportShading.SOLID].includes(editorModel.viewportShading.value)) {
-        //     shaderShadedMono.draw(pass, context, modelUniforms, positions, normals, indices, [1, 0.8, 0.7, 0.5])
-        // }
-        // if ([ViewportShading.WIREFRAME_XRAY, ViewportShading.WIREFRAME, ViewportShading.SOLID_XRAY].includes(editorModel.viewportShading.value)) {
-        //     shaderLines.draw(pass, context, modelUniforms, positions, edgeColorBuffer, edgeIndices)
-        // }
-
-        // shaderShadedTexture.draw(pass, context, modelUniforms, posColUv, cubeTexture)
-        // shaderShadedTexture2.draw(pass, context, modelUniforms, points, normals, texcoords, cubeTexture)
-        // shaderShadedTexture3.draw(pass, context, modelUniforms, points, normals, texcoords, cubeTexture, indices)
-
-        shaderShadedTexture3.draw(pass, context, modelUniforms, points, normals, texcoords, cubeTexture, indices,
-            bodyGroup.startIndex / 4 * 6, bodyGroup.length / 4 * 6)
+        shader.p3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.indices, [1, 0.5, 0, 1])
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
