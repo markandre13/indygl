@@ -7,22 +7,24 @@ import { mat4, vec3 } from "gl-matrix"
 import { isZero } from "./gl/algorithms/isZero"
 
 export interface MeshData {
+    vcount?: ArrayLike<number>
     xyz?: ArrayLike<number>
     fxyz?: ArrayLike<number>
     uv?: ArrayLike<number>
     fuv?: ArrayLike<number>
-    vcount?: ArrayLike<number>
     normals?: ArrayLike<number>
+    fnormals?: ArrayLike<number>
 }
 
 export class Mesh {
     device: Device
+    vcount?: ArrayLike<number>
     xyz?: ArrayLike<number>
     fxyz?: ArrayLike<number>
     uv?: ArrayLike<number>
     fuv?: ArrayLike<number>
-    vcount?: ArrayLike<number>
     normals?: ArrayLike<number>
+    fnormals?: ArrayLike<number>
     // vertex groups
     // faces to material
     // sharp edges
@@ -39,6 +41,7 @@ export class Mesh {
         this.fuv = opt?.fuv
         this.vcount = opt?.vcount
         this.normals = opt?.normals
+        this.fnormals = opt?.fnormals
     }
 
     get points() {

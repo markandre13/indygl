@@ -5,9 +5,9 @@ import { Group } from './Group'
 export class WavefrontObj {
     name = ""
 
-    xyz: Float32Array  // x,y,z (coord in makehuman)
-    uv: Float32Array // u,v (texco in makehuman)
-    // normal: number[]  // x,y,z (due to morphing & skinning, normals are calculated in makehuman)
+    xyz: Float32Array     // x,y,z (coord in makehuman)
+    uv: Float32Array      // u,v (texco in makehuman)
+    normal: Float32Array  // x,y,z (due to morphing & skinning, normals are calculated in makehuman)
 
     // vertices per face
     vcount: number[] = []
@@ -15,6 +15,8 @@ export class WavefrontObj {
     fxyz: number[] = [] // (fvert in makehuman)
     // face index for uv
     fuv: number[] = []
+    // face index for normal
+    fnormal: number[] = []
 
     groups: Group[]   // name, startIndex, length
     material: Group[] // name, startIndex, length
@@ -86,15 +88,15 @@ export class WavefrontObj {
                 case 'p': break // point
                 case 'l': break // line
                 case 'f': // face( vertex[/[texture][/normal]])+
-                    // if (tokens.length !== 5) {
-                    //     throw Error(`can't handle faces which are not quads yet (line ${lineNumber}: '${line}'}`)
-                    // }
                     vcount.push(tokens.length - 1)
                     for (let i = 1; i < tokens.length; ++i) {
                         const split = tokens[i].split('/')
-                        this.fxyz.push(parseInt(split[0], 10) - 1)
+                        this.fxyz.push(parseInt(split[0]) - 1)
                         if (split.length > 1) {
-                            this.fuv.push(parseInt(split[1], 10) - 1)
+                            this.fuv.push(parseInt(split[1]) - 1)
+                        }
+                        if (split.length > 2) {
+                            this.fnormal.push(parseInt(split[2]) - 1)
                         }
                     }
                     break
@@ -144,6 +146,7 @@ export class WavefrontObj {
         this.vcount = vcount
         this.xyz = new Float32Array(vertex)
         this.uv = new Float32Array(texcoord)
+        this.normal = new Float32Array(normal)
 
         // set group's lengths
         if (this.groups.length > 0) {
@@ -159,13 +162,11 @@ export class WavefrontObj {
             }
             this.material[this.material.length - 1].length = this.fxyz.length - this.material[this.material.length - 1].startIndex
         }
-
-        this.logStatistics()
     }
 
     getFaceGroup(name: string): Group | undefined {
         // the facegroups are not groups
-        // and they might be either stored in one of these:
+        // and those might be either stored in one of these:
         //   makehuman/data/rigs/default_weights.mhw
         //   makehuman/data/poses/benchmark.bvh
         //   makehuman/data/poses/tpose.bvh
@@ -179,29 +180,5 @@ export class WavefrontObj {
             return undefined
         }
         return x[0]
-    }
-
-    logStatistics() {
-        let groupNames = ""
-        let joints = 0
-        let helpers = 0
-        this.groups.forEach(g => {
-            if (g.name.startsWith("joint-")) {
-                ++joints
-            } else
-                if (g.name.startsWith("helper-")) {
-                    ++helpers
-                } else {
-                    if (groupNames.length === 0) {
-                        groupNames = g.name
-                    } else {
-                        groupNames = `${groupNames}, ${g.name}`
-                    }
-                }
-        })
-        if (groupNames.length !== 0) {
-            groupNames = ` and ${groupNames}`
-        }
-        // console.log(`Loaded ${this.groups.length} groups (${joints} joints, ${helpers} helpers${groupNames}), ${this.material.length} materials, ${this.xyz.length / 3} vertices, ${this.uv.length / 2} uvs, ${this.fxyz.length / 3} triangles from file '${filename}'`)
     }
 }

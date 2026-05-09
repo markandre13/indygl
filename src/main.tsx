@@ -159,11 +159,14 @@ async function loadMesh(device: Device, filename: string) {
         throw Error(`failed to load '${filename}': ${r.status} ${r.statusText}: ${await r.text()}`)
     }
     const obj = new WavefrontObj(filename, await r.text())
+    // console.log(obj)
     const mesh = new Mesh(device, {
         xyz: obj.xyz,
         fxyz: obj.fxyz,
         uv: obj.uv.length > 0 ? obj.uv : undefined,
         fuv: obj.fuv.length > 0 ? obj.uv : undefined,
+        normals: obj.normal.length > 0 ? obj.normal : undefined,
+        fnormals: obj.fnormal.length > 0 ? obj.fnormal : undefined,
         vcount: obj.vcount
     })
     return mesh
@@ -188,7 +191,7 @@ export async function main() {
     editorModel.transform.signal.add(context.invalidate)
     editorModel.selectionMode.signal.add(context.invalidate)
     editorModel.viewportShading.signal.add(context.invalidate)
-    new ResizeObserver(context.invalidate).observe(canvas)
+    new ResizeObserver(context.invalidate).observe(canvas) // TODO: shouldn't this be in CanvasContext???
     context.pushController(new BasicMode(context))
     const modelUniforms = new ModelUniform(device)
 
