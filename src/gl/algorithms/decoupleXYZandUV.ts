@@ -1,32 +1,55 @@
 interface GLXYZUV {
+    /**
+     * from where additional UV entries take their data
+     */
     idxExtra: number[]
+
+    /**
+     * from where additional indices take their data
+     */
+    idxExtraNormals?: number[]
+
     indices: number[]
-    vertex: Float32Array
-    texcoord?: Float32Array
+    xyz: Float32Array
+    uv?: Float32Array
+    normal?: Float32Array
 }
 
 /**
+ * WebGPU has only one list of indices, while Mesh has one for xyz, uv and normals each
  * 
- * 
+ * NOTE: this thing also converts quads to triangles... we do not want that...
+ *       that should be a step before running this function
+ *       which also means that the triangulation would need to extend the fuv and fnormal arrays...
+ *       this thing would also need to handle the sharp edges in the future...
+ *       u-hu.... this is becoming rather complicated... need to collect all requirements...
  * @param xyz 
  * @param fxyz a list of quads
  * @param uv 
  * @param fuv 
  * @returns 
  */
-
 export function decoupleXYZandUV(
     xyz: ArrayLike<number>,
     fxyz: ArrayLike<number>,
     uv?: ArrayLike<number>,
-    fuv?: ArrayLike<number>
+    fuv?: ArrayLike<number>,
+    normal?: ArrayLike<number>,
+    fnormal?: ArrayLike<number>
 ): GLXYZUV {
+    if ((fuv !== undefined && uv === undefined) || (fuv === undefined && uv !== undefined)) {
+        throw Error(`uv & fuv must both either be defined or undefined`)
+    }
     if (fuv !== undefined && fxyz.length !== fuv.length) {
-        throw Error(`fvertex and fuv must have the same length, instead it is ${fxyz.length} and ${fuv.length}`)
+        throw Error(`fxyz and fuv must have the same length, instead it is ${fxyz.length} and ${fuv.length}`)
     }
-    if (fuv !== undefined && uv === undefined) {
-        throw Error(`uv & fuv must both be defined`)
+    if ((fnormal !== undefined && normal === undefined) || (fnormal === undefined && normal !== undefined)) {
+        throw Error(`normal & fnormal must both either be defined or undefined`)
     }
+    if (fnormal !== undefined && fxyz.length !== fnormal.length) {
+        throw Error(`fxyz and fnormal must have the same length, instead it is ${fxyz.length} and ${fnormal.length}`)
+    }
+
     const indices: number[] = []
     const uvOut = new Array((xyz.length / 3) * 2) // for each vertex we have a texture coordinate
 
@@ -39,13 +62,11 @@ export function decoupleXYZandUV(
     }
 
     function decoupleXYZandUV(idxFace: number) {
-        // const idxXYZ = fxyz[i]
-
         const idxXYZ = fxyz[idxFace]
-        const idxUV = fuv![idxFace]
 
-        const u = uv![idxUV * 2]
-        const v = uv![idxUV * 2 + 1]
+        const idxUV = fuv![idxFace] * 2
+        const u = uv![idxUV]
+        const v = uv![idxUV + 1]
 
         // is this the 1st time the point is fetched?
         if (uvOut[idxXYZ * 2] === undefined) {
@@ -81,27 +102,16 @@ export function decoupleXYZandUV(
         f = decoupleXYZandUV
     }
 
-    // convert quad to triangle
-    for (let i = 0; i < fxyz.length; i += 4) {
-        const i0 = f(i)
-        const i1 = f(i + 1)
-        const i2 = f(i + 2)
-        const i3 = f(i + 3)
-
-        indices.push(i0)
-        indices.push(i1)
-        indices.push(i2)
-        indices.push(i3)
-        indices.push(i0)
-        indices.push(i2)
+    for (let i = 0; i < fxyz.length; ++i) {
+        indices.push(f(i))
     }
 
     if (fuv === undefined) {
         return {
             idxExtra: [],
             indices,
-            vertex: new Float32Array(xyz),
-            texcoord: undefined,
+            xyz: xyz instanceof Float32Array ? xyz : new Float32Array(xyz), 
+            uv: undefined,
         }
     }
 
@@ -113,5 +123,5 @@ export function decoupleXYZandUV(
     texcoord.set(uvOut)
     texcoord.set(uvOutExtra, uvOut.length)
 
-    return { indices, vertex, texcoord, idxExtra }
+    return { indices, xyz: vertex, uv: texcoord, idxExtra }
 }

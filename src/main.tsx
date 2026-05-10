@@ -166,7 +166,7 @@ async function loadMesh(device: Device, filename: string) {
         uv: obj.uv.length > 0 ? obj.uv : undefined,
         fuv: obj.fuv.length > 0 ? obj.uv : undefined,
         normals: obj.normal.length > 0 ? obj.normal : undefined,
-        fnormals: obj.fnormal.length > 0 ? obj.fnormal : undefined,
+        fnormal: obj.fnormal.length > 0 ? obj.fnormal : undefined,
         vcount: obj.vcount
     })
     return mesh
@@ -195,10 +195,10 @@ export async function main() {
     context.pushController(new BasicMode(context))
     const modelUniforms = new ModelUniform(device)
 
-    const teapot = await loadMesh(device, "obj/utah_teapot.obj")
+    // const teapot = await loadMesh(device, "obj/utah_teapot.obj")
     // const teapot = await loadMesh(device, "obj/teeth.obj")
     // const teapot = await loadMesh(device, "obj/mh/cube.obj") // quads
-    // const teapot = await loadMesh(device, "obj/dodecahedron.obj")
+    const teapot = await loadMesh(device, "obj/dodecahedron.obj")
     // const teapot = await loadMesh(device, "obj/mh/base.obj")
 
     context.paint = () => {
