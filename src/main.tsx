@@ -159,13 +159,13 @@ async function loadMesh(device: Device, filename: string) {
         throw Error(`failed to load '${filename}': ${r.status} ${r.statusText}: ${await r.text()}`)
     }
     const obj = new WavefrontObj(filename, await r.text())
-    // console.log(obj)
+    console.log(obj)
     const mesh = new Mesh(device, {
         xyz: obj.xyz,
         fxyz: obj.fxyz,
         uv: obj.uv.length > 0 ? obj.uv : undefined,
         fuv: obj.fuv.length > 0 ? obj.uv : undefined,
-        normals: obj.normal.length > 0 ? obj.normal : undefined,
+        normal: obj.normal.length > 0 ? obj.normal : undefined,
         fnormal: obj.fnormal.length > 0 ? obj.fnormal : undefined,
         vcount: obj.vcount
     })
@@ -195,11 +195,13 @@ export async function main() {
     context.pushController(new BasicMode(context))
     const modelUniforms = new ModelUniform(device)
 
-    // const teapot = await loadMesh(device, "obj/utah_teapot.obj")
-    // const teapot = await loadMesh(device, "obj/teeth.obj")
-    // const teapot = await loadMesh(device, "obj/mh/cube.obj") // quads
-    const teapot = await loadMesh(device, "obj/dodecahedron.obj")
+    const teapot = await loadMesh(device, "obj/utah_teapot.obj")
+    // const teapot = await loadMesh(device, "obj/teeth.obj") // two materials
+    // const teapot = await loadMesh(device, "obj/cube.obj") // 4-gons
+    // const teapot = await loadMesh(device, "obj/dodecahedron.obj") // 5-gons
     // const teapot = await loadMesh(device, "obj/mh/base.obj")
+    // console.log(teapot)
+
 
     context.paint = () => {
 
@@ -218,7 +220,8 @@ export async function main() {
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
-        shader.p3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.indices, [1, 0.5, 0, 1])
+        // shader.p3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.indices, [1, 0.5, 0, 1])
+        shader.p3_n3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.normals, teapot.indices, [1, 0.5, 0, 1])
 
         pass.end()
         const commandBuffer = commandEncoder.finish()

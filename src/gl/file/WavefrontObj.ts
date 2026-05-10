@@ -1,8 +1,9 @@
 import { StringToLine } from './StringToLine'
 import { Group } from './Group'
+import type { MeshData } from 'src/Mesh'
 
 // makehuman/shared/wavefront.py
-export class WavefrontObj {
+export class WavefrontObj implements MeshData {
     name = ""
 
     xyz: Float32Array     // x,y,z (coord in makehuman)
@@ -92,10 +93,10 @@ export class WavefrontObj {
                     for (let i = 1; i < tokens.length; ++i) {
                         const split = tokens[i].split('/')
                         this.fxyz.push(parseInt(split[0]) - 1)
-                        if (split.length > 1) {
+                        if (split.length > 1 && split[1].length > 0) {
                             this.fuv.push(parseInt(split[1]) - 1)
                         }
-                        if (split.length > 2) {
+                        if (split.length > 2&& split[2].length > 0) {
                             this.fnormal.push(parseInt(split[2]) - 1)
                         }
                     }

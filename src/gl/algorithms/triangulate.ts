@@ -140,8 +140,11 @@ export function triangulate(data: MeshData) {
     }
     // console.log(`triangulated size = ${indices.length}`)
     return {
+        xyz: data.xyz,
         fxyz,
+        uv: data.uv,
         fuv,
+        normal: data.normal,
         fnormal
     }
 }

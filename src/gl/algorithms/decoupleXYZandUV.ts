@@ -1,19 +1,21 @@
-interface GLXYZUV {
-    /**
-     * from where additional UV entries take their data
-     */
-    idxExtra: number[]
+import type { MeshData } from "src/Mesh"
 
-    /**
-     * from where additional indices take their data
-     */
-    idxExtraNormals?: number[]
-
-    indices: number[]
-    xyz: Float32Array
-    uv?: Float32Array
-    normal?: Float32Array
+export interface MeshDataSingleIndex extends MeshData {
+    xyzExtra?: number[]
+    uvExtra?: number[]
+    normalExtra?: number[]
 }
+
+const buffer = new Uint32Array(3)
+const view = new Uint8Array(buffer.buffer)
+function hashIndices(a: number | undefined, b: number | undefined, c: number | undefined) {
+    buffer[0] = a ? a + 1 : 0
+    buffer[1] = b ? b + 1 : 0
+    buffer[2] = c ? c + 1 : 0
+    return view.toBase64()
+}
+
+const debug = true
 
 /**
  * WebGPU has only one list of indices, while Mesh has one for xyz, uv and normals each
@@ -29,99 +31,113 @@ interface GLXYZUV {
  * @param fuv 
  * @returns 
  */
-export function decoupleXYZandUV(
-    xyz: ArrayLike<number>,
-    fxyz: ArrayLike<number>,
-    uv?: ArrayLike<number>,
-    fuv?: ArrayLike<number>,
-    normal?: ArrayLike<number>,
-    fnormal?: ArrayLike<number>
-): GLXYZUV {
-    if ((fuv !== undefined && uv === undefined) || (fuv === undefined && uv !== undefined)) {
+export function decoupleXYZandUV(data: MeshData): MeshDataSingleIndex {
+    if (!data.xyz || !data.fxyz) {
+        throw Error('xyz and fxys must be defined')
+    }
+    if ((data.fuv !== undefined && data.uv === undefined) || (data.fuv === undefined && data.uv !== undefined)) {
         throw Error(`uv & fuv must both either be defined or undefined`)
     }
-    if (fuv !== undefined && fxyz.length !== fuv.length) {
-        throw Error(`fxyz and fuv must have the same length, instead it is ${fxyz.length} and ${fuv.length}`)
+    if (data.fuv !== undefined && data.fxyz.length !== data.fuv.length) {
+        throw Error(`fxyz and fuv must have the same length, instead it is ${data.fxyz.length} and ${data.fuv.length}`)
     }
-    if ((fnormal !== undefined && normal === undefined) || (fnormal === undefined && normal !== undefined)) {
+    if ((data.fnormal !== undefined && data.normal === undefined) || (data.fnormal === undefined && data.normal !== undefined)) {
         throw Error(`normal & fnormal must both either be defined or undefined`)
     }
-    if (fnormal !== undefined && fxyz.length !== fnormal.length) {
-        throw Error(`fxyz and fnormal must have the same length, instead it is ${fxyz.length} and ${fnormal.length}`)
+    if (data.fnormal !== undefined && data.fxyz.length !== data.fnormal.length) {
+        throw Error(`fxyz and fnormal must have the same length, instead it is ${data.fxyz.length} and ${data.fnormal.length}`)
     }
 
-    const indices: number[] = []
-    const uvOut = new Array((xyz.length / 3) * 2) // for each vertex we have a texture coordinate
+    const uv2 = new Array<number>(data.xyz.length / 3 * 2)
+    const normal2 = new Array<number>(data.xyz.length)
 
-    const idxExtra: number[] = []
     const xyzOutExtra: number[] = []
     const uvOutExtra: number[] = []
+    const normalOutExtra: number[] = []
 
-    function getIndex(i: number) {
-        return fxyz[i]
-    }
+    const used = new Array<boolean>(data.fxyz.length)
+    // TODO: this tree might be too expensive... maybe use a map with a binary representation of the indices???
+    const usedCombination = new Map<string, number>()
+    let extraIndex = data.xyz!.length / 3
 
-    function decoupleXYZandUV(idxFace: number) {
-        const idxXYZ = fxyz[idxFace]
+    function getIndex(idx: number) {
 
-        const idxUV = fuv![idxFace] * 2
-        const u = uv![idxUV]
-        const v = uv![idxUV + 1]
-
-        // is this the 1st time the point is fetched?
-        if (uvOut[idxXYZ * 2] === undefined) {
-            // yes, enrich point xyz with uv end return index of point
-            uvOut[idxXYZ * 2] = u
-            uvOut[idxXYZ * 2 + 1] = v
-            return idxXYZ
+        let idxXYZ = data.fxyz![idx]
+        const idxUV = data.fuv ? data.fuv[idx] : undefined
+        const idxNormal = data.fnormal ? data.fnormal[idx] : undefined
+        // console.log(`get index ${idxFace} -> ${idxXYZ}, ${idxUV}, ${idxNormal}`)
+        const hash = hashIndices(idxXYZ, idxUV, idxNormal)
+        let usedIndex = usedCombination.get(hash)
+        if (usedIndex !== undefined) {
+            // console.log(`reuse ${idxXYZ}, ${idxUV}, ${idxNormal} -> ${usedIndex}`)
+            return usedIndex
         }
-        // has the point been fetched before and the u,v coordinates are the same? return it
-        if (uvOut[idxXYZ * 2] === u && uvOut[idxXYZ * 2 + 1] === v) {
-            return idxXYZ
+        if (used[idxXYZ] === undefined) {
+            // debug && console.log(`first time, use ${idxXYZ}`)
+            used[idxXYZ] = true
+            if (data.uv) {
+                uv2[idxXYZ * 2] = data.uv[idxUV! * 2]
+                uv2[idxXYZ * 2 + 1] = data.uv[idxUV! * 2 + 1]
+            }
+            if (data.normal) {
+                normal2[idxXYZ * 3] = data.normal[idxNormal! * 3]
+                normal2[idxXYZ * 3 + 1] = data.normal[idxNormal! * 3 + 1]
+                normal2[idxXYZ * 3 + 2] = data.normal[idxNormal! * 3 + 2]
+            }
+            // console.log(`1st set ${idxXYZ}, ${idxUV}, ${idxNormal} -> ${idxXYZ}`)
+        } else {
+            // debug && console.log(`collision, create copy at ${idxXYZ}`)
+            xyzOutExtra.push(
+                data.xyz![idxXYZ * 3],
+                data.xyz![idxXYZ * 3 + 1],
+                data.xyz![idxXYZ * 3 + 2],
+            )
+            if (data.uv) {
+                uvOutExtra.push(
+                    data.uv[idxUV! * 2],
+                    data.uv[idxUV! * 2 + 1],
+                )
+            }
+            if (data.normal) {
+                normalOutExtra.push(
+                    data.normal[idxNormal! * 3],
+                    data.normal[idxNormal! * 3 + 1],
+                    data.normal[idxNormal! * 3 + 2],
+                )
+            }
+            // console.log(`copy set ${idxXYZ}, ${idxUV}, ${idxNormal} -> ${extraIndex}`)
+            idxXYZ = extraIndex
+            extraIndex = extraIndex + 1
         }
-
-        // make a copy of point xyz with new uv coordinates
-        const newIdxXYZ = (xyz.length + xyzOutExtra.length) / 3
-
-        const idxXYZIn = idxXYZ * 3
-        const x = xyz[idxXYZIn]
-        const y = xyz[idxXYZIn + 1]
-        const z = xyz[idxXYZIn + 2]
-
-        idxExtra.push(idxXYZ)
-        xyzOutExtra.push(x, y, z)
-        uvOutExtra.push(u, v)
-
-        return newIdxXYZ
+        usedCombination.set(hash, idxXYZ)
+        return idxXYZ
     }
 
-    let f
-    if (fuv === undefined) {
-        f = getIndex
-    } else {
-        f = decoupleXYZandUV
+    let fxyz: number[] = []
+
+    for (let i = 0; i < data.fxyz.length; ++i) {
+        const newIndex = getIndex(i)
+        // console.log(`add index ${i} -> ${newIndex}`)
+        fxyz.push(newIndex)
     }
 
-    for (let i = 0; i < fxyz.length; ++i) {
-        indices.push(f(i))
+    const xyz = new Float32Array(data.xyz.length + xyzOutExtra.length)
+    xyz.set(data.xyz)
+    xyz.set(xyzOutExtra, data.xyz.length)
+
+    let uv: Float32Array | undefined
+    if (data.uv) {
+        uv = new Float32Array(uv2.length + uvOutExtra.length)
+        uv.set(uv2)
+        uv.set(uvOutExtra, uv2.length)
     }
 
-    if (fuv === undefined) {
-        return {
-            idxExtra: [],
-            indices,
-            xyz: xyz instanceof Float32Array ? xyz : new Float32Array(xyz), 
-            uv: undefined,
-        }
+    let normal: Float32Array | undefined
+    if (data.normal) {
+        normal = new Float32Array(normal2.length + normalOutExtra.length)
+        normal.set(normal2)
+        normal.set(normalOutExtra, normal2.length)
     }
 
-    const vertex = new Float32Array(xyz.length + xyzOutExtra.length)
-    const texcoord = new Float32Array(uvOut.length + uvOutExtra.length)
-
-    vertex.set(xyz)
-    vertex.set(xyzOutExtra, xyz.length)
-    texcoord.set(uvOut)
-    texcoord.set(uvOutExtra, uvOut.length)
-
-    return { indices, xyz: vertex, uv: texcoord, idxExtra }
+    return { fxyz, xyz, uv, normal }
 }

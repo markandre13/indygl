@@ -15,7 +15,7 @@ export default defineConfig({
             ],
         },
         reporters: [
-            ['tree', { summary: false, displayAnnotations: true}]
+            ['tree', { summary: false, displayAnnotations: false}]
         ]
     }
 })
