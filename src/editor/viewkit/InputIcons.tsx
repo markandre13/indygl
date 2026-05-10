@@ -20,9 +20,9 @@ export function IconMouseRight() {
     return (
         <svg viewBox="0 0 12 16" width={12} height={16}>
             <path stroke="currentcolor" fill="none"
-                d="M 6.5 0.5 l 1 0 s 4 0, 4 4 l 0 7 s 0 4, -4 4 l -3 0 s -4 0, -4 -4 l 0 -2" />
+                d="M 5.5 0.5 l -1 0 s -4 0, -4 4 l 0 7 s 0 4, 4 4 l 3 0 s 4 0, 4 -4 l 0 -2" />
             <path stroke="currentcolor" fill="currentcolor"
-                d="M 0.5 8 l 0 -4 s 0 -4, 4 -4 l 0 0 l 0 8 z" />
+                d="M 11.5 8 l 0 -4 s 0 -4, -4 -4 l 0 0 l 0 8 z" />
         </svg>
     )
 }
