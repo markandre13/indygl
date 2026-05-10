@@ -55,7 +55,7 @@ export function decoupleXYZandUV(data: MeshData): MeshDataSingleIndex {
     const uvOutExtra: number[] = []
     const normalOutExtra: number[] = []
 
-    const used = new Array<boolean>(data.fxyz.length)
+    const used = new Array<number>(data.fxyz.length)
     // TODO: this tree might be too expensive... maybe use a map with a binary representation of the indices???
     const usedCombination = new Map<string, number>()
     let extraIndex = data.xyz!.length / 3
@@ -66,15 +66,12 @@ export function decoupleXYZandUV(data: MeshData): MeshDataSingleIndex {
         const idxUV = data.fuv ? data.fuv[idx] : undefined
         const idxNormal = data.fnormal ? data.fnormal[idx] : undefined
         // console.log(`get index ${idxFace} -> ${idxXYZ}, ${idxUV}, ${idxNormal}`)
-        const hash = hashIndices(idxXYZ, idxUV, idxNormal)
-        let usedIndex = usedCombination.get(hash)
-        if (usedIndex !== undefined) {
-            // console.log(`reuse ${idxXYZ}, ${idxUV}, ${idxNormal} -> ${usedIndex}`)
-            return usedIndex
-        }
-        if (used[idxXYZ] === undefined) {
+
+        const idx2 = used[idxXYZ]
+
+        if (idx2 === undefined) {
             // debug && console.log(`first time, use ${idxXYZ}`)
-            used[idxXYZ] = true
+            used[idxXYZ] = idx
             if (data.uv) {
                 uv2[idxXYZ * 2] = data.uv[idxUV! * 2]
                 uv2[idxXYZ * 2 + 1] = data.uv[idxUV! * 2 + 1]
@@ -85,30 +82,47 @@ export function decoupleXYZandUV(data: MeshData): MeshDataSingleIndex {
                 normal2[idxXYZ * 3 + 2] = data.normal[idxNormal! * 3 + 2]
             }
             // console.log(`1st set ${idxXYZ}, ${idxUV}, ${idxNormal} -> ${idxXYZ}`)
-        } else {
-            // debug && console.log(`collision, create copy at ${idxXYZ}`)
-            xyzOutExtra.push(
-                data.xyz![idxXYZ * 3],
-                data.xyz![idxXYZ * 3 + 1],
-                data.xyz![idxXYZ * 3 + 2],
-            )
-            if (data.uv) {
-                uvOutExtra.push(
-                    data.uv[idxUV! * 2],
-                    data.uv[idxUV! * 2 + 1],
-                )
-            }
-            if (data.normal) {
-                normalOutExtra.push(
-                    data.normal[idxNormal! * 3],
-                    data.normal[idxNormal! * 3 + 1],
-                    data.normal[idxNormal! * 3 + 2],
-                )
-            }
-            // console.log(`copy set ${idxXYZ}, ${idxUV}, ${idxNormal} -> ${extraIndex}`)
-            idxXYZ = extraIndex
-            extraIndex = extraIndex + 1
+            return idxXYZ
         }
+
+        let idxXYZ2 = data.fxyz![idx2]
+        const idxUV2 = data.fuv ? data.fuv[idx2] : undefined
+        const idxNormal2 = data.fnormal ? data.fnormal[idx2] : undefined
+
+        if (idxXYZ === idxXYZ2 && idxUV === idxUV2 && idxNormal === idxNormal2) {
+            return idxXYZ
+        }
+
+        const hash = hashIndices(idxXYZ, idxUV, idxNormal)
+        let usedIndex = usedCombination.get(hash)
+        if (usedIndex !== undefined) {
+            // console.log(`reuse ${idxXYZ}, ${idxUV}, ${idxNormal} -> ${usedIndex}`)
+            return usedIndex
+        }
+
+        // debug && console.log(`collision, create copy at ${idxXYZ}`)
+        xyzOutExtra.push(
+            data.xyz![idxXYZ * 3],
+            data.xyz![idxXYZ * 3 + 1],
+            data.xyz![idxXYZ * 3 + 2],
+        )
+        if (data.uv) {
+            uvOutExtra.push(
+                data.uv[idxUV! * 2],
+                data.uv[idxUV! * 2 + 1],
+            )
+        }
+        if (data.normal) {
+            normalOutExtra.push(
+                data.normal[idxNormal! * 3],
+                data.normal[idxNormal! * 3 + 1],
+                data.normal[idxNormal! * 3 + 2],
+            )
+        }
+        // console.log(`copy set ${idxXYZ}, ${idxUV}, ${idxNormal} -> ${extraIndex}`)
+        idxXYZ = extraIndex
+        extraIndex = extraIndex + 1
+
         usedCombination.set(hash, idxXYZ)
         return idxXYZ
     }
