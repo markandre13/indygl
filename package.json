@@ -13,7 +13,7 @@
         "lint": "tsgo --watch",
         "build": "tsgo && vite build",
         "preview": "vite preview",
-        "test": "vitest",
+        "test": "vitest spec",
         "update": "npx npm-check-updates -u && npm install"
     },
     "devDependencies": {

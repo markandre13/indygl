@@ -13,60 +13,60 @@ function num(node: ExpressionNode | undefined): number {
     throw Error(`${node} is not a number`)
 }
 
-describe("expressions", function () {
-    describe("lexer", function () {
-        describe("single token", function () {
-            it("1", function () {
+describe("expressions", () => {
+    describe("lexer", () => {
+        describe("single token", () => {
+            it("1", () => {
                 const lexer = new Lexer("1")
                 const n = lexer.lex()?.value as BigNumber
                 expect((n as BigNumber).eq(1)).is.true
             })
-            it("1.9", function () {
+            it("1.9", () => {
                 const lexer = new Lexer("1.9")
                 const n = lexer.lex()?.value as BigNumber
                 expect((n as BigNumber).eq(1.9)).is.true
             })
-            it("1e9", function () {
+            it("1e9", () => {
                 const lexer = new Lexer("1e9")
                 const n = lexer.lex()?.value as BigNumber
                 expect((n as BigNumber).eq(1e9)).is.true
             })
-            it("1E9", function () {
+            it("1E9", () => {
                 const lexer = new Lexer("1E9")
                 const n = lexer.lex()?.value as BigNumber
                 expect((n as BigNumber).eq(1e9)).is.true
             })
-            it("+", function () {
+            it("+", () => {
                 const lexer = new Lexer("+")
                 expect(lexer.lex()?.value).to.equal('+')
             })
-            it("-", function () {
+            it("-", () => {
                 const lexer = new Lexer("-")
                 expect(lexer.lex()?.value).to.equal('-')
             })
-            it("*", function () {
+            it("*", () => {
                 const lexer = new Lexer("*")
                 expect(lexer.lex()?.value).to.equal('*')
             })
-            it("/", function () {
+            it("/", () => {
                 const lexer = new Lexer("/")
                 expect(lexer.lex()?.value).to.equal('/')
             })
-            it("(", function () {
+            it("(", () => {
                 const lexer = new Lexer("(")
                 expect(lexer.lex()?.value).to.equal('(')
             })
-            it(")", function () {
+            it(")", () => {
                 const lexer = new Lexer(")")
                 expect(lexer.lex()?.value).to.equal(')')
             })
-            it("text", function () {
+            it("text", () => {
                 const lexer = new Lexer("cm")
                 expect(lexer.lex()?.value).to.equal("cm")
             })
         })
-        describe("multiple tokens", function () {
-            it("1+2", function () {
+        describe("multiple tokens", () => {
+            it("1+2", () => {
                 const lexer = new Lexer("1+2")
                 const a = lexer.lex()?.value as BigNumber
                 expect((a as BigNumber).eq(1)).is.true
@@ -75,7 +75,7 @@ describe("expressions", function () {
                 expect((b as BigNumber).eq(2)).is.true
                 expect(lexer.lex()).to.be.undefined
             })
-            it(" 1 + 2 ", function () {
+            it(" 1 + 2 ", () => {
                 const lexer = new Lexer(" 1 + 2 ")
                 const a = lexer.lex()?.value as BigNumber
                 expect((a as BigNumber).eq(1)).is.true
@@ -84,7 +84,7 @@ describe("expressions", function () {
                 expect((b as BigNumber).eq(2)).is.true
                 expect(lexer.lex()).to.be.undefined
             })
-            it("1cm", function () {
+            it("1cm", () => {
                 const lexer = new Lexer("1cm")
                 const a = lexer.lex()?.value as BigNumber
                 expect((a as BigNumber).eq(1)).is.true
@@ -93,24 +93,24 @@ describe("expressions", function () {
             })
         })
     })
-    describe("parse", function () {
-        fit("1", function () {
+    describe("parse", () => {
+        it("1", () => {
             const tree = expression("1")
             expect(num(tree)).to.equal(1)
         })
-        it("1+2", function () {
+        it("1+2", () => {
             const tree = expression("1+2")
             expect(tree?.value).to.equal('+')
             expect(num(tree?.down)).to.equal(1)
             expect(num(tree?.down?.next)).to.equal(2)
         })
-        it("1*2", function () {
+        it("1*2", () => {
             const tree = expression("1*2")
             expect(tree?.value).to.equal('*')
             expect(num(tree?.down)).to.equal(1)
             expect(num(tree?.down?.next)).to.equal(2)
         })
-        it("1+2*3", function () {
+        it("1+2*3", () => {
             const tree = expression("1+2*3")
             expect(tree?.value).to.equal('+')
             expect(num(tree?.down)).to.equal(1)
@@ -118,7 +118,7 @@ describe("expressions", function () {
             expect(num(tree?.down?.next?.down)).to.equal(2)
             expect(num(tree?.down?.next?.down?.next)).to.equal(3)
         })
-        it("1*2+3", function () {
+        it("1*2+3", () => {
             const tree = expression("1*2+3")
             expect(tree?.value).to.equal('+')
             expect(tree?.down?.value).to.equal('*')
@@ -126,23 +126,23 @@ describe("expressions", function () {
             expect(num(tree?.down?.down?.next)).to.equal(2)
             expect(num(tree?.down?.next)).to.equal(3)
         })
-        it("(1)", function () {
+        it("(1)", () => {
             const tree = expression("(1)")
             expect(num(tree)).to.equal(1)
         })
-        it("(1+2)", function () {
+        it("(1+2)", () => {
             const tree = expression("(1+2)")
             expect(tree?.value).to.equal('+')
             expect(num(tree?.down)).to.equal(1)
             expect(num(tree?.down?.next)).to.equal(2)
         })
-        it("((1+2))", function () {
+        it("((1+2))", () => {
             const tree = expression("((1+2))")
             expect(tree?.value).to.equal('+')
             expect(num(tree?.down)).to.equal(1)
             expect(num(tree?.down?.next)).to.equal(2)
         })
-        it("(1+2)*3", function () {
+        it("(1+2)*3", () => {
             const tree = expression("(1+2)*3")
             expect(tree?.value).to.equal('*')
             expect(tree?.down?.value).to.equal('+')
@@ -150,12 +150,12 @@ describe("expressions", function () {
             expect(num(tree?.down?.down?.next)).to.equal(2)
             expect(num(tree?.down?.next)).to.equal(3)
         })
-        it("-1", function () {
+        it("-1", () => {
             const tree = expression("-1")
             expect(tree?.value).to.equal('-')
             expect(num(tree?.down)).to.equal(1)
         })
-        it("-1", function () {
+        it("-1", () => {
             const tree = expression("1+-2")
             expect(tree?.value).to.equal('+')
             expect(num(tree?.down)).to.equal(1)
@@ -163,29 +163,29 @@ describe("expressions", function () {
             expect(num(tree?.down?.next?.down)).to.equal(2)
         })
     })
-    describe("evaluate", function () {
-        it("0.1+0.2", function () {
+    describe("evaluate", () => {
+        it("0.1+0.2", () => {
             expect(evaluate("0.1+0.2")?.toNumber()).to.equal(0.3)
         })
-        it("1+2", function () {
+        it("1+2", () => {
             expect(evaluate("1+2")?.toNumber()).to.equal(3)
         })
-        it("3-2", function () {
+        it("3-2", () => {
             expect(evaluate("3-2")?.toNumber()).to.equal(1)
         })
-        it("2*3", function () {
+        it("2*3", () => {
             expect(evaluate("2*3")?.toNumber()).to.equal(6)
         })
-        it("6/2", function () {
+        it("6/2", () => {
             expect(evaluate("6/2")?.toNumber()).to.equal(3)
         })
-        it("-1", function () {
+        it("-1", () => {
             expect(evaluate("-1")?.toNumber()).to.equal(-1)
         })
-        it("1+-4", function () {
+        it("1+-4", () => {
             expect(evaluate("1+-4")?.toNumber()).to.equal(-3)
         })
-        it("6*2+14/7-3", function () {
+        it("6*2+14/7-3", () => {
             expect(evaluate("6*2+14/7-3")?.toNumber()).to.equal(11)
         })
     })

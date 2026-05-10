@@ -14,5 +14,8 @@ export default defineConfig({
                 { browser: 'chromium', headless: true },
             ],
         },
+        reporters: [
+            ['tree', { summary: false, displayAnnotations: true}]
+        ]
     }
 })
