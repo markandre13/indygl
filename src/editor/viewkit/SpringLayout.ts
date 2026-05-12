@@ -1,3 +1,5 @@
+import { bind } from "../appkit/details/decorators/bind"
+
 // type SpringHow = "none" | "form" | "window" | "opposite"
 type SpringWhere = "top" | "bottom" | "left" | "right"
 
@@ -51,8 +53,6 @@ export class SpringLayout {
 
     constructor(def: SpringDefinition[]) {
         this.initialize(def)
-        this.resize = this.resize.bind(this)
-        this.arrange = this.arrange.bind(this)
         new ResizeObserver(this.resize).observe(this.parent)
         this.resize()
     }
@@ -96,14 +96,14 @@ export class SpringLayout {
         }
     }
     private _invalidated = false
-    resize() {
+    @bind resize() {
         if (this._invalidated) {
             return
         }
         this._invalidated = true
         requestAnimationFrame(this.arrange)
     }
-    arrange() {
+    @bind arrange() {
         this._invalidated = false
         debug && console.log("==========================================================================")
 

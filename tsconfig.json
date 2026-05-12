@@ -24,15 +24,16 @@
                 "./src/editor/viewkit/*"
             ],
         },
+        "outDir": "js",
+        "noEmit": false,
+        "noEmitOnError": true,
+        "sourceMap": true,
         "esModuleInterop": true,
-        /* Bundler mode */
         "moduleResolution": "bundler",
-        "allowImportingTsExtensions": true,
+        "allowImportingTsExtensions": false,
         "verbatimModuleSyntax": true,
         "moduleDetection": "force",
-        "noEmit": true,
         "noImplicitOverride": true,
-        /* Linting */
         "noUnusedLocals": false,
         "noUnusedParameters": true,
         "erasableSyntaxOnly": false,

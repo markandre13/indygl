@@ -16,9 +16,5 @@ describe("BigNumberModel", () => {
             const a = new BigNumberModel("0.1")
             expect(a.value.toNumber()).equals(0.1)
         })
-        it('BigNumberModel(n: string, base: number)', () => {
-            const a = new BigNumberModel("10", 16)
-            expect(a.value.toNumber()).equals(16)
-        })
     })
 })

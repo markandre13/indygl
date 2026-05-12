@@ -3,6 +3,7 @@ import { SceneUniform } from './buffers/SceneUniform'
 import type { Device } from './Device'
 import type { Controller } from './controllers/Controller'
 import { Mat4Model } from './Mat4Model'
+import { bind } from 'src/editor/appkit/details/decorators/bind'
 
 export enum Projection {
     ORTHOGONAL,
@@ -37,7 +38,6 @@ export class CanvasContext {
         this.device = device
         this.canvas = canvas
 
-        this.invalidate = this.invalidate.bind(this)
         const defaultCamera = mat4.create()
         mat4.translate(defaultCamera, defaultCamera, [0.0, 0.0, -24.0])
         this.camera = new Mat4Model(defaultCamera, {default: defaultCamera, local: "camera"})
@@ -98,7 +98,7 @@ export class CanvasContext {
     // backgroundColor = [0,0,0,1]
     camera: Mat4Model
     private _invalidated = false
-    invalidate() {
+    @bind invalidate() {
         if (this._invalidated) {
             return
         }

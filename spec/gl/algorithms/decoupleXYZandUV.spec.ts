@@ -185,8 +185,8 @@ function dumpMeshData(output: MeshDataSingleIndex) {
 }
 
 function validateOutput(input: MeshData, output: MeshDataSingleIndex) {
-    dumpMeshData(input)
-    dumpMeshData(output)
+    // dumpMeshData(input)
+    // dumpMeshData(output)
 
     for (let i = 0; i < output.fxyz!.length; ++i) {
         const fxyz = input.fxyz![i]

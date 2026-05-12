@@ -3,20 +3,7 @@ import { NumericModel, type NumericModelEvent, type NumericModelOptions } from '
 import type { Unit } from './units/Unit'
 import { VALUE } from 'toad.js/appkit/ValueModel'
 import { evaluate } from './details/expressions/expression'
-
-// vite's rolldown does not support tc39 decorators yet...
-// maybe compile with tsgo and then use vite on the resulting js?
-
-// function bind(_target: any, context: ClassMemberDecoratorContext) {
-//     const methodName = context.name
-//     if (context.private) {
-//         throw Error(`@bind cannot decorate private properties like ${methodName.toString()}`)
-//     }
-//     console.log(_target)
-//     context.addInitializer(function() {
-//         (this as any)[methodName] = (this as any)[methodName].bind(this)
-//     })
-// }
+import { bind } from './details/decorators/bind'
 
 export type BigNumberModelEvent = NumericModelEvent
 export type BigNumberModelOptions = NumericModelOptions<BigNumber>
@@ -24,32 +11,21 @@ export type BigNumberModelOptions = NumericModelOptions<BigNumber>
 export class BigNumberModel extends NumericModel<BigNumber> {
     constructor(n: number, options?: BigNumberModelOptions)
     constructor(n: string, options?: BigNumberModelOptions)
-    constructor(n: string, base?: number, options?: BigNumberModelOptions)
     constructor(n: BigNumber, options?: BigNumberModelOptions)
-    constructor(n: number | string | BigNumber, baseOrOptions?: number | BigNumberModelOptions, options?: BigNumberModelOptions) {
-        if (n instanceof BigNumber) {
-            super(n)
-        } else if (typeof n === "string" && typeof baseOrOptions !== "number") {
-            super(BigNumber(n), baseOrOptions)
-        } else if (typeof n === "string" && typeof baseOrOptions === "number") {
-            super(BigNumber(n, baseOrOptions), options)
-        } else if (typeof n === "number" && typeof baseOrOptions !== "number") {
-            super(BigNumber(n), baseOrOptions)
-        } else {
-            throw Error(`BigNumberModel called with invalid arguments`)
-        }
-        this.increment = this.increment.bind(this)
-        this.decrement = this.decrement.bind(this)
+    constructor(n: number | string | BigNumber, options?: BigNumberModelOptions) {
+        super(
+            n instanceof BigNumber ? n : new BigNumber(n), options
+        )
     }
 
-    // @bind
+    @bind
     override increment() {
         if (this.step !== undefined) {
             this.value = this.clip(this.value.plus(this.step))
         }
     }
 
-    // @bind
+    @bind
     decrement() {
         if (this.step !== undefined) {
             this.value = this.clip(this._value.minus(this.step))

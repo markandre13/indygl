@@ -4,6 +4,7 @@ import { Scale3Model } from "./Scale3Model"
 import { Vec3Model } from "./Vec3Model"
 import { Signal } from "toad.js/reactive/Signal"
 import { deg2rad } from "src/gl/algorithms/deg2rad"
+import { bind } from "./details/decorators/bind"
 
 export class TransformModel {
     readonly signal = new Signal()
@@ -13,15 +14,16 @@ export class TransformModel {
     readonly dimensions = new Vec3Model();
     private readonly m = mat4.create()
 
-    private emit() { this.signal.emit() }
     constructor() {
-        this.emit = this.emit.bind(this)
         this.translation.signal.add(this.emit)
         this.rotation.signal.add(this.emit)
         this.scale.signal.add(this.emit)
         // TODO: dimensions, which is to affect scale relative to the current object's dimensions
         // TODO: how to we get the dimensions?
     }
+
+    @bind
+    private emit() { this.signal.emit() }
 
     get value(): mat4 {
         mat4.identity(this.m)

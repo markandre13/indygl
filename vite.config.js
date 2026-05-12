@@ -1,20 +1,41 @@
 import { defineConfig } from 'vite'
 import solidPlugin from 'vite-plugin-solid'
 // import glsl from 'vite-plugin-glsl'
+import { playwright } from '@vitest/browser-playwright'
 
 export default defineConfig({
-    //   plugins: [glsl()]
+    plugins: [
+        // [glsl()],
+        solidPlugin({ solid: { moduleName: "toad.jsx" } }),
+    ],
     resolve: {
-        tsconfig: true,
-        tsconfigPaths: true
+        // the tsconfig is for tsc
+        tsconfig: false,
+        tsconfigPaths: false,
+        // tsconfig's paths mapped to js/
+        alias: {
+            "src": "/js/src",
+            "appkit": "/js/src/editor/appkit",
+            "viewkit": "/js/src/editor/viewkit"
+        },
     },
     build: {
         lib: {
             formats: ['es'],
-            entry: 'src/main.tsx',
+            entry: 'js/src/main.jsx',
         },
-    }, plugins: [
-        // [glsl()],
-        solidPlugin({ solid: { moduleName: "toad.jsx" } }),
-    ],
+    },
+    test: {
+        environment: "node",
+        browser: {
+            provider: playwright(),
+            enabled: true,
+            instances: [
+                { browser: 'chromium', headless: true },
+            ],
+        },
+        reporters: [
+            ['tree', { summary: false }]
+        ]
+    },
 })
