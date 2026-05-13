@@ -10,7 +10,7 @@ import { replaceChildren } from 'toad.jsx'
 import { EditorModel } from './editor/app/EditorModel'
 import { MainScreen } from './editor/view/MainScreen'
 import { ShaderP3_N3_IDX_Alpha } from './gl/shaders/ShaderP3_N3_IDX_Alpha'
-import { Mesh } from './Mesh'
+import { IndyNode, Material, Mesh, Root, XForm } from './Mesh'
 
 // [ ] make rendering more generic: like a mesh object?
 //     https://graphics.cs.utah.edu/teapot/
@@ -20,6 +20,37 @@ import { Mesh } from './Mesh'
 //  [ ] select object with pointer
 //  [ ] move object with pointer
 //
+// blender tree:
+//   Scene Collection (name can't be changed)
+//     Collection
+//       Camera
+//         Camera
+//       Cube
+//         Cube
+//           Material
+//       Light
+//         Light
+// usd tree
+//   Xform root (UsdGeomXform)
+//     Xform Cube ;; custom string userProperties:blender:object_name = "Cube"
+//       Mesh     ;; custom string userProperties:blender:data_name = "Cube"
+//         UsdGeomMesh
+//   Scope
+//     Material
+//       Shader
+//   DomeLight
+//
+// https://docs.blender.org/manual/en/2.80/modeling/meshes/editing/edges.html
+// * Seams are a way to create separations, “islands”, in UV maps.
+// * Crease: This edge property, a value between (0.0 to 1.0), is used by the 
+//   Subdivision Surface Modifier to control the sharpness of the edges in the
+//   subdivided mesh.
+// * Sharp: exlude from smooth shading
+// * Bevel weight
+// For editing
+// slide (move edge using constraints), rotate (rotate edge and create new points), splice, bridge (connect groups of points)
+
+
 // USD and WavefrontObj have similar data structures for meshes
 //
 // faceVertexCounts: int[]      vcount
@@ -124,14 +155,14 @@ class ShaderCollection {
     }
 }
 
-async function loadMesh(device: Device, filename: string) {
+async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
     if (!r.ok) {
         throw Error(`failed to load '${filename}': ${r.status} ${r.statusText}: ${await r.text()}`)
     }
     const obj = new WavefrontObj(filename, await r.text())
-    console.log(obj)
-    const mesh = new Mesh(device, {
+    // console.log(obj)
+    const mesh = new Mesh(parent, {
         xyz: obj.xyz,
         fxyz: obj.fxyz,
         uv: obj.uv.length > 0 ? obj.uv : undefined,
@@ -166,13 +197,18 @@ export async function main() {
     context.pushController(new BasicMode(context))
     const modelUniforms = new ModelUniform(device)
 
-    const teapot = await loadMesh(device, "obj/utah_teapot.obj")
+    const root = new Root(device)
+    const teapot = new XForm(root)
+    const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
+    teapotMesh.material = new Material([1, 0.5, 0, 1])
     // const teapot = await loadMesh(device, "obj/teeth.obj") // two materials
     // const teapot = await loadMesh(device, "obj/cube.obj") // 4-gons
-    // const teapot = await loadMesh(device, "obj/dodecahedron.obj") // 5-gons
+    const dodecahedron = new XForm(root)
+    const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
+    dodecahedronMesh.material = new Material([0, 1, 0, 1])
+
     // const teapot = await loadMesh(device, "obj/mh/base.obj")
     // console.log(teapot)
-
 
     context.paint = () => {
 
@@ -191,8 +227,18 @@ export async function main() {
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
-        // shader.p3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.indices, [1, 0.5, 0, 1])
-        shader.p3_n3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.normals, teapot.indices, [1, 0.5, 0, 1])
+        function draw(node: IndyNode) {
+            if (node instanceof Mesh) {
+                // shader.p3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.indices, [1, 0.5, 0, 1])
+                shader.p3_n3_idx.draw(pass, context, modelUniforms, node.points, node.normals, node.indices, node.rgba)
+            } else {
+                for (const child of node.children) {
+                    draw(child)
+                }
+            }
+        }
+
+        draw(root)
 
         pass.end()
         const commandBuffer = commandEncoder.finish()

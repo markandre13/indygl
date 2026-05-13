@@ -5,6 +5,7 @@ import type { Device } from "./gl/Device"
 import { triangulate } from "./gl/algorithms/triangulate"
 import { decoupleXYZandUV, type MeshDataSingleIndex } from "./gl/algorithms/decoupleXYZandUV"
 import { VertexBuffer } from "./gl/buffers/VertexBuffer"
+import type { mat4 } from "gl-matrix"
 
 export interface MeshData {
     vcount?: ArrayLike<number>
@@ -16,8 +17,39 @@ export interface MeshData {
     fnormal?: ArrayLike<number>
 }
 
-export class Mesh implements MeshData {
-    device: Device
+export class Material {
+    constructor(rgba: number[]) {
+        this.rgba = rgba
+    }
+    rgba: number[]
+    texture?: Texture
+}
+
+export class IndyNode {
+    constructor(parent: IndyNode) {
+        if (parent) {
+            this.parent = parent
+            this.device = parent.device
+            parent.children.push(this)
+        }
+    }
+    device!: Device
+    parent?: IndyNode
+    children: IndyNode[] = []
+}
+
+export class Root extends IndyNode {
+    constructor(device: Device) {
+        super(undefined as any)
+        this.device = device
+    }
+}
+
+export class XForm extends IndyNode {
+    transform?: mat4
+}
+
+export class Mesh extends IndyNode implements MeshData {
     vcount?: ArrayLike<number>
     xyz?: ArrayLike<number>
     fxyz?: ArrayLike<number>
@@ -30,8 +62,8 @@ export class Mesh implements MeshData {
     // sharp edges
     // ...
 
-    constructor(device: Device, opt?: MeshData) {
-        this.device = device
+    constructor(parent: XForm, opt?: MeshData) {
+        super(parent)
         this.xyz = opt?.xyz
         this.fxyz = opt?.fxyz
         this.uv = opt?.uv
@@ -57,6 +89,11 @@ export class Mesh implements MeshData {
     protected _indices?: IndexBuffer
     protected _points?: PositionBuffer
     protected _normals?: VertexBuffer
+
+    material?: Material
+    get rgba(): number[] {
+        return this.material ? this.material.rgba : [0.8, 0.8, 0.8, 1]
+    }
 
     get indices() {
         if (this._triangles === undefined) {
@@ -97,7 +134,3 @@ export class Mesh implements MeshData {
 
 }
 
-export class Material {
-    rgba?: ArrayLike<number>
-    texture?: Texture
-}
