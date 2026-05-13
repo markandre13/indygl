@@ -6,6 +6,7 @@ import { triangulate } from "./gl/algorithms/triangulate"
 import { decoupleXYZandUV, type MeshDataSingleIndex } from "./gl/algorithms/decoupleXYZandUV"
 import { VertexBuffer } from "./gl/buffers/VertexBuffer"
 import type { mat4 } from "gl-matrix"
+import { ColorUniform } from "./gl/buffers/ColorUniform"
 
 export interface MeshData {
     vcount?: ArrayLike<number>
@@ -18,10 +19,14 @@ export interface MeshData {
 }
 
 export class Material {
-    constructor(rgba: number[]) {
-        this.rgba = rgba
+    constructor(device: Device, rgba: number[]) {
+        // this.rgba = rgba
+        this.colorUniform = new ColorUniform(device)
+        this.colorUniform.rgba = rgba
+        this.colorUniform.writeTo(device)
     }
-    rgba: number[]
+    colorUniform: ColorUniform
+    // rgba: number[]
     texture?: Texture
 }
 
@@ -91,9 +96,9 @@ export class Mesh extends IndyNode implements MeshData {
     protected _normals?: VertexBuffer
 
     material?: Material
-    get rgba(): number[] {
-        return this.material ? this.material.rgba : [0.8, 0.8, 0.8, 1]
-    }
+    // get rgba(): number[] {
+    //     return this.material ? this.material.rgba : [0.8, 0.8, 0.8, 1]
+    // }
 
     get indices() {
         if (this._triangles === undefined) {

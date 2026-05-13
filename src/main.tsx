@@ -200,12 +200,12 @@ export async function main() {
     const root = new Root(device)
     const teapot = new XForm(root)
     const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
-    teapotMesh.material = new Material([1, 0.5, 0, 1])
+    teapotMesh.material = new Material(device, [1, 0.5, 0, 1])
     // const teapot = await loadMesh(device, "obj/teeth.obj") // two materials
     // const teapot = await loadMesh(device, "obj/cube.obj") // 4-gons
     const dodecahedron = new XForm(root)
     const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
-    dodecahedronMesh.material = new Material([0, 1, 0, 1])
+    dodecahedronMesh.material = new Material(device, [0, 1, 0, 1])
 
     // const teapot = await loadMesh(device, "obj/mh/base.obj")
     // console.log(teapot)
@@ -224,13 +224,21 @@ export async function main() {
         modelUniforms.writeTo(device)
         context.ajustSize()
 
+        // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
+
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
+        // https://github.com/gfx-rs/wgpu/issues/733
+        //   "all draws within a render pass are executed in parallel"
+        // https://webgpu.github.io/webgpu-samples/?sample=occlusionQuery
+        //   one uniform buffer & bind group per object...???
+        // https://www.reddit.com/r/webgpu/comments/1go20qr/best_way_to_render_multiple_objects_with/
+        // https://toji.dev/webgpu-best-practices/bind-groups.html
         function draw(node: IndyNode) {
             if (node instanceof Mesh) {
                 // shader.p3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.indices, [1, 0.5, 0, 1])
-                shader.p3_n3_idx.draw(pass, context, modelUniforms, node.points, node.normals, node.indices, node.rgba)
+                shader.p3_n3_idx.draw(pass, context, modelUniforms, node.material!.colorUniform, node.points, node.normals, node.indices)
             } else {
                 for (const child of node.children) {
                     draw(child)

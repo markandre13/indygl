@@ -52,7 +52,7 @@ export class ShaderP3_N3_IDX extends Shader {
 
     bindGroup?: GPUBindGroup
     private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
-        if (this.bindGroup === undefined) {
+        // if (this.bindGroup === undefined) {
             this.bindGroup = this.device.device.createBindGroup({
                 layout: this.pipeline.getBindGroupLayout(0),
                 entries: [
@@ -61,20 +61,22 @@ export class ShaderP3_N3_IDX extends Shader {
                     { binding: 2, resource: this.colorUniform.buffer },
                 ],
             })
-        }
+        // }
         return this.bindGroup
     }
 
     draw(pass: GPURenderPassEncoder,
         context: CanvasContext,
         modelUniforms: ModelUniform,
+        colorUniform: ColorUniform,
         positions: VertexBuffer,
         normals: VertexBuffer,
         indices: IndexBuffer,
-        rgba: number[]
+        // rgba: number[]
     ) {
-        this.colorUniform.rgba = rgba
-        this.colorUniform.writeTo(this.device)
+        this.colorUniform = colorUniform
+        // this.colorUniform.rgba = rgba
+        // this.colorUniform.writeTo(this.device)
 
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
