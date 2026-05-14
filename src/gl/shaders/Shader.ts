@@ -3,9 +3,9 @@ import type { Device } from "../Device"
 export class Shader {
     device: Device
     module: GPUShaderModule
-    constructor(device: Device, code: string) {
+    constructor(device: Device, code: string, label?: string) {
         this.device = device
-        this.module = this.device.device.createShaderModule({ code })
+        this.module = this.device.device.createShaderModule({ label, code })
         this.module.getCompilationInfo().then(info => logCompilationInfo(info))
     }
 }

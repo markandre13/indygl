@@ -10,6 +10,33 @@ export enum Projection {
     PERSPECTIVE
 }
 
+export class CameraBindGroup {
+    static layout: GPUBindGroupLayout
+    bindGroup: GPUBindGroup
+    constructor(device: Device, camera: SceneUniform) {
+        if (CameraBindGroup.layout === undefined) {
+            CameraBindGroup.layout = device.device.createBindGroupLayout({
+                label: 'camera-bind-group-layout',
+                entries: [{
+                    binding: 0,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                    buffer: {
+                        type: "uniform",
+                        minBindingSize: 0
+                    }
+                }]
+            })
+        }
+        this.bindGroup = device.device.createBindGroup({
+            label: 'camera-bind-group',
+            layout: CameraBindGroup.layout,
+            entries: [
+                { binding: 0, resource: camera },
+            ],
+        })
+    }
+}
+
 export class CanvasContext {
     device: Device
     canvas: HTMLCanvasElement
@@ -20,6 +47,7 @@ export class CanvasContext {
     private depthTextureView?: GPUTextureView
     sampler: GPUSampler
     sceneUniforms: SceneUniform
+    cameraBindGroup: CameraBindGroup
     renderPassDescriptor: GPURenderPassDescriptor
 
     private _controllerStack: Controller[] = []
@@ -51,6 +79,7 @@ export class CanvasContext {
         }
 
         this.sceneUniforms = new SceneUniform(device)
+        this.cameraBindGroup = new CameraBindGroup(device, this.sceneUniforms)
 
         const devicePixelRatio = window.devicePixelRatio
         const pixelWidth = canvas.clientWidth * devicePixelRatio

@@ -1,51 +1,67 @@
+import { MaterialBindGroup, ModelBindGroup } from "src/main"
 import { ColorUniform } from "../buffers/ColorUniform"
 import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import type { VertexBuffer } from "../buffers/VertexBuffer"
-import type { CanvasContext } from "../CanvasContext"
+import { CameraBindGroup, type CanvasContext } from "../CanvasContext"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
 export class ShaderP3_N3_IDX extends Shader {
     pipeline: GPURenderPipeline
-    colorUniform: ColorUniform
-    layout: GPUBindGroupLayout
+    // colorUniform: ColorUniform
+    // layout: GPUBindGroupLayout
     constructor(device: Device,
         context: CanvasContext
     ) {
-        super(device, code)
-        this.colorUniform = new ColorUniform(device)
+        super(device, code, 'p3-n3-idx')
+        // this.colorUniform = new ColorUniform(device)
 
-        this.layout = this.device.device.createBindGroupLayout({
-            label: 'my 1st bindgroup layout',
-            entries: [{
-                binding: 0,
-                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-                buffer: {
-                    type: "uniform",
-                    minBindingSize: 0
-                }
-            }, {
-                binding: 1,
-                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-                buffer: {
-                    type: "uniform",
-                    minBindingSize: 0
-                }
-            }, {
-                binding: 2,
-                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-                buffer: {
-                    type: "uniform",
-                    minBindingSize: 0
-                }
-            }]
-        })
+        // this.layout = this.device.device.createBindGroupLayout({
+        //     label: 'my 1st bindgroup layout',
+        //     entries: [{
+        //         binding: 0,
+        //         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        //         buffer: {
+        //             type: "uniform",
+        //             minBindingSize: 0
+        //         }
+        //     }, {
+        //         binding: 1,
+        //         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        //         buffer: {
+        //             type: "uniform",
+        //             minBindingSize: 0
+        //         }
+        //     }, {
+        //         binding: 2,
+        //         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+        //         buffer: {
+        //             type: "uniform",
+        //             minBindingSize: 0
+        //         }
+        //     }]
+        // })
+        if (CameraBindGroup.layout === undefined) {
+            throw Error(`CameraBindGroup.layout === undefined`)
+        }
+        if (ModelBindGroup.layout === undefined) {
+            throw Error(`ModelBindGroup.layout === undefined`)
+        }
+        if (MaterialBindGroup.layout === undefined) {
+            throw Error(`MaterialBindGroup.layout === undefined`)
+        }
+
         const pipelineDef: GPURenderPipelineDescriptor = {
+            label: 'p3-n3-idx',
             layout: device.device.createPipelineLayout({
-                label: 'my 1st pipeline layout',
-                bindGroupLayouts: [this.layout]
+                label: 'p3-n3-idx',
+                bindGroupLayouts: [
+                    CameraBindGroup.layout,
+                    ModelBindGroup.layout,
+                    MaterialBindGroup.layout
+                ]
             }),
             vertex: {
                 buffers: [{
@@ -80,37 +96,40 @@ export class ShaderP3_N3_IDX extends Shader {
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
 
-    bindGroup?: GPUBindGroup
-    private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
-        if (this.bindGroup === undefined) {
-            this.bindGroup = this.device.device.createBindGroup({
-                label: 'Shader X',
-                layout: this.layout,
-                entries: [
-                    { binding: 0, resource: context.sceneUniforms.buffer },
-                    { binding: 1, resource: modelUniforms.buffer },
-                    { binding: 2, resource: this.colorUniform.buffer },
-                ],
-            })
-        }
-        return this.bindGroup
-    }
+    // bindGroup?: GPUBindGroup
+    // private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
+    //     if (this.bindGroup === undefined) {
+    //         this.bindGroup = this.device.device.createBindGroup({
+    //             label: 'Shader X',
+    //             layout: this.layout,
+    //             entries: [
+    //                 { binding: 0, resource: context.sceneUniforms.buffer },
+    //                 { binding: 1, resource: modelUniforms.buffer },
+    //                 { binding: 2, resource: this.colorUniform.buffer },
+    //             ],
+    //         })
+    //     }
+    //     return this.bindGroup
+    // }
 
     draw(pass: GPURenderPassEncoder,
-        context: CanvasContext,
-        modelUniforms: ModelUniform,
-        colorUniform: ColorUniform,
+        camera: CameraBindGroup,
+        model: ModelBindGroup,
+        material: MaterialBindGroup,
         positions: VertexBuffer,
         normals: VertexBuffer,
         indices: IndexBuffer,
         // rgba: number[]
     ) {
-        this.colorUniform = colorUniform
+        // this.colorUniform = colorUniform
         // this.colorUniform.rgba = rgba
         // this.colorUniform.writeTo(this.device)
 
         pass.setPipeline(this.pipeline)
-        pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
+        pass.setBindGroup(0, camera.bindGroup)
+        pass.setBindGroup(1, model.bindGroup)
+        pass.setBindGroup(2, material.bindGroup)
+
         pass.setVertexBuffer(0, positions.buffer)
         pass.setVertexBuffer(1, normals.buffer)
         pass.setIndexBuffer(indices.buffer, 'uint32')
@@ -130,8 +149,8 @@ const code = /* wgsl */`
         uColor: vec4f
     }
     @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
-    @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
-    @group(0) @binding(2) var<uniform> colorUniforms: ColorUniforms;
+    @group(1) @binding(0) var<uniform> modelUniforms: ModelUniforms;
+    @group(2) @binding(0) var<uniform> colorUniforms: ColorUniforms;
 
     struct Vertex2Fragment {
         @builtin(position) Position: vec4f,

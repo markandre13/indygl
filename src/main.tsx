@@ -11,6 +11,8 @@ import { EditorModel } from './editor/app/EditorModel'
 import { MainScreen } from './editor/view/MainScreen'
 import { ShaderP3_N3_IDX_Alpha } from './gl/shaders/ShaderP3_N3_IDX_Alpha'
 import { IndyNode, Material, Mesh, Root, XForm } from './Mesh'
+import { ColorUniform } from './gl/buffers/ColorUniform'
+import type { SceneUniform } from './gl/buffers/SceneUniform'
 
 // [ ] make rendering more generic: like a mesh object?
 //     https://graphics.cs.utah.edu/teapot/
@@ -134,17 +136,17 @@ X transform using the panel on the right
 */
 
 class ShaderCollection {
-    readonly p3_idx: ShaderP3_IDX
+    // readonly p3_idx: ShaderP3_IDX
     readonly p3_n3_idx: ShaderP3_N3_IDX
-    readonly p3_n3_idx_alpha: ShaderP3_N3_IDX_Alpha
+    // readonly p3_n3_idx_alpha: ShaderP3_N3_IDX_Alpha
 
     constructor(context: CanvasContext) {
         const device = context.device
         this.p3_n3_idx = new ShaderP3_N3_IDX(device, context)
-        this.p3_n3_idx_alpha = new ShaderP3_N3_IDX_Alpha(device, context)
+        // this.p3_n3_idx_alpha = new ShaderP3_N3_IDX_Alpha(device, context)
         // // const shaderPickPoint = new ShaderP3_PickPoint(device, context)
         // const shaderPickPoints = new ShaderP3_C3_Point(device, context)
-        this.p3_idx = new ShaderP3_IDX(device, context)
+        // this.p3_idx = new ShaderP3_IDX(device, context)
 
         // // const shaderColor = new ShaderP3_C3_IDX(device, context)
         // const shaderShadedTexture = new ShaderP4N4T2(device, context)
@@ -174,6 +176,62 @@ async function loadMesh(parent: XForm, filename: string) {
     return mesh
 }
 
+// one per model
+export class ModelBindGroup {
+    static layout: GPUBindGroupLayout
+    bindGroup: GPUBindGroup
+    constructor(device: Device, model: ModelUniform) {
+        if (ModelBindGroup.layout === undefined) {
+            ModelBindGroup.layout = device.device.createBindGroupLayout({
+                label: 'model-bind-group-layout',
+                entries: [{
+                    binding: 0,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                    buffer: {
+                        type: "uniform",
+                        minBindingSize: 0
+                    }
+                }]
+            })
+        }
+        this.bindGroup = device.device.createBindGroup({
+            label: 'model-bind-group',
+            layout: ModelBindGroup.layout,
+            entries: [
+                { binding: 0, resource: model },
+            ],
+        })
+    }
+}
+
+// one per material
+export class MaterialBindGroup {
+    static layout: GPUBindGroupLayout
+    bindGroup: GPUBindGroup
+    constructor(device: Device, color: ColorUniform) {
+        if (MaterialBindGroup.layout === undefined) {
+            MaterialBindGroup.layout = device.device.createBindGroupLayout({
+                label: 'material-bind-group-layout',
+                entries: [{
+                    binding: 0,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                    buffer: {
+                        type: "uniform",
+                        minBindingSize: 0
+                    }
+                }]
+            })
+        }
+        this.bindGroup = device.device.createBindGroup({
+            label: 'material-bind-group',
+            layout: MaterialBindGroup.layout,
+            entries: [
+                { binding: 0, resource: color },
+            ],
+        })
+    }
+}
+
 export async function main() {
     // start the ui
     const editorModel = new EditorModel()
@@ -188,14 +246,27 @@ export async function main() {
     const device = new Device()
     await device.init()
     const context = new CanvasContext(device, canvas)
-    const shader = new ShaderCollection(context)
 
     editorModel.transform.signal.add(context.invalidate)
     editorModel.selectionMode.signal.add(context.invalidate)
     editorModel.viewportShading.signal.add(context.invalidate)
     new ResizeObserver(context.invalidate).observe(canvas) // TODO: shouldn't this be in CanvasContext???
     context.pushController(new BasicMode(context))
+
     const modelUniforms = new ModelUniform(device)
+    const modelBindGroup = new ModelBindGroup(device, modelUniforms)
+
+    const colorUniform0 = new ColorUniform(device)
+    colorUniform0.rgba = [1, 0.5, 0, 1]
+    const materialBindGroup0 = new MaterialBindGroup(device, colorUniform0)
+    colorUniform0.writeTo(device)
+
+    const colorUniform1 = new ColorUniform(device)
+    colorUniform1.rgba = [0, 1, 0, 1]
+    const materialBindGroup1 = new MaterialBindGroup(device, colorUniform1)
+    colorUniform1.writeTo(device)
+
+    const shader = new ShaderCollection(context)
 
     const root = new Root(device)
     const teapot = new XForm(root)
@@ -249,11 +320,17 @@ export async function main() {
         // the main render loop when it will cause the most visible stutters.
 
         // pass.setPipeline is also expensive!!!
+        let flag = false
 
         function draw(node: IndyNode) {
             if (node instanceof Mesh) {
                 // shader.p3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.indices, [1, 0.5, 0, 1])
-                shader.p3_n3_idx.draw(pass, context, modelUniforms, node.material!.colorUniform, node.points, node.normals, node.indices)
+                flag = !flag
+                if (flag) {
+                    shader.p3_n3_idx.draw(pass, context.cameraBindGroup, modelBindGroup, materialBindGroup0, node.points, node.normals, node.indices)
+                } else {
+                    shader.p3_n3_idx.draw(pass, context.cameraBindGroup, modelBindGroup, materialBindGroup1, node.points, node.normals, node.indices)
+                }
             } else {
                 for (const child of node.children) {
                     draw(child)
