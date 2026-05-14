@@ -235,6 +235,21 @@ export async function main() {
         //   one uniform buffer & bind group per object...???
         // https://www.reddit.com/r/webgpu/comments/1go20qr/best_way_to_render_multiple_objects_with/
         // https://toji.dev/webgpu-best-practices/bind-groups.html
+        // https://www.reddit.com/r/webgpu/comments/1bbwag3/are_dynamic_uniforms_efficient/
+        //   bind group per object, groups for: scene, object, material
+        // https://www.willusher.io/graphics/2023/04/11/0-to-gltf-bind-groups/
+        // https://www.khronos.org/assets/uploads/developers/presentations/WebGPU_Best_Practices_Google.pdf
+        // THE LAST ONE IS A GOOD READ!!! by https://toji.dev also the author of glMatrix
+        // https://toji.dev/webgpu-gltf-case-study/
+        // https://whoisryosuke.com/blog/2025/structure-of-a-webgpu-renderer/
+        // https://github.com/AmyangXYZ/reze-engine
+
+        // Render pipelines are also fairly expensive to create, and can cause hitches if you create them while rendering.
+        // As a result we’ll want to build all of our render pipelines at the point we load our model, rather than during 
+        // the main render loop when it will cause the most visible stutters.
+
+        // pass.setPipeline is also expensive!!!
+
         function draw(node: IndyNode) {
             if (node instanceof Mesh) {
                 // shader.p3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.indices, [1, 0.5, 0, 1])

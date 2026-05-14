@@ -10,20 +10,50 @@ import { Shader } from "./Shader"
 export class ShaderP3_N3_IDX extends Shader {
     pipeline: GPURenderPipeline
     colorUniform: ColorUniform
+    layout: GPUBindGroupLayout
     constructor(device: Device,
         context: CanvasContext
     ) {
         super(device, code)
         this.colorUniform = new ColorUniform(device)
+
+        this.layout = this.device.device.createBindGroupLayout({
+            label: 'my 1st bindgroup layout',
+            entries: [{
+                binding: 0,
+                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                buffer: {
+                    type: "uniform",
+                    minBindingSize: 0
+                }
+            }, {
+                binding: 1,
+                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                buffer: {
+                    type: "uniform",
+                    minBindingSize: 0
+                }
+            }, {
+                binding: 2,
+                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                buffer: {
+                    type: "uniform",
+                    minBindingSize: 0
+                }
+            }]
+        })
         const pipelineDef: GPURenderPipelineDescriptor = {
-            layout: 'auto',
+            layout: device.device.createPipelineLayout({
+                label: 'my 1st pipeline layout',
+                bindGroupLayouts: [this.layout]
+            }),
             vertex: {
                 buffers: [{
                     arrayStride: FLOAT32_NUM_BYTES * 3,
                     attributes: [
                         { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
                     ]
-                },{
+                }, {
                     arrayStride: FLOAT32_NUM_BYTES * 3,
                     attributes: [
                         { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
@@ -52,16 +82,17 @@ export class ShaderP3_N3_IDX extends Shader {
 
     bindGroup?: GPUBindGroup
     private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
-        // if (this.bindGroup === undefined) {
+        if (this.bindGroup === undefined) {
             this.bindGroup = this.device.device.createBindGroup({
-                layout: this.pipeline.getBindGroupLayout(0),
+                label: 'Shader X',
+                layout: this.layout,
                 entries: [
                     { binding: 0, resource: context.sceneUniforms.buffer },
                     { binding: 1, resource: modelUniforms.buffer },
                     { binding: 2, resource: this.colorUniform.buffer },
                 ],
             })
-        // }
+        }
         return this.bindGroup
     }
 
