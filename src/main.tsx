@@ -50,16 +50,17 @@ export async function main() {
     new ResizeObserver(context.invalidate).observe(canvas) // TODO: shouldn't this be in CanvasContext???
     context.pushController(new BasicMode(context))
 
-    const modelUniform = new ModelUniform(context)
-    // const modelBindGroup = new ModelBindGroup(device, modelUniforms)
+    // const modelUniform = new ModelUniform(context)
 
-    const root = new Root(device)
+    const root = new Root(context)
     const teapot = new XForm(root)
     const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
     teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
     // const teapot = await loadMesh(device, "obj/teeth.obj") // two materials
     // const teapot = await loadMesh(device, "obj/cube.obj") // 4-gons
     const dodecahedron = new XForm(root)
+    dodecahedron.transform = mat4.create()
+    mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15,3.4,0))
     const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
     dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
@@ -68,18 +69,6 @@ export async function main() {
 
     context.paint = () => {
         console.log(`paint`)
-
-        const modelViewMatrix = modelUniform.modelViewMatrix
-
-        // mat4.copy(modelViewMatrix, context.camera)
-        // mat4.multiply(modelViewMatrix, context.camera.value, editorModel.transform.value)
-        mat4.copy(modelViewMatrix, editorModel.transform.value)
-        
-        const normalMatrix = modelUniform.normalMatrix
-        mat4.invert(normalMatrix, modelViewMatrix)
-        mat4.transpose(normalMatrix, normalMatrix)
-
-        modelUniform.writeTo(device)
         context.ajustSize()
 
         // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
@@ -112,7 +101,20 @@ export async function main() {
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
         function draw(node: IndyNode) {
             if (node instanceof Mesh) {
-                pass.setBindGroup(1, modelUniform.bindGroup)
+                if (node.parent instanceof XForm) {
+                    if (node.parent.dirty) {
+                        if (node.parent.transform) {
+                            mat4.copy(node.modelView.modelViewMatrix, node.parent.transform)
+                            mat4.invert(node.modelView.normalMatrix, node.parent.transform)
+                            mat4.transpose(node.modelView.normalMatrix, node.modelView.normalMatrix)
+                        } else {
+                            mat4.identity(node.modelView.modelViewMatrix)
+                            mat4.identity(node.modelView.normalMatrix)
+                        }
+                        node.modelView.writeTo(device)
+                    }
+                }
+                pass.setBindGroup(1, node.modelView.bindGroup)
                 pass.setBindGroup(2, node.material!.bindGroup)
                 pass.setVertexBuffer(0, node.points.buffer)
                 pass.setVertexBuffer(1, node.normals.buffer)
@@ -121,6 +123,9 @@ export async function main() {
             } else {
                 for (const child of node.children) {
                     draw(child)
+                }
+                if (node instanceof XForm) {
+                    node.dirty = false
                 }
             }
         }

@@ -6,6 +6,8 @@ import { decoupleXYZandUV, type MeshDataSingleIndex } from "./gl/algorithms/deco
 import { VertexBuffer } from "./gl/buffers/VertexBuffer"
 import type { mat4 } from "gl-matrix"
 import type { Material } from "./Material"
+import { ModelUniform } from "./gl/buffers/ModelUniform"
+import type { Context } from "./gl/Context"
 
 export interface MeshData {
     vcount?: ArrayLike<number>
@@ -21,27 +23,30 @@ export class IndyNode {
     constructor(parent: IndyNode) {
         if (parent) {
             this.parent = parent
-            this.device = parent.device
+            this.context = parent.context
             parent.children.push(this)
         }
     }
-    device!: Device
+    context!: Context
     parent?: IndyNode
     children: IndyNode[] = []
 }
 
 export class Root extends IndyNode {
-    constructor(device: Device) {
+    constructor(context: Context) {
         super(undefined as any)
-        this.device = device
+        this.context = context
     }
 }
 
 export class XForm extends IndyNode {
     transform?: mat4
+    dirty = true
 }
 
 export class Mesh extends IndyNode implements MeshData {
+    modelView: ModelUniform
+
     vcount?: ArrayLike<number>
     xyz?: ArrayLike<number>
     fxyz?: ArrayLike<number>
@@ -56,6 +61,9 @@ export class Mesh extends IndyNode implements MeshData {
 
     constructor(parent: XForm, opt?: MeshData) {
         super(parent)
+
+        this.modelView = new ModelUniform(this.context)
+
         this.xyz = opt?.xyz
         this.fxyz = opt?.fxyz
         this.uv = opt?.uv
@@ -95,7 +103,7 @@ export class Mesh extends IndyNode implements MeshData {
             this._single_index = decoupleXYZandUV(this._triangles)
         }
         if (this._indices === undefined) {
-            this._indices = new IndexBuffer(this.device, this._single_index.fxyz!)
+            this._indices = new IndexBuffer(this.context.device, this._single_index.fxyz!)
         }
         return this._indices
     }
@@ -107,7 +115,7 @@ export class Mesh extends IndyNode implements MeshData {
             this._single_index = decoupleXYZandUV(this._triangles)
         }
         if (this._points === undefined) {
-            this._points = new PositionBuffer(this.device, this._single_index.xyz!)
+            this._points = new PositionBuffer(this.context.device, this._single_index.xyz!)
         }
         return this._points
     }
@@ -119,7 +127,7 @@ export class Mesh extends IndyNode implements MeshData {
             this._single_index = decoupleXYZandUV(this._triangles)
         }
         if (this._normals === undefined) {
-            this._normals = new VertexBuffer(this.device, this._single_index.normal!)
+            this._normals = new VertexBuffer(this.context.device, this._single_index.normal!)
         }
         return this._normals
     }
