@@ -3,7 +3,7 @@ import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import type { VertexBuffer } from "../buffers/VertexBuffer"
-import type { CanvasContext } from "../CanvasContext"
+import type { Context } from "../Context"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
@@ -11,7 +11,7 @@ export class ShaderP3_N3_IDX_Alpha extends Shader {
     pipeline: GPURenderPipeline
     colorUniform: ColorUniform
     constructor(device: Device,
-        context: CanvasContext
+        context: Context
     ) {
         super(device, code)
         this.colorUniform = new ColorUniform(device)
@@ -61,7 +61,7 @@ export class ShaderP3_N3_IDX_Alpha extends Shader {
     }
 
     bindGroup?: GPUBindGroup
-    private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
+    private createBindGroup(context: Context, modelUniforms: ModelUniform): GPUBindGroup {
         if (this.bindGroup === undefined) {
             this.bindGroup = this.device.device.createBindGroup({
                 layout: this.pipeline.getBindGroupLayout(0),
@@ -76,7 +76,7 @@ export class ShaderP3_N3_IDX_Alpha extends Shader {
     }
 
     draw(pass: GPURenderPassEncoder,
-        context: CanvasContext,
+        context: Context,
         modelUniforms: ModelUniform,
         positions: VertexBuffer,
         normals: VertexBuffer,

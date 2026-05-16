@@ -2,7 +2,7 @@ import { ColorUniform } from "../buffers/ColorUniform"
 import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { PositionBuffer } from "../buffers/PositionBuffer"
-import type { CanvasContext } from "../CanvasContext"
+import type { Context } from "../Context"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
@@ -10,7 +10,7 @@ export class ShaderP3_IDX extends Shader {
     pipeline: GPURenderPipeline
     colorUniform: ColorUniform
     constructor(device: Device,
-        context: CanvasContext,
+        context: Context,
         cullMode: GPUCullMode | undefined = "back",
         topology: GPUPrimitiveTopology | undefined = 'triangle-list',
         depthCompare: GPUCompareFunction | undefined = 'less'
@@ -46,7 +46,7 @@ export class ShaderP3_IDX extends Shader {
     }
     
     bindGroup?: GPUBindGroup
-    private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
+    private createBindGroup(context: Context, modelUniforms: ModelUniform): GPUBindGroup {
         if (this.bindGroup === undefined) {
             this.bindGroup = this.device.device.createBindGroup({
                 layout: this.pipeline.getBindGroupLayout(0),
@@ -61,7 +61,7 @@ export class ShaderP3_IDX extends Shader {
     }
 
     draw(pass: GPURenderPassEncoder,
-        context: CanvasContext,
+        context: Context,
         modelUniforms: ModelUniform,
         positions: PositionBuffer,
         indices: IndexBuffer,

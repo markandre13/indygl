@@ -3,7 +3,7 @@ import type { ModelUniform } from "../buffers/ModelUniform"
 import { PositionBuffer } from "../buffers/PositionBuffer"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import { Uniform } from "../buffers/Uniform"
-import type { CanvasContext } from "../CanvasContext"
+import type { Context } from "../Context"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 import { PICK_SIZE } from "./ShaderP3_PickPoint"
@@ -12,7 +12,7 @@ export class ShaderP3_C3_Point extends Shader {
     pipeline: GPURenderPipeline
     pickUniform: Uniform
     constructor(device: Device,
-        context: CanvasContext
+        context: Context
     ) {
         super(device, code)
         const pipelineDef: GPURenderPipelineDescriptor = {
@@ -49,7 +49,7 @@ export class ShaderP3_C3_Point extends Shader {
     }
 
     bindGroup?: GPUBindGroup
-    private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
+    private createBindGroup(context: Context, modelUniforms: ModelUniform): GPUBindGroup {
         if (this.bindGroup === undefined) {
             this.bindGroup = this.device.device.createBindGroup({
                 layout: this.pipeline.getBindGroupLayout(0),
@@ -64,7 +64,7 @@ export class ShaderP3_C3_Point extends Shader {
     }
 
     draw(pass: GPURenderPassEncoder,
-        context: CanvasContext,
+        context: Context,
         modelUniforms: ModelUniform,
         positions: PositionBuffer,
         colors: ColorBuffer,

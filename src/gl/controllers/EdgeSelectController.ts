@@ -4,14 +4,14 @@ import type { ModelUniform } from "../buffers/ModelUniform"
 import type { PositionBuffer } from "../buffers/PositionBuffer"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import { Texture } from "../buffers/Texture"
-import type { CanvasContext } from "../CanvasContext"
+import type { Context } from "../Context"
 import { ShaderP3_IDX } from "../shaders/ShaderP3_IDX"
 import { PICK_SIZE, ShaderP3_PickPoint } from "../shaders/ShaderP3_PickPoint"
 import { Controller } from "./Controller"
 import { MouseButton } from "./details/MouseButton"
 
 export class EdgeSelectController extends Controller {
-    context: CanvasContext
+    context: Context
     modelUniforms: ModelUniform
     edgeColors: Float32Array
     positions: PositionBuffer
@@ -19,7 +19,7 @@ export class EdgeSelectController extends Controller {
     edgeColorBuffer: ColorBuffer
 
     constructor(
-        context: CanvasContext,
+        context: Context,
         modelUniforms: ModelUniform,
         edgeColors: Float32Array,
         positions: PositionBuffer,

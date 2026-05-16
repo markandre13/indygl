@@ -10,7 +10,7 @@
     },
     "scripts": {
         "build": "tsgo && vite build",
-        "start": "tsgo && concurrently --names tsgo,vite 'npm run tsgo' 'npm run vite'",
+        "start": "tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo' 'npm run vite'",
         "test": "tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo' 'npm run vitest'",
         "tsgo": "tsgo --watch --preserveWatchOutput",
         "vite": "NO_COLOR=true vite --mode production --clearScreen false --open",

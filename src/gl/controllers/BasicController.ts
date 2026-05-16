@@ -1,6 +1,6 @@
 import { mat4, vec3 } from 'gl-matrix'
 import { Controller } from './Controller'
-import { Projection, type CanvasContext } from '../CanvasContext'
+import { Projection, type Context } from '../Context'
 import { deg2rad } from '../algorithms/deg2rad'
 import { MouseButton } from './details/MouseButton'
 import { FlyMode } from './FlyMode'
@@ -11,8 +11,8 @@ interface Point {
 }
 
 export class BasicMode extends Controller {
-    private context: CanvasContext
-    constructor(view: CanvasContext) {
+    private context: Context
+    constructor(view: Context) {
         super()
         this.context = view
     }

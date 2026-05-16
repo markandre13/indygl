@@ -1,12 +1,11 @@
 import { IndexBuffer } from "./gl/buffers/IndexBuffer"
 import { PositionBuffer } from "./gl/buffers/PositionBuffer"
-import type { Texture } from "./gl/buffers/Texture"
 import type { Device } from "./gl/Device"
 import { triangulate } from "./gl/algorithms/triangulate"
 import { decoupleXYZandUV, type MeshDataSingleIndex } from "./gl/algorithms/decoupleXYZandUV"
 import { VertexBuffer } from "./gl/buffers/VertexBuffer"
 import type { mat4 } from "gl-matrix"
-import { ColorUniform } from "./gl/buffers/ColorUniform"
+import type { Material } from "./Material"
 
 export interface MeshData {
     vcount?: ArrayLike<number>
@@ -16,18 +15,6 @@ export interface MeshData {
     fuv?: ArrayLike<number>
     normal?: ArrayLike<number>
     fnormal?: ArrayLike<number>
-}
-
-export class Material {
-    constructor(device: Device, rgba: number[]) {
-        // this.rgba = rgba
-        this.colorUniform = new ColorUniform(device)
-        this.colorUniform.rgba = rgba
-        this.colorUniform.writeTo(device)
-    }
-    colorUniform: ColorUniform
-    // rgba: number[]
-    texture?: Texture
 }
 
 export class IndyNode {

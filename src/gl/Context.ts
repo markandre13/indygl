@@ -4,40 +4,16 @@ import type { Device } from './Device'
 import type { Controller } from './controllers/Controller'
 import { Mat4Model } from './Mat4Model'
 import { bind } from 'src/editor/appkit/details/decorators/bind'
+import { SceneBindGroup } from './details/SceneBindGroup'
+import { BindGroupLayoutCollection } from './details/BindGroupLayoutCollection'
+import { ShaderCollection } from './details/ShaderCollection'
 
 export enum Projection {
     ORTHOGONAL,
     PERSPECTIVE
 }
 
-export class CameraBindGroup {
-    static layout: GPUBindGroupLayout
-    bindGroup: GPUBindGroup
-    constructor(device: Device, camera: SceneUniform) {
-        if (CameraBindGroup.layout === undefined) {
-            CameraBindGroup.layout = device.device.createBindGroupLayout({
-                label: 'camera-bind-group-layout',
-                entries: [{
-                    binding: 0,
-                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-                    buffer: {
-                        type: "uniform",
-                        minBindingSize: 0
-                    }
-                }]
-            })
-        }
-        this.bindGroup = device.device.createBindGroup({
-            label: 'camera-bind-group',
-            layout: CameraBindGroup.layout,
-            entries: [
-                { binding: 0, resource: camera },
-            ],
-        })
-    }
-}
-
-export class CanvasContext {
+export class Context {
     device: Device
     canvas: HTMLCanvasElement
     context: GPUCanvasContext | null = null;
@@ -45,9 +21,13 @@ export class CanvasContext {
     depthTextureFormat: GPUTextureFormat = 'depth24plus';
     private depthTexture?: GPUTexture
     private depthTextureView?: GPUTextureView
+
+    bindGroupLayout: BindGroupLayoutCollection
+    shader: ShaderCollection
+
     sampler: GPUSampler
     sceneUniforms: SceneUniform
-    cameraBindGroup: CameraBindGroup
+    cameraBindGroup: SceneBindGroup
     renderPassDescriptor: GPURenderPassDescriptor
 
     private _controllerStack: Controller[] = []
@@ -66,6 +46,8 @@ export class CanvasContext {
         this.device = device
         this.canvas = canvas
 
+        this.bindGroupLayout = new BindGroupLayoutCollection(device)
+
         const defaultCamera = mat4.create()
         mat4.translate(defaultCamera, defaultCamera, [0.0, 0.0, -24.0])
         this.camera = new Mat4Model(defaultCamera, {default: defaultCamera, local: "camera"})
@@ -79,7 +61,7 @@ export class CanvasContext {
         }
 
         this.sceneUniforms = new SceneUniform(device)
-        this.cameraBindGroup = new CameraBindGroup(device, this.sceneUniforms)
+        this.cameraBindGroup = new SceneBindGroup(device, this.sceneUniforms)
 
         const devicePixelRatio = window.devicePixelRatio
         const pixelWidth = canvas.clientWidth * devicePixelRatio
@@ -114,6 +96,8 @@ export class CanvasContext {
                 depthStoreOp: 'store',
             },
         }
+
+        this.shader = new ShaderCollection(this)
 
         const observer = new ResizeObserver(_entries => {
             this.ajustSize()

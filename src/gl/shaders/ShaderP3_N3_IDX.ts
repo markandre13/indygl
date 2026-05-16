@@ -1,10 +1,10 @@
-import { MaterialBindGroup, ModelBindGroup } from "src/main"
 import { ColorUniform } from "../buffers/ColorUniform"
 import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import type { VertexBuffer } from "../buffers/VertexBuffer"
-import { CameraBindGroup, type CanvasContext } from "../CanvasContext"
+import { type Context } from "../Context"
+import { SceneBindGroup } from '../details/SceneBindGroup'
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
@@ -13,7 +13,7 @@ export class ShaderP3_N3_IDX extends Shader {
     // colorUniform: ColorUniform
     // layout: GPUBindGroupLayout
     constructor(device: Device,
-        context: CanvasContext
+        context: Context
     ) {
         super(device, code, 'p3-n3-idx')
         // this.colorUniform = new ColorUniform(device)
@@ -43,24 +43,19 @@ export class ShaderP3_N3_IDX extends Shader {
         //         }
         //     }]
         // })
-        if (CameraBindGroup.layout === undefined) {
+        if (SceneBindGroup.layout === undefined) {
             throw Error(`CameraBindGroup.layout === undefined`)
         }
-        if (ModelBindGroup.layout === undefined) {
-            throw Error(`ModelBindGroup.layout === undefined`)
-        }
-        if (MaterialBindGroup.layout === undefined) {
-            throw Error(`MaterialBindGroup.layout === undefined`)
-        }
+
 
         const pipelineDef: GPURenderPipelineDescriptor = {
             label: 'p3-n3-idx',
             layout: device.device.createPipelineLayout({
                 label: 'p3-n3-idx',
                 bindGroupLayouts: [
-                    CameraBindGroup.layout,
-                    ModelBindGroup.layout,
-                    MaterialBindGroup.layout
+                    SceneBindGroup.layout,
+                    context.bindGroupLayout.model,
+                    context.bindGroupLayout.material
                 ]
             }),
             vertex: {
@@ -113,9 +108,9 @@ export class ShaderP3_N3_IDX extends Shader {
     // }
 
     draw(pass: GPURenderPassEncoder,
-        camera: CameraBindGroup,
-        model: ModelBindGroup,
-        material: MaterialBindGroup,
+        camera: SceneBindGroup,
+        model: GPUBindGroup,
+        material: GPUBindGroup,
         positions: VertexBuffer,
         normals: VertexBuffer,
         indices: IndexBuffer,
@@ -127,8 +122,8 @@ export class ShaderP3_N3_IDX extends Shader {
 
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, camera.bindGroup)
-        pass.setBindGroup(1, model.bindGroup)
-        pass.setBindGroup(2, material.bindGroup)
+        pass.setBindGroup(1, model)
+        pass.setBindGroup(2, material)
 
         pass.setVertexBuffer(0, positions.buffer)
         pass.setVertexBuffer(1, normals.buffer)

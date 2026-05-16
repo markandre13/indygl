@@ -1,7 +1,7 @@
 import { mat4, vec2, vec3 } from 'gl-matrix'
 import { euler2matrix } from '../algorithms/euler'
 import { Controller } from './Controller'
-import type { CanvasContext } from '../CanvasContext'
+import type { Context } from '../Context'
 
 export const D = 180 / Math.PI
 
@@ -9,7 +9,7 @@ export const D = 180 / Math.PI
  * Fly Mode similar to Blender
  */
 export class FlyMode extends Controller {
-    private _ctx!: CanvasContext
+    private _ctx!: Context
     // private _osd?: FlyModeOnScreenDisplay
 
     /**
@@ -48,7 +48,7 @@ export class FlyMode extends Controller {
      */
     private _lastUpdate?: number
 
-    constructor(context: CanvasContext) {
+    constructor(context: Context) {
         super()
         this._ctx = context
         // this._view = view
