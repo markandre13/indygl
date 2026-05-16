@@ -4,7 +4,6 @@ import type { Device } from './Device'
 import type { Controller } from './controllers/Controller'
 import { Mat4Model } from './Mat4Model'
 import { bind } from 'src/editor/appkit/details/decorators/bind'
-import { SceneBindGroup } from './details/SceneBindGroup'
 import { BindGroupLayoutCollection } from './details/BindGroupLayoutCollection'
 import { ShaderCollection } from './details/ShaderCollection'
 
@@ -27,7 +26,6 @@ export class Context {
 
     sampler: GPUSampler
     sceneUniforms: SceneUniform
-    cameraBindGroup: SceneBindGroup
     renderPassDescriptor: GPURenderPassDescriptor
 
     private _controllerStack: Controller[] = []
@@ -60,8 +58,7 @@ export class Context {
             throw Error('no webgpu')
         }
 
-        this.sceneUniforms = new SceneUniform(device)
-        this.cameraBindGroup = new SceneBindGroup(device, this.sceneUniforms)
+        this.sceneUniforms = new SceneUniform(this)
 
         const devicePixelRatio = window.devicePixelRatio
         const pixelWidth = canvas.clientWidth * devicePixelRatio
@@ -129,6 +126,8 @@ export class Context {
         this._invalidated = false
 
         if (this.paint) {
+            mat4.copy(this.sceneUniforms.camera, this.camera.value)
+            this.sceneUniforms.writeTo(this.device)
             this.paint()
         }
         // console.log(`this._controllerStack.length = ${this._controllerStack.length }`)
@@ -225,7 +224,6 @@ export class Context {
         canvas.style.width = '640px'
         canvas.style.height = '480px'
 
-
         //
         // pointer
         //
@@ -241,8 +239,6 @@ export class Context {
                 }
             }
             ev.preventDefault()
-
-
             canvas.setPointerCapture(ev.pointerId)
             buttonDown = true
             downX = ev.x

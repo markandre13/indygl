@@ -3,15 +3,12 @@ import { Context } from './gl/Context'
 import { Device } from './gl/Device'
 import { ModelUniform } from './gl/buffers/ModelUniform'
 import { BasicMode } from './gl/controllers/BasicController'
-import { ShaderP3_IDX } from './gl/shaders/ShaderP3_IDX'
 import { WavefrontObj } from './gl/file/WavefrontObj'
 import { replaceChildren } from 'toad.jsx'
 import { EditorModel } from './editor/app/EditorModel'
 import { MainScreen } from './editor/view/MainScreen'
-import { ShaderP3_N3_IDX_Alpha } from './gl/shaders/ShaderP3_N3_IDX_Alpha'
 import { IndyNode, Mesh, Root, XForm } from './Mesh'
 import { Material } from "./Material"
-import { ShaderCollection } from './gl/details/ShaderCollection'
 
 async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
@@ -56,8 +53,6 @@ export async function main() {
     const modelUniform = new ModelUniform(context)
     // const modelBindGroup = new ModelBindGroup(device, modelUniforms)
 
-    const shader = new ShaderCollection(context)
-
     const root = new Root(device)
     const teapot = new XForm(root)
     const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
@@ -72,12 +67,14 @@ export async function main() {
     // console.log(teapot)
 
     context.paint = () => {
+        console.log(`paint`)
 
         const modelViewMatrix = modelUniform.modelViewMatrix
 
         // mat4.copy(modelViewMatrix, context.camera)
-        mat4.multiply(modelViewMatrix, context.camera.value, editorModel.transform.value)
-
+        // mat4.multiply(modelViewMatrix, context.camera.value, editorModel.transform.value)
+        mat4.copy(modelViewMatrix, editorModel.transform.value)
+        
         const normalMatrix = modelUniform.normalMatrix
         mat4.invert(normalMatrix, modelViewMatrix)
         mat4.transpose(normalMatrix, normalMatrix)
@@ -111,23 +108,30 @@ export async function main() {
 
         // pass.setPipeline is also expensive!!!
 
+        pass.setPipeline(context.shader.p3_n3_idx.pipeline)
+        pass.setBindGroup(0, context.sceneUniforms.bindGroup)
         function draw(node: IndyNode) {
             if (node instanceof Mesh) {
-                // shader.p3_idx.draw(pass, context, modelUniforms, teapot.points, teapot.indices, [1, 0.5, 0, 1])
-                shader.p3_n3_idx.draw(pass, context.cameraBindGroup, modelUniform.bindGroup, node.material!.bindGroup, node.points, node.normals, node.indices)
+                pass.setBindGroup(1, modelUniform.bindGroup)
+                pass.setBindGroup(2, node.material!.bindGroup)
+                pass.setVertexBuffer(0, node.points.buffer)
+                pass.setVertexBuffer(1, node.normals.buffer)
+                pass.setIndexBuffer(node.indices.buffer, 'uint32')
+                pass.drawIndexed(node.indices.length)
             } else {
                 for (const child of node.children) {
                     draw(child)
                 }
             }
         }
-
         draw(root)
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
         device.device.queue.submit([commandBuffer])
     }
+
+    console.log("main is done")
 }
 
 main()

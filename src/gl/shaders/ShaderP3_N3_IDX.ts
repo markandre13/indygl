@@ -4,56 +4,23 @@ import type { ModelUniform } from "../buffers/ModelUniform"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import type { VertexBuffer } from "../buffers/VertexBuffer"
 import { type Context } from "../Context"
-import { SceneBindGroup } from '../details/SceneBindGroup'
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
 export class ShaderP3_N3_IDX extends Shader {
     pipeline: GPURenderPipeline
-    // colorUniform: ColorUniform
-    // layout: GPUBindGroupLayout
+
     constructor(device: Device,
         context: Context
     ) {
         super(device, code, 'p3-n3-idx')
-        // this.colorUniform = new ColorUniform(device)
-
-        // this.layout = this.device.device.createBindGroupLayout({
-        //     label: 'my 1st bindgroup layout',
-        //     entries: [{
-        //         binding: 0,
-        //         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        //         buffer: {
-        //             type: "uniform",
-        //             minBindingSize: 0
-        //         }
-        //     }, {
-        //         binding: 1,
-        //         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        //         buffer: {
-        //             type: "uniform",
-        //             minBindingSize: 0
-        //         }
-        //     }, {
-        //         binding: 2,
-        //         visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-        //         buffer: {
-        //             type: "uniform",
-        //             minBindingSize: 0
-        //         }
-        //     }]
-        // })
-        if (SceneBindGroup.layout === undefined) {
-            throw Error(`CameraBindGroup.layout === undefined`)
-        }
-
 
         const pipelineDef: GPURenderPipelineDescriptor = {
             label: 'p3-n3-idx',
             layout: device.device.createPipelineLayout({
                 label: 'p3-n3-idx',
                 bindGroupLayouts: [
-                    SceneBindGroup.layout,
+                    context.bindGroupLayout.scene,
                     context.bindGroupLayout.model,
                     context.bindGroupLayout.material
                 ]
@@ -90,51 +57,12 @@ export class ShaderP3_N3_IDX extends Shader {
         }
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
-
-    // bindGroup?: GPUBindGroup
-    // private createBindGroup(context: CanvasContext, modelUniforms: ModelUniform): GPUBindGroup {
-    //     if (this.bindGroup === undefined) {
-    //         this.bindGroup = this.device.device.createBindGroup({
-    //             label: 'Shader X',
-    //             layout: this.layout,
-    //             entries: [
-    //                 { binding: 0, resource: context.sceneUniforms.buffer },
-    //                 { binding: 1, resource: modelUniforms.buffer },
-    //                 { binding: 2, resource: this.colorUniform.buffer },
-    //             ],
-    //         })
-    //     }
-    //     return this.bindGroup
-    // }
-
-    draw(pass: GPURenderPassEncoder,
-        camera: SceneBindGroup,
-        model: GPUBindGroup,
-        material: GPUBindGroup,
-        positions: VertexBuffer,
-        normals: VertexBuffer,
-        indices: IndexBuffer,
-        // rgba: number[]
-    ) {
-        // this.colorUniform = colorUniform
-        // this.colorUniform.rgba = rgba
-        // this.colorUniform.writeTo(this.device)
-
-        pass.setPipeline(this.pipeline)
-        pass.setBindGroup(0, camera.bindGroup)
-        pass.setBindGroup(1, model)
-        pass.setBindGroup(2, material)
-
-        pass.setVertexBuffer(0, positions.buffer)
-        pass.setVertexBuffer(1, normals.buffer)
-        pass.setIndexBuffer(indices.buffer, 'uint32')
-        pass.drawIndexed(indices.length)
-    }
 }
 
 const code = /* wgsl */`
     struct SceneUniforms { 
         uProjectionMatrix: mat4x4f,
+        uCameraMatrix: mat4x4f,
     };
     struct ModelUniforms { 
         uModelViewMatrix: mat4x4f,
@@ -158,7 +86,11 @@ const code = /* wgsl */`
         @location(1) normal: vec4f,
     ) -> Vertex2Fragment {
 
-        let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * position;
+        let gl_Position 
+            = sceneUniforms.uProjectionMatrix 
+            * sceneUniforms.uCameraMatrix
+            * modelUniforms.uModelViewMatrix 
+            * position;
 
         let ambientLight = vec3f(0.3, 0.3, 0.3);
         let directionalLightColor = vec3f(1, 1, 1);
