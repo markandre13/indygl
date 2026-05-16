@@ -61,8 +61,7 @@ export class ShaderP3_N3_IDX extends Shader {
 
 const code = /* wgsl */`
     struct SceneUniforms { 
-        uProjectionMatrix: mat4x4f,
-        uCameraMatrix: mat4x4f,
+        uProjectionMatrix: mat4x4f
     };
     struct ModelUniforms { 
         uModelViewMatrix: mat4x4f,
@@ -88,7 +87,6 @@ const code = /* wgsl */`
 
         let gl_Position 
             = sceneUniforms.uProjectionMatrix 
-            * sceneUniforms.uCameraMatrix
             * modelUniforms.uModelViewMatrix 
             * position;
 
