@@ -7,6 +7,7 @@ import type { mat4 } from "gl-matrix"
 import type { Material } from "./Material"
 import { ModelUniform } from "../gl/buffers/ModelUniform"
 import type { Context } from "../gl/Context"
+import type { MeshSubset } from "src/gl/file/MeshSubset"
 
 export interface MeshData {
     vcount?: ArrayLike<number>
@@ -16,6 +17,7 @@ export interface MeshData {
     fuv?: ArrayLike<number>
     normal?: ArrayLike<number>
     fnormal?: ArrayLike<number>
+    materialSubset?: MeshSubset[]
 }
 
 export class IndyNode {

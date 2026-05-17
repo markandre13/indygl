@@ -1,5 +1,5 @@
 import { StringToLine } from './StringToLine'
-import { Group } from './Group'
+import type { MeshSubset } from './MeshSubset'
 import type { MeshData } from 'src/nodes/Mesh'
 
 // makehuman/shared/wavefront.py
@@ -19,11 +19,11 @@ export class WavefrontObj implements MeshData {
     // face index for normal
     fnormal: number[] = []
 
-    groups: Group[]   // name, startIndex, length
-    material: Group[] // name, startIndex, length
+    groupSubset: MeshSubset[]
+    materialSubset: MeshSubset[]
 
     toString(): string {
-        return `WavefrontObj {name: '${this.name}', vertices: ${this.xyz.length / 3}, quads: ${this.fxyz.length / 6}, groups: ${this.groups.length}} `
+        return `WavefrontObj {name: '${this.name}', vertices: ${this.xyz.length / 3}, quads: ${this.fxyz.length / 6}, groups: ${this.groupSubset.length}} `
     }
 
     constructor(filename: string, data: string) {
@@ -31,8 +31,8 @@ export class WavefrontObj implements MeshData {
         // if (data === undefined) {
         //     data = FileSystemAdapter.readFile(filename)
         // }
-        this.groups = []
-        this.material = []
+        this.groupSubset = []
+        this.materialSubset = []
         const vcount: number[] = []
         const vertex: number[] = []
         const texcoord: number[] = []
@@ -118,7 +118,7 @@ export class WavefrontObj implements MeshData {
 
                 // grouping
                 case 'g': // <groupname>+ the following elements belong to that group    
-                    this.groups.push(new Group(tokens[1], this.fxyz.length))
+                    this.groupSubset.push({name: tokens[1], start: this.fxyz.length, length: 0})
                     break
                 case 's': break
                 case 'mg': break
@@ -132,7 +132,7 @@ export class WavefrontObj implements MeshData {
                 case 'd_interp': break
                 case 'lod': break
                 case 'usemtl': // <materialname>
-                    this.material.push(new Group(tokens[1], this.fxyz.length))
+                    this.materialSubset.push({name: tokens[1], start: this.fxyz.length, length: 0})
                     break
                 case 'mtllib': break
                 case 'shadow_obj': break
@@ -150,22 +150,22 @@ export class WavefrontObj implements MeshData {
         this.normal = new Float32Array(normal)
 
         // set group's lengths
-        if (this.groups.length > 0) {
-            for (let i = 0; i < this.groups.length - 1; ++i) {
-                this.groups[i].length = this.groups[i + 1].startIndex - this.groups[i].startIndex
+        if (this.groupSubset.length > 0) {
+            for (let i = 0; i < this.groupSubset.length - 1; ++i) {
+                this.groupSubset[i].length = this.groupSubset[i + 1].start - this.groupSubset[i].start
             }
-            this.groups[this.groups.length - 1].length = this.fxyz.length - this.groups[this.groups.length - 1].startIndex
+            this.groupSubset[this.groupSubset.length - 1].length = this.fxyz.length - this.groupSubset[this.groupSubset.length - 1].start
         }
 
-        if (this.material.length > 0) {
-            for (let i = 0; i < this.material.length - 1; ++i) {
-                this.material[i].length = this.material[i + 1].startIndex - this.material[i].startIndex
+        if (this.materialSubset.length > 0) {
+            for (let i = 0; i < this.materialSubset.length - 1; ++i) {
+                this.materialSubset[i].length = this.materialSubset[i + 1].start - this.materialSubset[i].start
             }
-            this.material[this.material.length - 1].length = this.fxyz.length - this.material[this.material.length - 1].startIndex
+            this.materialSubset[this.materialSubset.length - 1].length = this.fxyz.length - this.materialSubset[this.materialSubset.length - 1].start
         }
     }
 
-    getFaceGroup(name: string): Group | undefined {
+    getFaceGroup(name: string): MeshSubset | undefined {
         // the facegroups are not groups
         // and those might be either stored in one of these:
         //   makehuman/data/rigs/default_weights.mhw
@@ -175,7 +175,7 @@ export class WavefrontObj implements MeshData {
         // or maybe the code i have here is correct but the weight must be read as part of the rig?
 
         // return undefined
-        const x = this.groups
+        const x = this.groupSubset
             .filter(g => g.name === name)
         if (x.length !== 1) {
             return undefined
