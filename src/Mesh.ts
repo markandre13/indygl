@@ -71,16 +71,6 @@ export class Mesh extends IndyNode implements MeshData {
         this.vcount = opt?.vcount
         this.normal = opt?.normal
         this.fnormal = opt?.fnormal
-
-        // to handle uv, normals or flat shading, we will need additional vertices
-        // per default we assume flat shading, which requires the most memory, smooth shading will require the least memory
-        // operations on the mesh should always be performed on the ... data
-
-        // decouple is not the correct term
-
-        // extend decoupleXYZandUV to handle normals
-
-        // put decoupleXYZandUV and the data it generates into it's own class
     }
 
     protected _triangles?: MeshData

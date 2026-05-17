@@ -68,9 +68,6 @@ export async function main() {
     // console.log(teapot)
 
     context.paint = () => {
-        console.log(`paint`)
-        context.ajustSize()
-
         // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
 
         const commandEncoder = device.device!.createCommandEncoder()
@@ -135,8 +132,6 @@ export async function main() {
         const commandBuffer = commandEncoder.finish()
         device.device.queue.submit([commandBuffer])
     }
-
-    console.log("main is done")
 }
 
 main()

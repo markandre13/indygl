@@ -40,7 +40,7 @@ export class Context {
         this.invalidate()
     }
 
-    constructor(device: Device, canvas: HTMLCanvasElement) {      
+    constructor(device: Device, canvas: HTMLCanvasElement) {
         this.device = device
         this.canvas = canvas
 
@@ -48,7 +48,7 @@ export class Context {
 
         const defaultCamera = mat4.create()
         mat4.translate(defaultCamera, defaultCamera, [0.0, 0.0, -24.0])
-        this.camera = new Mat4Model(defaultCamera, {default: defaultCamera, local: "camera"})
+        this.camera = new Mat4Model(defaultCamera, { default: defaultCamera, local: "camera" })
         this.camera.signal.add(this.invalidate)
 
         this.setupEventHandling(canvas)
@@ -95,19 +95,17 @@ export class Context {
         }
 
         this.shader = new ShaderCollection(this)
-
-        const observer = new ResizeObserver(_entries => {
-            this.ajustSize()
-            this.invalidate()
-        })
-        observer.observe(canvas)
     }
 
-    // paint?: () => void
+    /**
+     * rgba to be used as the views background color
+     */
     backgroundColor = [0.247, 0.247, 0.247, 1.0]
-    // backgroundColor = [0,0,0,1]
     camera: Mat4Model
+
+    private _paint?: () => void
     private _invalidated = false
+
     @bind invalidate() {
         if (this._invalidated) {
             return
@@ -119,16 +117,23 @@ export class Context {
             }
         })
     }
-    paint?: () => void
+
+    set paint(callback: () => void) {
+        // register new callback and...
+        this._paint = callback
+        // ...request to use the new callback
+        this.invalidate()
+    }
     protected doPaint() {
         // console.log(`Controller.doPaint()`)
-        // we clear _invalidated here so that the following paint()'s may invalidate the view again
+        // we clear _invalidated here as following call to _paint() may invalidate the view again
         this._invalidated = false
 
-        if (this.paint) {
+        if (this._paint) {
             mat4.copy(this.sceneUniforms.camera, this.camera.value)
             this.sceneUniforms.writeTo(this.device)
-            this.paint()
+            this.adjustSize()
+            this._paint()
         }
         // console.log(`this._controllerStack.length = ${this._controllerStack.length }`)
         for (let i = this._controllerStack.length - 1; i >= 0; --i) {
@@ -140,7 +145,7 @@ export class Context {
         this.camera.resetToDefault()
     }
     rotateCameraTo(x: number, y: number, z: number) {
-        this.camera.rotateTo(x,y,z)
+        this.camera.rotateTo(x, y, z)
     }
 
     protected _projection: Projection = Projection.PERSPECTIVE
@@ -182,7 +187,7 @@ export class Context {
         return this.renderPassDescriptor
     }
 
-    ajustSize() {
+    private adjustSize() {
         const devicePixelRatio = window.devicePixelRatio
         const pixelWidth = this.canvas.clientWidth * devicePixelRatio
         const pixelHeight = this.canvas.clientHeight * devicePixelRatio
@@ -191,7 +196,7 @@ export class Context {
         }
     }
 
-    adjustSizeCore(pixelWidth: number, pixelHeight: number) {
+    private adjustSizeCore(pixelWidth: number, pixelHeight: number) {
         // console.log(`adjust canvas size: canvas.width=${this.canvas.width}, pixelWidth=${pixelWidth}; canvas.height=${this.canvas.height}, pixelHeight=${pixelHeight}`)
         this.canvas.width = pixelWidth
         this.canvas.height = pixelHeight
@@ -211,19 +216,14 @@ export class Context {
      * setup handling of pointer, keyboard and resize event
      */
     private setupEventHandling(canvas: HTMLCanvasElement) {
-
         //
-        // resize
+        // resive canvas
         //
-        // const r = new ResizeObserver((e) => {
-        //     console.log(e)
-        // })
-        // r.observe(document.body)
-        // console.log(r)
-        // window.addEventListener("resize", (e) => {console.log(e)})
-        canvas.style.width = '640px'
-        canvas.style.height = '480px'
-
+        const observer = new ResizeObserver(_entries => {
+            this.adjustSize()
+            this.invalidate()
+        })
+        observer.observe(canvas)
         //
         // pointer
         //
