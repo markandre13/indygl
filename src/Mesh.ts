@@ -81,43 +81,37 @@ export class Mesh extends IndyNode implements MeshData {
     protected _normals?: VertexBuffer
 
     material?: Material
-    // get rgba(): number[] {
-    //     return this.material ? this.material.rgba : [0.8, 0.8, 0.8, 1]
-    // }
 
-    get indices() {
+    /**
+     * triangulate mesh and create unified index for rendering via WebGPU
+     */
+    protected prepare() {
         if (this._triangles === undefined) {
             this._triangles = triangulate(this)
         }
         if (this._single_index === undefined) {
             this._single_index = decoupleXYZandUV(this._triangles)
         }
+    }
+
+    get indices() {
+        this.prepare()
         if (this._indices === undefined) {
-            this._indices = new IndexBuffer(this.context.device, this._single_index.fxyz!)
+            this._indices = new IndexBuffer(this.context.device, this._single_index!.fxyz!)
         }
         return this._indices
     }
     get points() {
-        if (this._triangles === undefined) {
-            this._triangles = triangulate(this)
-        }
-        if (this._single_index === undefined) {
-            this._single_index = decoupleXYZandUV(this._triangles)
-        }
+        this.prepare()
         if (this._points === undefined) {
-            this._points = new PositionBuffer(this.context.device, this._single_index.xyz!)
+            this._points = new PositionBuffer(this.context.device, this._single_index!.xyz!)
         }
         return this._points
     }
     get normals() {
-        if (this._triangles === undefined) {
-            this._triangles = triangulate(this)
-        }
-        if (this._single_index === undefined) {
-            this._single_index = decoupleXYZandUV(this._triangles)
-        }
+        this.prepare()
         if (this._normals === undefined) {
-            this._normals = new VertexBuffer(this.context.device, this._single_index.normal!)
+            this._normals = new VertexBuffer(this.context.device, this._single_index!.normal!)
         }
         return this._normals
     }

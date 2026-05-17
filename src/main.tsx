@@ -1,7 +1,6 @@
 import { mat4, vec3 } from 'gl-matrix'
 import { Context } from './gl/Context'
 import { Device } from './gl/Device'
-import { ModelUniform } from './gl/buffers/ModelUniform'
 import { BasicMode } from './gl/controllers/BasicController'
 import { WavefrontObj } from './gl/file/WavefrontObj'
 import { replaceChildren } from 'toad.jsx'
@@ -9,6 +8,7 @@ import { EditorModel } from './editor/app/EditorModel'
 import { MainScreen } from './editor/view/MainScreen'
 import { IndyNode, Mesh, Root, XForm } from './Mesh'
 import { Material } from "./Material"
+import { deg2rad } from './gl/algorithms/deg2rad'
 
 async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
@@ -16,7 +16,7 @@ async function loadMesh(parent: XForm, filename: string) {
         throw Error(`failed to load '${filename}': ${r.status} ${r.statusText}: ${await r.text()}`)
     }
     const obj = new WavefrontObj(filename, await r.text())
-    // console.log(obj)
+    console.log(obj)
     const mesh = new Mesh(parent, {
         xyz: obj.xyz,
         fxyz: obj.fxyz,
@@ -53,16 +53,26 @@ export async function main() {
     // const modelUniform = new ModelUniform(context)
 
     const root = new Root(context)
-    const teapot = new XForm(root)
-    const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
-    teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
-    // const teapot = await loadMesh(device, "obj/teeth.obj") // two materials
+    // const teapot = new XForm(root)
+    // const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
+    // teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
+
+    const teeth = new XForm(root)
+    const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
+    teethMesh.material = new Material(context, [1, 1, 1, 1])
+    // this wrecks the shading, guess through the normal matrix being messed up
+    // teeth.transform = mat4.create()
+    // mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
+    // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6,6,6))
+    // mat4.translate(teeth.transform, teeth.transform, vec3.fromValues(0,-5.5,-1))
+
     // const teapot = await loadMesh(device, "obj/cube.obj") // 4-gons
-    const dodecahedron = new XForm(root)
-    dodecahedron.transform = mat4.create()
-    mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15,3.4,0))
-    const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
-    dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
+
+    // const dodecahedron = new XForm(root)
+    // dodecahedron.transform = mat4.create()
+    // mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15,3.4,0))
+    // const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
+    // dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
     // const teapot = await loadMesh(device, "obj/mh/base.obj")
     // console.log(teapot)
