@@ -1,6 +1,6 @@
 import { StringToLine } from './StringToLine'
 import { Group } from './Group'
-import type { MeshData } from 'src/Mesh'
+import type { MeshData } from 'src/nodes/Mesh'
 
 // makehuman/shared/wavefront.py
 export class WavefrontObj implements MeshData {

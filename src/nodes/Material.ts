@@ -1,6 +1,6 @@
-import { ColorUniform } from "./gl/buffers/ColorUniform"
-import type { Texture } from "./gl/buffers/Texture"
-import type { Context } from "./gl/Context"
+import { ColorUniform } from "../gl/buffers/ColorUniform"
+import type { Texture } from "../gl/buffers/Texture"
+import type { Context } from "../gl/Context"
 
 
 export class Material {

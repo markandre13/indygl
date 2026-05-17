@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fit, xit } from '../../spec'
-import { type MeshData } from 'src/Mesh'
+import { type MeshData } from 'src/nodes/Mesh'
 import { vec3 } from 'gl-matrix'
 import { deg2rad } from 'src/gl/algorithms/deg2rad'
 import { euler2matrix } from 'src/gl/algorithms/euler'

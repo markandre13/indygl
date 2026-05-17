@@ -1,13 +1,12 @@
-import { IndexBuffer } from "./gl/buffers/IndexBuffer"
-import { PositionBuffer } from "./gl/buffers/PositionBuffer"
-import type { Device } from "./gl/Device"
-import { triangulate } from "./gl/algorithms/triangulate"
-import { decoupleXYZandUV, type MeshDataSingleIndex } from "./gl/algorithms/decoupleXYZandUV"
-import { VertexBuffer } from "./gl/buffers/VertexBuffer"
+import { IndexBuffer } from "../gl/buffers/IndexBuffer"
+import { PositionBuffer } from "../gl/buffers/PositionBuffer"
+import { triangulate } from "../gl/algorithms/triangulate"
+import { decoupleXYZandUV, type MeshDataSingleIndex } from "../gl/algorithms/decoupleXYZandUV"
+import { VertexBuffer } from "../gl/buffers/VertexBuffer"
 import type { mat4 } from "gl-matrix"
 import type { Material } from "./Material"
-import { ModelUniform } from "./gl/buffers/ModelUniform"
-import type { Context } from "./gl/Context"
+import { ModelUniform } from "../gl/buffers/ModelUniform"
+import type { Context } from "../gl/Context"
 
 export interface MeshData {
     vcount?: ArrayLike<number>

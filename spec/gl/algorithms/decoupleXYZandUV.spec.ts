@@ -1,7 +1,7 @@
 import { decoupleXYZandUV, type MeshDataSingleIndex } from "src/gl/algorithms/decoupleXYZandUV"
 import { describe, expect, it } from "vitest"
 import { fit } from "../../spec"
-import type { MeshData } from "src/Mesh"
+import type { MeshData } from "src/nodes/Mesh"
 import { WavefrontObj } from "src/gl/file/WavefrontObj"
 import { triangulate } from "src/gl/algorithms/triangulate"
 

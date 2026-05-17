@@ -6,8 +6,8 @@ import { WavefrontObj } from './gl/file/WavefrontObj'
 import { replaceChildren } from 'toad.jsx'
 import { EditorModel } from './editor/app/EditorModel'
 import { MainScreen } from './editor/view/MainScreen'
-import { IndyNode, Mesh, Root, XForm } from './Mesh'
-import { Material } from "./Material"
+import { IndyNode, Mesh, Root, XForm } from './nodes/Mesh'
+import { Material } from "./nodes/Material"
 import { deg2rad } from './gl/algorithms/deg2rad'
 
 async function loadMesh(parent: XForm, filename: string) {
