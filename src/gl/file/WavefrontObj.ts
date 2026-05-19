@@ -2,6 +2,12 @@ import { StringToLine } from './StringToLine'
 import type { MeshSubset } from './MeshSubset'
 import type { MeshData } from 'src/nodes/Mesh'
 
+interface NamedMeshSubset {
+    name: string
+    start: number
+    length: number
+}
+
 // makehuman/shared/wavefront.py
 export class WavefrontObj implements MeshData {
     name = ""
@@ -19,11 +25,11 @@ export class WavefrontObj implements MeshData {
     // face index for normal
     fnormal: number[] = []
 
-    groupSubset: MeshSubset[]
-    materialSubset: MeshSubset[]
+    groupSubset?: Map<string, MeshSubset>
+    materialSubset?: Map<string, MeshSubset>
 
     toString(): string {
-        return `WavefrontObj {name: '${this.name}', vertices: ${this.xyz.length / 3}, quads: ${this.fxyz.length / 6}, groups: ${this.groupSubset.length}} `
+        return `WavefrontObj {name: '${this.name}', vertices: ${this.xyz.length / 3}, faces: ${this.vcount.length}} `
     }
 
     constructor(filename: string, data: string) {
@@ -31,8 +37,8 @@ export class WavefrontObj implements MeshData {
         // if (data === undefined) {
         //     data = FileSystemAdapter.readFile(filename)
         // }
-        this.groupSubset = []
-        this.materialSubset = []
+        const groupSubset: NamedMeshSubset[] = []
+        const materialSubset: NamedMeshSubset[] = []
         const vcount: number[] = []
         const vertex: number[] = []
         const texcoord: number[] = []
@@ -96,7 +102,7 @@ export class WavefrontObj implements MeshData {
                         if (split.length > 1 && split[1].length > 0) {
                             this.fuv.push(parseInt(split[1]) - 1)
                         }
-                        if (split.length > 2&& split[2].length > 0) {
+                        if (split.length > 2 && split[2].length > 0) {
                             this.fnormal.push(parseInt(split[2]) - 1)
                         }
                     }
@@ -118,7 +124,7 @@ export class WavefrontObj implements MeshData {
 
                 // grouping
                 case 'g': // <groupname>+ the following elements belong to that group    
-                    this.groupSubset.push({name: tokens[1], start: this.fxyz.length, length: 0})
+                    groupSubset.push({ name: tokens[1], start: this.fxyz.length, length: 0 })
                     break
                 case 's': break
                 case 'mg': break
@@ -132,7 +138,7 @@ export class WavefrontObj implements MeshData {
                 case 'd_interp': break
                 case 'lod': break
                 case 'usemtl': // <materialname>
-                    this.materialSubset.push({name: tokens[1], start: this.fxyz.length, length: 0})
+                    materialSubset.push({ name: tokens[1], start: this.fxyz.length, length: 0 })
                     break
                 case 'mtllib': break
                 case 'shadow_obj': break
@@ -150,36 +156,48 @@ export class WavefrontObj implements MeshData {
         this.normal = new Float32Array(normal)
 
         // set group's lengths
-        if (this.groupSubset.length > 0) {
-            for (let i = 0; i < this.groupSubset.length - 1; ++i) {
-                this.groupSubset[i].length = this.groupSubset[i + 1].start - this.groupSubset[i].start
+        if (groupSubset.length > 0) {
+            for (let i = 0; i < groupSubset.length - 1; ++i) {
+                groupSubset[i].length = groupSubset[i + 1].start - groupSubset[i].start
             }
-            this.groupSubset[this.groupSubset.length - 1].length = this.fxyz.length - this.groupSubset[this.groupSubset.length - 1].start
+            groupSubset[groupSubset.length - 1].length = this.fxyz.length - groupSubset[groupSubset.length - 1].start
+        }
+        if (groupSubset.length > 0) {
+            this.groupSubset = new Map()
+            for (const s of groupSubset) {
+                this.groupSubset.set(s.name, { start: s.start, length: s.length })
+            }
         }
 
-        if (this.materialSubset.length > 0) {
-            for (let i = 0; i < this.materialSubset.length - 1; ++i) {
-                this.materialSubset[i].length = this.materialSubset[i + 1].start - this.materialSubset[i].start
+        if (materialSubset.length > 0) {
+            for (let i = 0; i < materialSubset.length - 1; ++i) {
+                materialSubset[i].length = materialSubset[i + 1].start - materialSubset[i].start
             }
-            this.materialSubset[this.materialSubset.length - 1].length = this.fxyz.length - this.materialSubset[this.materialSubset.length - 1].start
+            materialSubset[materialSubset.length - 1].length = this.fxyz.length - materialSubset[materialSubset.length - 1].start
+        }
+        if (materialSubset.length > 0) {
+            this.materialSubset = new Map()
+            for (const s of materialSubset) {
+                this.materialSubset.set(s.name, { start: s.start, length: s.length })
+            }
         }
     }
 
-    getFaceGroup(name: string): MeshSubset | undefined {
-        // the facegroups are not groups
-        // and those might be either stored in one of these:
-        //   makehuman/data/rigs/default_weights.mhw
-        //   makehuman/data/poses/benchmark.bvh
-        //   makehuman/data/poses/tpose.bvh
-        //   makehuman/data/poseunits/face-poseunits.bvh
-        // or maybe the code i have here is correct but the weight must be read as part of the rig?
+    // getFaceGroup(name: string): MeshSubset | undefined {
+    //     // the facegroups are not groups
+    //     // and those might be either stored in one of these:
+    //     //   makehuman/data/rigs/default_weights.mhw
+    //     //   makehuman/data/poses/benchmark.bvh
+    //     //   makehuman/data/poses/tpose.bvh
+    //     //   makehuman/data/poseunits/face-poseunits.bvh
+    //     // or maybe the code i have here is correct but the weight must be read as part of the rig?
 
-        // return undefined
-        const x = this.groupSubset
-            .filter(g => g.name === name)
-        if (x.length !== 1) {
-            return undefined
-        }
-        return x[0]
-    }
+    //     // return undefined
+    //     const x = this.groupSubset
+    //         .filter(g => g.name === name)
+    //     if (x.length !== 1) {
+    //         return undefined
+    //     }
+    //     return x[0]
+    // }
 }

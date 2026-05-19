@@ -17,7 +17,8 @@ export interface MeshData {
     fuv?: ArrayLike<number>
     normal?: ArrayLike<number>
     fnormal?: ArrayLike<number>
-    materialSubset?: MeshSubset[]
+    groupSubset?: Map<string, MeshSubset>
+    materialSubset?: Map<string, MeshSubset>
 }
 
 export class IndyNode {

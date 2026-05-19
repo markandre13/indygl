@@ -10,7 +10,7 @@ import { IndyNode, Mesh, Root, XForm } from './nodes/Mesh'
 import { Material } from "./nodes/Material"
 import { deg2rad } from './gl/algorithms/deg2rad'
 
-async function loadMesh(parent: XForm, filename: string) {
+export async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
     if (!r.ok) {
         throw Error(`failed to load '${filename}': ${r.status} ${r.statusText}: ${await r.text()}`)

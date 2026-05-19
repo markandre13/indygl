@@ -4,6 +4,7 @@ import { mat4, vec3 } from "gl-matrix"
 import type { MeshData } from "src/nodes/Mesh"
 import { isZero } from "./isZero"
 import earcut from "earcut"
+import type { MeshSubset } from "../file/MeshSubset"
 
 function windingIsClockWise(i0: number, i1: number, i2: number) {
     return (i0 < i1 ? 1 : 0) + (i1 < i2 ? 1 : 0) + (i2 < i0 ? 1 : 0) == 2
@@ -14,7 +15,7 @@ function windingIsClockWise(i0: number, i1: number, i2: number) {
  * 
  * todo: mapping between old and new indicies in case subsets are to be rendered, editing, etc.
  */
-export function triangulate(data: MeshData) {
+export function triangulate(data: MeshData): MeshData {
     if (!data.xyz || !data.fxyz || !data.vcount) {
         throw Error()
     }
@@ -25,6 +26,8 @@ export function triangulate(data: MeshData) {
     let fnormal: number[] | undefined
     if (data.fnormal) { fnormal = [] }
 
+    const map = new Map<number, number>()
+
     const v = vec3.create()
 
     let fp = 0
@@ -33,6 +36,7 @@ export function triangulate(data: MeshData) {
         if (n < 3) {
             continue
         }
+        map.set(fp, fxyz.length)
         if (n === 3) {
             for (let j = 0; j < n; ++j) {
                 fxyz.push(data.fxyz[fp])
@@ -42,16 +46,6 @@ export function triangulate(data: MeshData) {
             }
             continue
         }
-        if (n === 4) {
-            for (const j of [0, 1, 2, 2, 3, 0]) {
-                fxyz.push(data.fxyz[fp + j])
-                if (data.fuv) { fuv!.push(data.fuv[fp + j]) }
-                if (data.fnormal) { fnormal!.push(data.fnormal[fp + j]) }
-            }
-            fp += 4
-            continue
-        }
-
         // get the first three points of the polygon
         let idx: number
         idx = data.fxyz[fp] * 3
@@ -138,6 +132,35 @@ export function triangulate(data: MeshData) {
         // console.log(`polygon with ${n} edges triangulated to ${triangles.length / 3} triangles`)
         // indices.push(...triangles.map(it => back[it]))
     }
+    map.set(fp, fxyz.length)
+
+    let groupSubset: Map<string, MeshSubset> | undefined
+    if (data.groupSubset) {
+        groupSubset = new Map()
+        for(const [name, r] of data.groupSubset) {
+            const start = map.get(r.start)!
+            const end = map.get(r.start + r.length)
+            if (start === undefined || end === undefined) {
+                throw Error(`yikes: groupSubset '${name}' start, length don't match face positions`)
+            }
+            groupSubset.set(name, {start, length: end - start})
+        }
+    }
+
+    let materialSubset: Map<string, MeshSubset> | undefined
+    if (data.materialSubset) {
+        materialSubset = new Map()
+        for(const [name, r] of data.materialSubset) {
+            const start = map.get(r.start)!
+            const end = map.get(r.start + r.length)
+            if (start === undefined || end === undefined) {
+                throw Error(`yikes: materialSubset '${name}' start, length don't match face positions`)
+            }
+            materialSubset.set(name, {start, length: end - start})
+        }
+    }
+
+
     // console.log(`triangulated size = ${indices.length}`)
     return {
         xyz: data.xyz,
@@ -145,6 +168,8 @@ export function triangulate(data: MeshData) {
         uv: data.uv,
         fuv,
         normal: data.normal,
-        fnormal
+        fnormal,
+        groupSubset,
+        materialSubset
     }
 }
