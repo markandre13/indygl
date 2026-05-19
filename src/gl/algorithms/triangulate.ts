@@ -1,7 +1,7 @@
 // TODO: move into gl/algorithms/
 
 import { mat4, vec3 } from "gl-matrix"
-import type { MeshData } from "src/nodes/Mesh"
+import type { MeshData } from "./MeshData"
 import { isZero } from "./isZero"
 import earcut from "earcut"
 import type { MeshSubset } from "../file/MeshSubset"

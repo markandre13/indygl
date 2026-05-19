@@ -7,19 +7,9 @@ import type { mat4 } from "gl-matrix"
 import type { Material } from "./Material"
 import { ModelUniform } from "../gl/buffers/ModelUniform"
 import type { Context } from "../gl/Context"
-import type { MeshSubset } from "src/gl/file/MeshSubset"
-
-export interface MeshData {
-    vcount?: ArrayLike<number>
-    xyz?: ArrayLike<number>
-    fxyz?: ArrayLike<number>
-    uv?: ArrayLike<number>
-    fuv?: ArrayLike<number>
-    normal?: ArrayLike<number>
-    fnormal?: ArrayLike<number>
-    groupSubset?: Map<string, MeshSubset>
-    materialSubset?: Map<string, MeshSubset>
-}
+import { smoothShading } from "src/gl/algorithms/smoothShading"
+import { flatShading } from "src/gl/algorithms/flatShading"
+import type { MeshData } from "../gl/algorithms/MeshData"
 
 export class IndyNode {
     constructor(parent: IndyNode) {
@@ -88,6 +78,13 @@ export class Mesh extends IndyNode implements MeshData {
      * triangulate mesh and create unified index for rendering via WebGPU
      */
     protected prepare() {
+        // if (this.normal === undefined) {
+            smoothShading(this)
+            // throw Error('need to create normals')
+            // normal & fnormal
+            // flat & smooth
+            // later: helper data to update if vertices change
+        // }
         if (this._triangles === undefined) {
             this._triangles = triangulate(this)
         }

@@ -1,4 +1,4 @@
-import type { MeshData } from "src/nodes/Mesh"
+import type { MeshData } from "./MeshData"
 
 export interface MeshDataSingleIndex extends MeshData {
     xyzExtra?: number[]

@@ -53,13 +53,14 @@ export async function main() {
     // const modelUniform = new ModelUniform(context)
 
     const root = new Root(context)
+
     // const teapot = new XForm(root)
     // const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
     // teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
 
-    const teeth = new XForm(root)
-    const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
-    teethMesh.material = new Material(context, [1, 1, 1, 1])
+    // const teeth = new XForm(root)
+    // const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
+    // teethMesh.material = new Material(context, [1, 1, 1, 1])
     // this wrecks the shading, guess through the normal matrix being messed up
     // teeth.transform = mat4.create()
     // mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
@@ -74,8 +75,13 @@ export async function main() {
     // const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
     // dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
-    // const teapot = await loadMesh(device, "obj/mh/base.obj")
-    // console.log(teapot)
+    // const cube = new XForm(root)
+    // const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
+    // cubeMesh.material = new Material(context, [1, 1, 1, 1])
+
+    const human = new XForm(root)
+    const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    humanMesh.material = new Material(context, [1, 1, 1, 1])
 
     context.paint = () => {
         // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
