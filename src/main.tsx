@@ -17,12 +17,12 @@ export async function loadMesh(parent: XForm, filename: string) {
         throw Error(`failed to load '${filename}': ${r.status} ${r.statusText}: ${await r.text()}`)
     }
     const obj = new WavefrontObj(filename, await r.text())
-    console.log(obj)
+    // console.log(obj)
     const mesh = new Mesh(parent, {
         xyz: obj.xyz,
         fxyz: obj.fxyz,
         uv: obj.uv.length > 0 ? obj.uv : undefined,
-        fuv: obj.fuv.length > 0 ? obj.uv : undefined,
+        fuv: obj.fuv.length > 0 ? obj.fuv : undefined,
         normal: obj.normal.length > 0 ? obj.normal : undefined,
         fnormal: obj.fnormal.length > 0 ? obj.fnormal : undefined,
         vcount: obj.vcount,

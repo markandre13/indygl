@@ -68,8 +68,6 @@ export class Mesh extends IndyNode implements MeshData {
         this.fnormal = opt?.fnormal
         this.groupSubset = opt?.groupSubset
         this.materialSubset = opt?.materialSubset
-
-        console.log(this)
     }
 
     protected _triangles?: MeshData

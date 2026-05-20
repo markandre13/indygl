@@ -59,7 +59,7 @@ export function decoupleXYZandUV(data: MeshData): MeshDataSingleIndex {
     // TODO: this tree might be too expensive... maybe use a map with a binary representation of the indices???
     const usedCombination = new Map<string, number>()
     let extraIndex = data.xyz!.length / 3
-
+    
     function getIndex(idx: number) {
 
         let idxXYZ = data.fxyz![idx]
