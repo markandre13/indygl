@@ -10,6 +10,7 @@ import type { Context } from "../gl/Context"
 import { smoothShading } from "src/gl/algorithms/smoothShading"
 import { flatShading } from "src/gl/algorithms/flatShading"
 import type { MeshData } from "../gl/algorithms/MeshData"
+import type { MeshSubset } from "src/gl/algorithms/MeshSubset"
 
 export class IndyNode {
     constructor(parent: IndyNode) {
@@ -46,6 +47,8 @@ export class Mesh extends IndyNode implements MeshData {
     fuv?: ArrayLike<number>
     normal?: ArrayLike<number>
     fnormal?: ArrayLike<number>
+    groupSubset?: Map<string, MeshSubset>
+    materialSubset?: Map<string, MeshSubset>
     // vertex groups
     // faces to material
     // sharp edges
@@ -63,6 +66,10 @@ export class Mesh extends IndyNode implements MeshData {
         this.vcount = opt?.vcount
         this.normal = opt?.normal
         this.fnormal = opt?.fnormal
+        this.groupSubset = opt?.groupSubset
+        this.materialSubset = opt?.materialSubset
+
+        console.log(this)
     }
 
     protected _triangles?: MeshData
@@ -71,6 +78,7 @@ export class Mesh extends IndyNode implements MeshData {
     protected _indices?: IndexBuffer
     protected _points?: PositionBuffer
     protected _normals?: VertexBuffer
+    protected _texcoords?: VertexBuffer
 
     material?: Material
 
@@ -78,13 +86,9 @@ export class Mesh extends IndyNode implements MeshData {
      * triangulate mesh and create unified index for rendering via WebGPU
      */
     protected prepare() {
-        // if (this.normal === undefined) {
+        if (this.normal === undefined) {
             smoothShading(this)
-            // throw Error('need to create normals')
-            // normal & fnormal
-            // flat & smooth
-            // later: helper data to update if vertices change
-        // }
+        }
         if (this._triangles === undefined) {
             this._triangles = triangulate(this)
         }
@@ -114,6 +118,20 @@ export class Mesh extends IndyNode implements MeshData {
         }
         return this._normals
     }
-
+    get texcoords() {
+        this.prepare()
+        if (this._texcoords === undefined) {
+            this._texcoords = new VertexBuffer(this.context.device, this._single_index!.uv!)
+        }
+        return this._texcoords
+    }
+    group(name: string) {
+        this.prepare()
+        return this._triangles?.groupSubset?.get(name)
+    }
+    mat(name: string) {
+        this.prepare()
+        return this._triangles?.materialSubset?.get(name)
+    }
 }
 

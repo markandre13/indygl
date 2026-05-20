@@ -4,7 +4,7 @@ import { mat4, vec3 } from "gl-matrix"
 import type { MeshData } from "./MeshData"
 import { isZero } from "./isZero"
 import earcut from "earcut"
-import type { MeshSubset } from "../file/MeshSubset"
+import type { MeshSubset } from "./MeshSubset"
 
 function windingIsClockWise(i0: number, i1: number, i2: number) {
     return (i0 < i1 ? 1 : 0) + (i1 < i2 ? 1 : 0) + (i2 < i0 ? 1 : 0) == 2

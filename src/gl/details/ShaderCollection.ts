@@ -1,5 +1,6 @@
 import type { Context } from '../Context'
 import { ShaderP3_N3_IDX } from '../shaders/ShaderP3_N3_IDX'
+import { ShaderP3_N3_T2_IDX } from '../shaders/ShaderP3_N3_T2_IDX'
 
 // [ ] make rendering more generic: like a mesh object?
 //     https://graphics.cs.utah.edu/teapot/
@@ -116,10 +117,12 @@ X transform using the panel on the right
 export class ShaderCollection {
     // readonly p3_idx: ShaderP3_IDX
     readonly p3_n3_idx: ShaderP3_N3_IDX
+    readonly p3_n3_t2_idx: ShaderP3_N3_T2_IDX
     // readonly p3_n3_idx_alpha: ShaderP3_N3_IDX_Alpha
     constructor(context: Context) {
         const device = context.device
         this.p3_n3_idx = new ShaderP3_N3_IDX(device, context)
+        this.p3_n3_t2_idx = new ShaderP3_N3_T2_IDX(device, context)
         // this.p3_n3_idx_alpha = new ShaderP3_N3_IDX_Alpha(device, context)
         // // const shaderPickPoint = new ShaderP3_PickPoint(device, context)
         // const shaderPickPoints = new ShaderP3_C3_Point(device, context)
@@ -127,7 +130,6 @@ export class ShaderCollection {
         // // const shaderColor = new ShaderP3_C3_IDX(device, context)
         // const shaderShadedTexture = new ShaderP4N4T2(device, context)
         // const shaderShadedTexture2 = new ShaderP3_N3_T2(device, context)
-        // const shaderShadedTexture3 = new ShaderP3_N3_T2_IDX(device, context)
         // // const shaderShadedMono = new ShaderP3N3(device, context)
         // const shaderLines = new ShaderP3_C3_IDX_LineList(device, context) // need ShaderP3_C3_IDX_LineList
     }

@@ -1,4 +1,4 @@
-import type { MeshSubset } from "src/gl/file/MeshSubset"
+import type { MeshSubset } from "src/gl/algorithms/MeshSubset"
 
 
 export interface MeshData {

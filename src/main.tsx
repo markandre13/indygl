@@ -9,6 +9,7 @@ import { MainScreen } from './editor/view/MainScreen'
 import { IndyNode, Mesh, Root, XForm } from './nodes/Mesh'
 import { Material } from "./nodes/Material"
 import { deg2rad } from './gl/algorithms/deg2rad'
+import { Texture } from './gl/buffers/Texture'
 
 export async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
@@ -24,7 +25,9 @@ export async function loadMesh(parent: XForm, filename: string) {
         fuv: obj.fuv.length > 0 ? obj.uv : undefined,
         normal: obj.normal.length > 0 ? obj.normal : undefined,
         fnormal: obj.fnormal.length > 0 ? obj.fnormal : undefined,
-        vcount: obj.vcount
+        vcount: obj.vcount,
+        groupSubset: obj.groupSubset,
+        materialSubset: obj.materialSubset
     })
     return mesh
 }
@@ -81,7 +84,12 @@ export async function main() {
 
     const human = new XForm(root)
     const humanMesh = await loadMesh(human, "obj/mh/base.obj")
-    humanMesh.material = new Material(context, [1, 1, 1, 1])
+
+    const bodyTexture = new Texture()
+    await bodyTexture.load(device.device!!, "img/young_caucasian_female_special_suit.jpg")
+
+    // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
+    humanMesh.material = new Material(context, bodyTexture)
 
     context.paint = () => {
         // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
@@ -110,7 +118,9 @@ export async function main() {
 
         // pass.setPipeline is also expensive!!!
 
-        pass.setPipeline(context.shader.p3_n3_idx.pipeline)
+        // pass.setPipeline(context.shader.p3_n3_idx.pipeline)
+        pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
         function draw(node: IndyNode) {
             if (node instanceof Mesh) {
@@ -131,8 +141,14 @@ export async function main() {
                 pass.setBindGroup(2, node.material!.bindGroup)
                 pass.setVertexBuffer(0, node.points.buffer)
                 pass.setVertexBuffer(1, node.normals.buffer)
+                pass.setVertexBuffer(2, node.texcoords.buffer)
                 pass.setIndexBuffer(node.indices.buffer, 'uint32')
-                pass.drawIndexed(node.indices.length)
+                if (node.groupSubset && node.groupSubset.has("body")) {
+                    const group = node.group("body")!
+                    pass.drawIndexed(group.length, 1, group.start)
+                } else {
+                    pass.drawIndexed(node.indices.length)
+                }
             } else {
                 for (const child of node.children) {
                     draw(child)

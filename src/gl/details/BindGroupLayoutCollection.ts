@@ -4,12 +4,13 @@ import type { Device } from '../Device'
 export class BindGroupLayoutCollection {
     scene: GPUBindGroupLayout
     model: GPUBindGroupLayout
-    material: GPUBindGroupLayout
+    materialRGBA: GPUBindGroupLayout
+    materialTexture: GPUBindGroupLayout
 
     constructor(device: Device) {
         const d = device.device
         this.scene = d.createBindGroupLayout({
-            label: 'camera-bind-group-layout',
+            label: 'scene',
             entries: [{
                 binding: 0,
                 visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -20,7 +21,7 @@ export class BindGroupLayoutCollection {
             }]
         })
         this.model = d.createBindGroupLayout({
-            label: 'model-bind-group-layout',
+            label: 'model',
             entries: [{
                 binding: 0,
                 visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -30,8 +31,8 @@ export class BindGroupLayoutCollection {
                 }
             }]
         })
-        this.material = d.createBindGroupLayout({
-            label: 'material-bind-group-layout',
+        this.materialRGBA = d.createBindGroupLayout({
+            label: 'material-rgba',
             entries: [{
                 binding: 0,
                 visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -39,6 +40,19 @@ export class BindGroupLayoutCollection {
                     type: "uniform",
                     minBindingSize: 0
                 }
+            }]
+        })
+
+        this.materialTexture = d.createBindGroupLayout({
+            label: 'material-texture',
+            entries: [{
+                binding: 0,
+                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                sampler: { type: "filtering" }
+            }, {
+                binding: 1,
+                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                texture: {}
             }]
         })
     }

@@ -1,8 +1,4 @@
-import type { IndexBuffer } from "../buffers/IndexBuffer"
-import type { ModelUniform } from "../buffers/ModelUniform"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
-import type { Texture } from "../buffers/Texture"
-import type { VertexBuffer } from "../buffers/VertexBuffer"
 import type { Context } from "../Context"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
@@ -16,8 +12,17 @@ export class ShaderP3_N3_T2_IDX extends Shader {
         context: Context
     ) {
         super(device, code)
+        const label = 'p3-n3-t2-idx'
         const pipelineDef: GPURenderPipelineDescriptor = {
-            layout: 'auto',
+            label,
+            layout: device.device.createPipelineLayout({
+                label,
+                bindGroupLayouts: [
+                    context.bindGroupLayout.scene,
+                    context.bindGroupLayout.model,
+                    context.bindGroupLayout.materialTexture
+                ]
+            }),
             vertex: {
                 buffers: [{
                     arrayStride: FLOAT32_NUM_BYTES * 3,
@@ -48,6 +53,8 @@ export class ShaderP3_N3_T2_IDX extends Shader {
             },
             depthStencil: {
                 depthWriteEnabled: true,
+                depthBias: 1, // this make points and lines look better
+                depthBiasSlopeScale: 1,
                 depthCompare: 'less',
                 format: context.depthTextureFormat,
             },
@@ -55,47 +62,29 @@ export class ShaderP3_N3_T2_IDX extends Shader {
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
 
-
-    texture?: GPUTexture
-    bindGroup?: GPUBindGroup
-    private createBindGroup(context: Context, modelUniforms: ModelUniform): GPUBindGroup {
-        if (this.bindGroup === undefined) {
-            this.bindGroup = this.device.device.createBindGroup({
-                layout: this.pipeline.getBindGroupLayout(0),
-                entries: [
-                    { binding: 0, resource: context.sceneUniforms.buffer },
-                    { binding: 1, resource: modelUniforms.buffer },
-                    { binding: 2, resource: context.sampler },
-                    { binding: 3, resource: this.texture!.createView() },
-                ],
-            })
-        }
-        return this.bindGroup
-    }
-
-    draw(pass: GPURenderPassEncoder,
-        context: Context,
-        modelUniforms: ModelUniform,
-        points: VertexBuffer,
-        normals: VertexBuffer,
-        texcoords: VertexBuffer,
-        texture: Texture,
-        indices: IndexBuffer,
-        offset?: number,
-        length?: number
-    ) {
-        if (texture.texture !== this.texture) {
-            this.texture = texture.texture
-            this.bindGroup = undefined
-        }
-        pass.setPipeline(this.pipeline)
-        pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
-        pass.setVertexBuffer(0, points.buffer)
-        pass.setVertexBuffer(1, normals.buffer)
-        pass.setVertexBuffer(2, texcoords.buffer)
-        pass.setIndexBuffer(indices.buffer, 'uint32')
-        pass.drawIndexed(length === undefined ? indices.length : length, 1, offset)
-    }
+    // draw(pass: GPURenderPassEncoder,
+    //     context: Context,
+    //     modelUniforms: ModelUniform,
+    //     points: VertexBuffer,
+    //     normals: VertexBuffer,
+    //     texcoords: VertexBuffer,
+    //     texture: Texture,
+    //     indices: IndexBuffer,
+    //     offset?: number,
+    //     length?: number
+    // ) {
+    //     if (texture.texture !== this.texture) {
+    //         this.texture = texture.texture
+    //         this.bindGroup = undefined
+    //     }
+    //     pass.setPipeline(this.pipeline)
+    //     pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
+    //     pass.setVertexBuffer(0, points.buffer)
+    //     pass.setVertexBuffer(1, normals.buffer)
+    //     pass.setVertexBuffer(2, texcoords.buffer)
+    //     pass.setIndexBuffer(indices.buffer, 'uint32')
+    //     pass.drawIndexed(length === undefined ? indices.length : length, 1, offset)
+    // }
 }
 
 const code = /* wgsl */`
@@ -107,9 +96,9 @@ const code = /* wgsl */`
         uNormalMatrix: mat4x4f,
     };
     @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
-    @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
-    @group(0) @binding(2) var mySampler: sampler;
-    @group(0) @binding(3) var myTexture: texture_2d<f32>;
+    @group(1) @binding(0) var<uniform> modelUniforms: ModelUniforms;
+    @group(2) @binding(0) var mySampler: sampler;
+    @group(2) @binding(1) var myTexture: texture_2d<f32>;
 
     struct Vertex2Fragment {
         @builtin(position) Position: vec4f,

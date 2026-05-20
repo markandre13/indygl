@@ -1,5 +1,5 @@
 import { StringToLine } from './StringToLine'
-import type { MeshSubset } from './MeshSubset'
+import type { MeshSubset } from '../algorithms/MeshSubset'
 import type { MeshData } from "../algorithms/MeshData"
 
 interface NamedMeshSubset {

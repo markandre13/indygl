@@ -1,8 +1,4 @@
-import { ColorUniform } from "../buffers/ColorUniform"
-import type { IndexBuffer } from "../buffers/IndexBuffer"
-import type { ModelUniform } from "../buffers/ModelUniform"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
-import type { VertexBuffer } from "../buffers/VertexBuffer"
 import { type Context } from "../Context"
 import type { Device } from "../Device"
 import { Shader } from "./Shader"
@@ -14,15 +10,15 @@ export class ShaderP3_N3_IDX extends Shader {
         context: Context
     ) {
         super(device, code, 'p3-n3-idx')
-
+        const label = 'p3-n3-idx'
         const pipelineDef: GPURenderPipelineDescriptor = {
-            label: 'p3-n3-idx',
+            label,
             layout: device.device.createPipelineLayout({
-                label: 'p3-n3-idx',
+                label,
                 bindGroupLayouts: [
                     context.bindGroupLayout.scene,
                     context.bindGroupLayout.model,
-                    context.bindGroupLayout.material
+                    context.bindGroupLayout.materialRGBA
                 ]
             }),
             vertex: {
