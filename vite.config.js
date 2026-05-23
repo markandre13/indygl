@@ -1,11 +1,11 @@
 import { defineConfig } from 'vite'
 import solidPlugin from 'vite-plugin-solid'
-// import glsl from 'vite-plugin-glsl'
+import glsl from 'vite-plugin-glsl'
 import { playwright } from '@vitest/browser-playwright'
 
 export default defineConfig({
     plugins: [
-        // [glsl()],
+        glsl(),
         solidPlugin({ solid: { moduleName: "toad.jsx" } }),
     ],
     resolve: {

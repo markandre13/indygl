@@ -11,6 +11,45 @@ import { Material } from "./nodes/Material"
 import { deg2rad } from './gl/algorithms/deg2rad'
 import { Texture } from './gl/buffers/Texture'
 
+// [ ] render both texture & rgb
+// [ ] select object
+// [ ] render object as selected
+//     Blender, Viewport Overlays, Objects, Outline Selected, Show an outline hightlight around selected objects.
+//     source/blender/draw/engines/overlay/overlay_base.hh
+//     source/blender/draw/engines/overlay/overlay_outline.hh
+//     source/blender/draw/engines/overlay/shaders/overlay_outline_prepass_vert.glsl
+//     * the overlay outline prepass writes 2 bits (0-4)
+//       * 3 last selected (active): light orange
+//       * 1 other selected: dark orange
+//       * 0 during transform: white
+//     * width: 2px
+//     * can be seen through non-selected objects
+//     * on intersections with other selected objects
+//
+
+// https://www.reddit.com/r/opengl/comments/14jisvu/how_can_i_outline_selected_meshes/
+// https://learnopengl.com/Advanced-OpenGL/Stencil-testing
+
+//     https://www.marginallyclever.com/2025/09/drawing-thick-outlines-in-opengl/
+//     Ben Golus’ Jump Flood Algorithm (JFA) is the final answer for most people.
+//     It’s the hardest to do and the most efficient at run time. 
+//     https://en.wikipedia.org/wiki/Jump_flooding_algorithm  
+//
+//     source/blender/editors/object/object_modes.cc
+//       OB_MODE_EDIT | OB_MODE_OBJECT
+//     source/blender/editors/object/object_edit.cc
+//       context_active_object(), objects_in_mode_or_selected()
+//       BKE_view_layer_active_object_get()
+//     source/blender/blenkernel/intern/paint.cc
+//        /* default to image paint */
+//        return &ts->imapaint.paint;
+//     maybe start with
+//     * move edges by smooth normal to the outside
+//     * draw backface culled... (if the orientation is correct...)
+//       or draw everything to texture, draw normal object to erase, then compose into image?
+
+// [ ] re-enable edit mode
+
 export async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
     if (!r.ok) {
@@ -120,6 +159,7 @@ export async function main() {
 
         // pass.setPipeline(context.shader.p3_n3_idx.pipeline)
         pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+        // pass.setPipeline(context.shader.p3_idx.pipeline)
 
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
         function draw(node: IndyNode) {
@@ -138,10 +178,9 @@ export async function main() {
                     }
                 }
                 pass.setBindGroup(1, node.modelView.bindGroup)
-                pass.setBindGroup(2, node.material!.bindGroup)
-                pass.setVertexBuffer(0, node.points.buffer)
-                pass.setVertexBuffer(1, node.normals.buffer)
-                pass.setVertexBuffer(2, node.texcoords.buffer)
+
+                node.material!.setBindGroup(pass, node)
+
                 pass.setIndexBuffer(node.indices.buffer, 'uint32')
                 if (node.groupSubset && node.groupSubset.has("body")) {
                     const group = node.group("body")!

@@ -1,6 +1,7 @@
 import { ColorUniform } from "../gl/buffers/ColorUniform"
 import { Texture } from "../gl/buffers/Texture"
 import type { Context } from "../gl/Context"
+import type { Mesh } from "./Mesh"
 
 
 export class Material {
@@ -36,4 +37,13 @@ export class Material {
     }
     colorUniform?: ColorUniform
     texture?: Texture
+
+    setBindGroup(pass: GPURenderPassEncoder, node: Mesh) {
+        pass.setBindGroup(2, this.bindGroup)
+        pass.setVertexBuffer(0, node.points.buffer)
+        pass.setVertexBuffer(1, node.normals.buffer)
+        if (this.texture) {
+            pass.setVertexBuffer(2, node.texcoords.buffer)
+        }
+    }
 }

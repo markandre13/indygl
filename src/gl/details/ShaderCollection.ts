@@ -1,4 +1,5 @@
 import type { Context } from '../Context'
+import { ShaderP3_IDX } from '../shaders/ShaderP3_IDX'
 import { ShaderP3_N3_IDX } from '../shaders/ShaderP3_N3_IDX'
 import { ShaderP3_N3_T2_IDX } from '../shaders/ShaderP3_N3_T2_IDX'
 
@@ -121,6 +122,7 @@ export class ShaderCollection {
     // readonly p3_n3_idx_alpha: ShaderP3_N3_IDX_Alpha
     constructor(context: Context) {
         const device = context.device
+        // this.p3_idx = new ShaderP3_IDX(device, context)
         this.p3_n3_idx = new ShaderP3_N3_IDX(device, context)
         this.p3_n3_t2_idx = new ShaderP3_N3_T2_IDX(device, context)
         // this.p3_n3_idx_alpha = new ShaderP3_N3_IDX_Alpha(device, context)

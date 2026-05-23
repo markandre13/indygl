@@ -9,13 +9,14 @@
         "url": "git+https://github.com/markandre13/indygl.git"
     },
     "scripts": {
-        "build": "tsgo && vite build",
-        "start": "tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo' 'npm run vite'",
-        "test": "tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo' 'npm run vitest'",
+        "build": "npm run wgsl && tsgo && vite build",
+        "start": "npm run wgsl && tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo' 'npm run vite'",
+        "test": "npm run wgsl && tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo' 'npm run vitest'",
+        "wgsl": "mkdir -p js/src/gl/shaders && ln -f src/gl/shaders/*wgsl js/src/gl/shaders",
         "tsgo": "tsgo --watch --preserveWatchOutput",
         "vite": "NO_COLOR=true vite --mode production --clearScreen false --open",
         "vitest": "vitest --clearScreen false --watch js/spec",
-        "preview": "tsgo && vite preview --open",
+        "preview": "npm run wgsl && tsgo && vite preview --open",
         "update": "npx npm-check-updates -u && npm install"
     },
     "devDependencies": {
@@ -25,6 +26,7 @@
         "@webgpu/types": "^0.1.70",
         "concurrently": "^9.2.1",
         "vite": "^8.0.12",
+        "vite-plugin-glsl": "^1.6.0",
         "vite-plugin-solid": "^2.11.12",
         "vitest": "^4.1.6"
     },
