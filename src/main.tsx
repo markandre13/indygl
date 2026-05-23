@@ -127,8 +127,8 @@ export async function main() {
     const bodyTexture = new Texture()
     await bodyTexture.load(device.device!!, "img/young_caucasian_female_special_suit.jpg")
 
-    // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
-    humanMesh.material = new Material(context, bodyTexture)
+    humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
+    // humanMesh.material = new Material(context, bodyTexture)
 
     context.paint = () => {
         // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
@@ -157,9 +157,9 @@ export async function main() {
 
         // pass.setPipeline is also expensive!!!
 
+        pass.setPipeline(context.shader.p3_idx.pipeline)
         // pass.setPipeline(context.shader.p3_n3_idx.pipeline)
-        pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
-        // pass.setPipeline(context.shader.p3_idx.pipeline)
+        // pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
 
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
         function draw(node: IndyNode) {
