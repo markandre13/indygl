@@ -11,6 +11,7 @@ import { Material } from "./nodes/Material"
 import { deg2rad } from './gl/algorithms/deg2rad'
 import { Texture } from './gl/buffers/Texture'
 import { ViewportShading } from './editor/app/ViewportShading'
+import { ObjectSelectController } from './gl/controllers/ObjectSelectController'
 
 // [ ] render both texture & rgb
 // [ ] select object
@@ -95,6 +96,7 @@ export async function main() {
     editorModel.viewportShading.signal.add(context.invalidate)
     new ResizeObserver(context.invalidate).observe(canvas) // TODO: shouldn't this be in CanvasContext???
     context.pushController(new BasicMode(context))
+    context.pushController(new ObjectSelectController(context))
 
     // const modelUniform = new ModelUniform(context)
 
@@ -224,54 +226,61 @@ export async function main() {
 
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
 
-        if (lineNodes.length > 0) {
-            pass.setPipeline(context.shader.p3_idx_line.pipeline)
-            pass.setBindGroup(2, matWire.bindGroup)
-            for (const node of lineNodes) {
-                pass.setBindGroup(1, node.modelView.bindGroup)
-                // node.material!.setBindGroup(pass, node)
-                // pass.setBindGroup(2, node.material!.bindGroup)
-                pass.setVertexBuffer(0, node.points.buffer)
-                pass.setIndexBuffer(node.edgeIndices.buffer, 'uint32')
-                // if (node.groupSubset && node.groupSubset.has("body")) {
-                //     const group = node.group("body")!
-                //     pass.drawIndexed(group.length, 1, group.start)
-                // } else {
-                pass.drawIndexed(node.edgeIndices.length)
-                // }
-            }
+        pass.setPipeline(context.shader.p3_idx.pipeline)
+        for (const node of rgbNodes) {
+            pass.setBindGroup(1, node.modelView.bindGroup)
+            node.material!.setBindGroup(pass, node)
+            pass.setIndexBuffer(node.indices.buffer, 'uint32')
+            pass.drawIndexed(node.indices.length)
         }
 
-        // pass.setPipeline(context.shader.p3_idx.pipeline)
-        if (rgbNodes.length > 0) {
-            pass.setPipeline(context.shader.p3_n3_idx.pipeline)
-            for (const node of rgbNodes) {
-                pass.setBindGroup(1, node.modelView.bindGroup)
-                node.material!.setBindGroup(pass, node)
-                pass.setIndexBuffer(node.indices.buffer, 'uint32')
-                if (node.groupSubset && node.groupSubset.has("body")) {
-                    const group = node.group("body")!
-                    pass.drawIndexed(group.length, 1, group.start)
-                } else {
-                    pass.drawIndexed(node.indices.length)
-                }
-            }
-        }
+        // if (lineNodes.length > 0) {
+        //     pass.setPipeline(context.shader.p3_idx_line.pipeline)
+        //     pass.setBindGroup(2, matWire.bindGroup)
+        //     for (const node of lineNodes) {
+        //         pass.setBindGroup(1, node.modelView.bindGroup)
+        //         // node.material!.setBindGroup(pass, node)
+        //         // pass.setBindGroup(2, node.material!.bindGroup)
+        //         pass.setVertexBuffer(0, node.points.buffer)
+        //         pass.setIndexBuffer(node.edgeIndices.buffer, 'uint32')
+        //         // if (node.groupSubset && node.groupSubset.has("body")) {
+        //         //     const group = node.group("body")!
+        //         //     pass.drawIndexed(group.length, 1, group.start)
+        //         // } else {
+        //         pass.drawIndexed(node.edgeIndices.length)
+        //         // }
+        //     }
+        // }
 
-        if (texNodes.length > 0) {
-            pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
-            for (const node of texNodes) {
-                pass.setBindGroup(1, node.modelView.bindGroup)
-                node.material!.setBindGroup(pass, node)
-                pass.setIndexBuffer(node.indices.buffer, 'uint32')
-                if (node.groupSubset && node.groupSubset.has("body")) {
-                    const group = node.group("body")!
-                    pass.drawIndexed(group.length, 1, group.start)
-                } else {
-                    pass.drawIndexed(node.indices.length)
-                }
-            }
-        }
+        // if (rgbNodes.length > 0) {
+        //     pass.setPipeline(context.shader.p3_n3_idx.pipeline)
+        //     for (const node of rgbNodes) {
+        //         pass.setBindGroup(1, node.modelView.bindGroup)
+        //         node.material!.setBindGroup(pass, node)
+        //         pass.setIndexBuffer(node.indices.buffer, 'uint32')
+        //         if (node.groupSubset && node.groupSubset.has("body")) {
+        //             const group = node.group("body")!
+        //             pass.drawIndexed(group.length, 1, group.start)
+        //         } else {
+        //             pass.drawIndexed(node.indices.length)
+        //         }
+        //     }
+        // }
+
+        // if (texNodes.length > 0) {
+        //     pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+        //     for (const node of texNodes) {
+        //         pass.setBindGroup(1, node.modelView.bindGroup)
+        //         node.material!.setBindGroup(pass, node)
+        //         pass.setIndexBuffer(node.indices.buffer, 'uint32')
+        //         if (node.groupSubset && node.groupSubset.has("body")) {
+        //             const group = node.group("body")!
+        //             pass.drawIndexed(group.length, 1, group.start)
+        //         } else {
+        //             pass.drawIndexed(node.indices.length)
+        //         }
+        //     }
+        // }
 
         pass.end()
         const commandBuffer = commandEncoder.finish()
