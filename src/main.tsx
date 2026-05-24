@@ -26,6 +26,9 @@ import { Texture } from './gl/buffers/Texture'
 //     * can be seen through non-selected objects
 //     * on intersections with other selected objects
 //
+//     this is close to what i need, let's start here:
+//       https://webgpufundamentals.org/webgpu/lessons/webgpu-highlighting.html
+//     in WebGPU blur seems to be a compute pass? some use a fragment shader...
 
 // https://www.reddit.com/r/opengl/comments/14jisvu/how_can_i_outline_selected_meshes/
 // https://learnopengl.com/Advanced-OpenGL/Stencil-testing
@@ -96,9 +99,9 @@ export async function main() {
 
     const root = new Root(context)
 
-    // const teapot = new XForm(root)
-    // const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
-    // teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
+    const teapot = new XForm(root)
+    const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
+    teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
 
     // const teeth = new XForm(root)
     // const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
@@ -109,13 +112,11 @@ export async function main() {
     // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6,6,6))
     // mat4.translate(teeth.transform, teeth.transform, vec3.fromValues(0,-5.5,-1))
 
-    // const teapot = await loadMesh(device, "obj/cube.obj") // 4-gons
-
-    // const dodecahedron = new XForm(root)
-    // dodecahedron.transform = mat4.create()
-    // mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15,3.4,0))
-    // const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
-    // dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
+    const dodecahedron = new XForm(root)
+    dodecahedron.transform = mat4.create()
+    mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15,3.4,0))
+    const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
+    dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
     // const cube = new XForm(root)
     // const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
@@ -127,8 +128,8 @@ export async function main() {
     const bodyTexture = new Texture()
     await bodyTexture.load(device.device!!, "img/young_caucasian_female_special_suit.jpg")
 
-    humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
-    // humanMesh.material = new Material(context, bodyTexture)
+    // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
+    humanMesh.material = new Material(context, bodyTexture)
 
     context.paint = () => {
         // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
@@ -157,47 +158,80 @@ export async function main() {
 
         // pass.setPipeline is also expensive!!!
 
-        pass.setPipeline(context.shader.p3_idx.pipeline)
-        // pass.setPipeline(context.shader.p3_n3_idx.pipeline)
-        // pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+        const rgbNodes: Mesh[] = []
+        const texNodes: Mesh[] = []
 
-        pass.setBindGroup(0, context.sceneUniforms.bindGroup)
-        function draw(node: IndyNode) {
-            if (node instanceof Mesh) {
-                if (node.parent instanceof XForm) {
-                    if (node.parent.dirty) {
-                        if (node.parent.transform) {
-                            mat4.copy(node.modelView.modelViewMatrix, node.parent.transform)
-                            mat4.invert(node.modelView.normalMatrix, node.parent.transform)
-                            mat4.transpose(node.modelView.normalMatrix, node.modelView.normalMatrix)
-                        } else {
-                            mat4.identity(node.modelView.modelViewMatrix)
-                            mat4.identity(node.modelView.normalMatrix)
-                        }
-                        node.modelView.writeTo(device)
+        function prepare(node: IndyNode) {
+            if (node.parent && node.parent.dirty) {
+                node.dirty = true
+            }
+
+            if (node.dirty) {
+                if (node instanceof XForm && node.transform !== undefined) {
+                    if (node.parent === undefined) {
+                        mat4.copy(node.combined, node.transform)
+                    } else {
+                        mat4.mul(node.combined, node.parent.combined, node.transform)
+                    }
+                } else {
+                    if (node.parent) {
+                        mat4.copy(node.combined, node.parent.combined)
+                    } else {
+                        mat4.identity(node.combined)
                     }
                 }
-                pass.setBindGroup(1, node.modelView.bindGroup)
 
-                node.material!.setBindGroup(pass, node)
-
-                pass.setIndexBuffer(node.indices.buffer, 'uint32')
-                if (node.groupSubset && node.groupSubset.has("body")) {
-                    const group = node.group("body")!
-                    pass.drawIndexed(group.length, 1, group.start)
-                } else {
-                    pass.drawIndexed(node.indices.length)
-                }
-            } else {
-                for (const child of node.children) {
-                    draw(child)
-                }
-                if (node instanceof XForm) {
-                    node.dirty = false
+                if (node instanceof Mesh) {
+                    mat4.copy(node.modelView.modelViewMatrix, node.combined)
+                    mat4.invert(node.modelView.normalMatrix, node.combined)
+                    mat4.transpose(node.modelView.normalMatrix, node.modelView.normalMatrix)
+                    node.modelView.writeTo(device)
                 }
             }
+
+            if (node instanceof Mesh) {
+                if (node.material?.texture !== undefined) {
+                    texNodes.push(node)
+                } else {
+                    rgbNodes.push(node)
+                }
+            }
+
+            for (const child of node.children) {
+                prepare(child)
+            }
+            node.dirty = false
         }
-        draw(root)
+        prepare(root)
+
+        pass.setBindGroup(0, context.sceneUniforms.bindGroup)
+
+        // pass.setPipeline(context.shader.p3_idx.pipeline)
+        pass.setPipeline(context.shader.p3_n3_idx.pipeline)
+        for (const node of rgbNodes) {
+            pass.setBindGroup(1, node.modelView.bindGroup)
+            node.material!.setBindGroup(pass, node)
+            pass.setIndexBuffer(node.indices.buffer, 'uint32')
+            if (node.groupSubset && node.groupSubset.has("body")) {
+                const group = node.group("body")!
+                pass.drawIndexed(group.length, 1, group.start)
+            } else {
+                pass.drawIndexed(node.indices.length)
+            }
+        }
+
+        pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+        for (const node of texNodes) {
+            pass.setBindGroup(1, node.modelView.bindGroup)
+            node.material!.setBindGroup(pass, node)
+            pass.setIndexBuffer(node.indices.buffer, 'uint32')
+            if (node.groupSubset && node.groupSubset.has("body")) {
+                const group = node.group("body")!
+                pass.drawIndexed(group.length, 1, group.start)
+            } else {
+                pass.drawIndexed(node.indices.length)
+            }
+        }
 
         pass.end()
         const commandBuffer = commandEncoder.finish()

@@ -3,7 +3,7 @@ import { PositionBuffer } from "../gl/buffers/PositionBuffer"
 import { triangulate } from "../gl/algorithms/triangulate"
 import { decoupleXYZandUV, type MeshDataSingleIndex } from "../gl/algorithms/decoupleXYZandUV"
 import { VertexBuffer } from "../gl/buffers/VertexBuffer"
-import type { mat4 } from "gl-matrix"
+import { mat4 } from "gl-matrix"
 import type { Material } from "./Material"
 import { ModelUniform } from "../gl/buffers/ModelUniform"
 import type { Context } from "../gl/Context"
@@ -23,6 +23,9 @@ export class IndyNode {
     context!: Context
     parent?: IndyNode
     children: IndyNode[] = []
+    // runtime
+    readonly combined = mat4.create()
+    dirty = true
 }
 
 export class Root extends IndyNode {
@@ -34,7 +37,6 @@ export class Root extends IndyNode {
 
 export class XForm extends IndyNode {
     transform?: mat4
-    dirty = true
 }
 
 export class Mesh extends IndyNode implements MeshData {
