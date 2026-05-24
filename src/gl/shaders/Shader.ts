@@ -1,5 +1,6 @@
 import type { Device } from "../Device"
 import p3_idx from "./p3-idx.wgsl"
+import p3_idx_id from "./p3-idx-id.wgsl"
 import p3_n3_idx from "./p3-n3-idx.wgsl"
 import p3_n3_t2_idx from "./p3-n3-t2-idx.wgsl"
 
@@ -15,6 +16,7 @@ export class Shader {
             let code: string
             switch(label) {
                 case 'p3-idx': code = p3_idx; break
+                case 'p3-idx-id': code = p3_idx_id; break
                 case 'p3-n3-idx': code = p3_n3_idx; break
                 case 'p3-n3-t2-idx': code = p3_n3_t2_idx; break
                 default: throw Error('yikes')

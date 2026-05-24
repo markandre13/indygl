@@ -226,12 +226,14 @@ export async function main() {
 
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
 
-        pass.setPipeline(context.shader.p3_idx.pipeline)
+        pass.setPipeline(context.shader.p3_idx_id.pipeline)
+        let i = 0
         for (const node of rgbNodes) {
+            ++i
             pass.setBindGroup(1, node.modelView.bindGroup)
             node.material!.setBindGroup(pass, node)
             pass.setIndexBuffer(node.indices.buffer, 'uint32')
-            pass.drawIndexed(node.indices.length)
+            pass.drawIndexed(node.indices.length, 1, 0, 0, i)
         }
 
         // if (lineNodes.length > 0) {
