@@ -10,6 +10,7 @@ import { IndyNode, Mesh, Root, XForm } from './nodes/Mesh'
 import { Material } from "./nodes/Material"
 import { deg2rad } from './gl/algorithms/deg2rad'
 import { Texture } from './gl/buffers/Texture'
+import { ViewportShading } from './editor/app/ViewportShading'
 
 // [ ] render both texture & rgb
 // [ ] select object
@@ -114,7 +115,7 @@ export async function main() {
 
     const dodecahedron = new XForm(root)
     dodecahedron.transform = mat4.create()
-    mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15,3.4,0))
+    mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15, 3.4, 0))
     const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
     dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
@@ -122,14 +123,13 @@ export async function main() {
     // const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
     // cubeMesh.material = new Material(context, [1, 1, 1, 1])
 
-    const human = new XForm(root)
-    const humanMesh = await loadMesh(human, "obj/mh/base.obj")
-
-    const bodyTexture = new Texture()
-    await bodyTexture.load(device.device!!, "img/young_caucasian_female_special_suit.jpg")
+    // const human = new XForm(root)
+    // const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    // const bodyTexture = new Texture()
+    // await bodyTexture.load(device.device!!, "img/young_caucasian_female_special_suit.jpg")
+    // humanMesh.material = new Material(context, bodyTexture)
 
     // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
-    humanMesh.material = new Material(context, bodyTexture)
 
     context.paint = () => {
         // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
@@ -160,6 +160,7 @@ export async function main() {
 
         const rgbNodes: Mesh[] = []
         const texNodes: Mesh[] = []
+        const lineNodes: Mesh[] = []
 
         function prepare(node: IndyNode) {
             if (node.parent && node.parent.dirty) {
@@ -190,10 +191,16 @@ export async function main() {
             }
 
             if (node instanceof Mesh) {
-                if (node.material?.texture !== undefined) {
-                    texNodes.push(node)
-                } else {
-                    rgbNodes.push(node)
+                switch (editorModel.viewportShading.value) {
+                    case ViewportShading.WIREFRAME_XRAY:
+                        lineNodes.push(node)
+                        break
+                    default:
+                        if (node.material?.texture !== undefined) {
+                            texNodes.push(node)
+                        } else {
+                            rgbNodes.push(node)
+                        }
                 }
             }
 
@@ -206,30 +213,49 @@ export async function main() {
 
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
 
-        // pass.setPipeline(context.shader.p3_idx.pipeline)
-        pass.setPipeline(context.shader.p3_n3_idx.pipeline)
-        for (const node of rgbNodes) {
-            pass.setBindGroup(1, node.modelView.bindGroup)
-            node.material!.setBindGroup(pass, node)
-            pass.setIndexBuffer(node.indices.buffer, 'uint32')
-            if (node.groupSubset && node.groupSubset.has("body")) {
-                const group = node.group("body")!
-                pass.drawIndexed(group.length, 1, group.start)
-            } else {
-                pass.drawIndexed(node.indices.length)
+        if (lineNodes.length > 0) {
+            pass.setPipeline(context.shader.p3_idx_line.pipeline)
+            for (const node of lineNodes) {
+                pass.setBindGroup(1, node.modelView.bindGroup)
+                node.material!.setBindGroup(pass, node)
+                pass.setIndexBuffer(node.edgeIndices.buffer, 'uint32')
+                // if (node.groupSubset && node.groupSubset.has("body")) {
+                //     const group = node.group("body")!
+                //     pass.drawIndexed(group.length, 1, group.start)
+                // } else {
+                    pass.drawIndexed(node.edgeIndices.length)
+                // }
             }
         }
 
-        pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
-        for (const node of texNodes) {
-            pass.setBindGroup(1, node.modelView.bindGroup)
-            node.material!.setBindGroup(pass, node)
-            pass.setIndexBuffer(node.indices.buffer, 'uint32')
-            if (node.groupSubset && node.groupSubset.has("body")) {
-                const group = node.group("body")!
-                pass.drawIndexed(group.length, 1, group.start)
-            } else {
-                pass.drawIndexed(node.indices.length)
+        // pass.setPipeline(context.shader.p3_idx.pipeline)
+        if (rgbNodes.length > 0) {
+            pass.setPipeline(context.shader.p3_n3_idx.pipeline)
+            for (const node of rgbNodes) {
+                pass.setBindGroup(1, node.modelView.bindGroup)
+                node.material!.setBindGroup(pass, node)
+                pass.setIndexBuffer(node.indices.buffer, 'uint32')
+                if (node.groupSubset && node.groupSubset.has("body")) {
+                    const group = node.group("body")!
+                    pass.drawIndexed(group.length, 1, group.start)
+                } else {
+                    pass.drawIndexed(node.indices.length)
+                }
+            }
+        }
+
+        if (texNodes.length > 0) {
+            pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+            for (const node of texNodes) {
+                pass.setBindGroup(1, node.modelView.bindGroup)
+                node.material!.setBindGroup(pass, node)
+                pass.setIndexBuffer(node.indices.buffer, 'uint32')
+                if (node.groupSubset && node.groupSubset.has("body")) {
+                    const group = node.group("body")!
+                    pass.drawIndexed(group.length, 1, group.start)
+                } else {
+                    pass.drawIndexed(node.indices.length)
+                }
             }
         }
 

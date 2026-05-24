@@ -1,17 +1,20 @@
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import { type Context } from "../Context"
-import type { Device } from "../Device"
-import code from "./p3-idx.wgsl"
 import { Shader } from "./Shader"
 
 export class ShaderP3_IDX extends Shader {
     pipeline: GPURenderPipeline
 
-    constructor(device: Device,
-        context: Context
+    constructor(
+        context: Context,
+        label = 'p3-idx',
+        topology: GPUPrimitiveTopology = 'triangle-list',
+        cullMode: GPUCullMode = 'back',
+        depthBias = 1,
+        depthBiasSlopeScale = 1
     ) {
-        const label = 'p3-idx'
-        super(device, code, label)
+        const device = context.device
+        super(device, 'p3-idx')
         const pipelineDef: GPURenderPipelineDescriptor = {
             label,
             layout: device.device.createPipelineLayout({
@@ -40,14 +43,10 @@ export class ShaderP3_IDX extends Shader {
                 module: this.module,
                 targets: [{ format: context.presentationFormat }]
             },
-            primitive: {
-                topology: 'triangle-list',
-                cullMode: 'none',
-            },
+            primitive: { topology, cullMode },
             depthStencil: {
                 depthWriteEnabled: true,
-                depthBias: 1, // this make points and lines look better
-                depthBiasSlopeScale: 1,
+                depthBias, depthBiasSlopeScale,
                 depthCompare: 'less',
                 format: context.depthTextureFormat,
             },

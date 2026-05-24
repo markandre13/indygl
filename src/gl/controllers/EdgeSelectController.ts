@@ -70,7 +70,7 @@ export class EdgeSelectController extends Controller {
         // used to draw the points
         const shaderPickPoints = new ShaderP3_PickPoint(device, context)
         // used to draw the objects in black to hide hidden points
-        const shaderPickFaces = new ShaderP3_IDX(device, context)
+        const shaderPickFaces = new ShaderP3_IDX(context)
 
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))

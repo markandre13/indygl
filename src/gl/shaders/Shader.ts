@@ -1,12 +1,28 @@
 import type { Device } from "../Device"
+import p3_idx from "./p3-idx.wgsl"
+import p3_n3_idx from "./p3-n3-idx.wgsl"
+import p3_n3_t2_idx from "./p3-n3-t2-idx.wgsl"
+
+const modules = new Map<string, GPUShaderModule>()
 
 export class Shader {
     device: Device
     module: GPUShaderModule
-    constructor(device: Device, code: string, label?: string) {
+    constructor(device: Device, label: string) {
         this.device = device
-        this.module = this.device.device.createShaderModule({ label, code })
-        this.module.getCompilationInfo().then(info => logCompilationInfo(info))
+        let module = modules.get(label)
+        if (module === undefined) {
+            let code: string
+            switch(label) {
+                case 'p3-idx': code = p3_idx; break
+                case 'p3-n3-idx': code = p3_n3_idx; break
+                case 'p3-n3-t2-idx': code = p3_n3_t2_idx; break
+                default: throw Error('yikes')
+            }
+            module = this.device.device.createShaderModule({ label, code })
+            module.getCompilationInfo().then(info => logCompilationInfo(info))
+        }
+        this.module = module       
     }
 }
 

@@ -11,6 +11,7 @@ import { smoothShading } from "src/gl/algorithms/smoothShading"
 import { flatShading } from "src/gl/algorithms/flatShading"
 import type { MeshData } from "../gl/algorithms/MeshData"
 import type { MeshSubset } from "src/gl/algorithms/MeshSubset"
+import { edges } from "src/gl/algorithms/edges"
 
 export class IndyNode {
     constructor(parent: IndyNode) {
@@ -76,6 +77,7 @@ export class Mesh extends IndyNode implements MeshData {
     protected _single_index?: MeshDataSingleIndex
 
     protected _indices?: IndexBuffer
+    protected _edgeIndices?: IndexBuffer
     protected _points?: PositionBuffer
     protected _normals?: VertexBuffer
     protected _texcoords?: VertexBuffer
@@ -96,13 +98,19 @@ export class Mesh extends IndyNode implements MeshData {
             this._single_index = decoupleXYZandUV(this._triangles)
         }
     }
-
     get indices() {
         this.prepare()
         if (this._indices === undefined) {
             this._indices = new IndexBuffer(this.context.device, this._single_index!.fxyz!)
         }
         return this._indices
+    }
+    get edgeIndices() {
+        this.prepare()
+        if (this._edgeIndices === undefined) {
+            this._edgeIndices = new IndexBuffer(this.context.device, edges(this))
+        }
+        return this._edgeIndices
     }
     get points() {
         this.prepare()

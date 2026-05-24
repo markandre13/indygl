@@ -1,7 +1,6 @@
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import type { Context } from "../Context"
 import type { Device } from "../Device"
-import code from './p3-n3-t2-idx.wgsl'
 import { Shader } from "./Shader"
 
 /**
@@ -9,11 +8,10 @@ import { Shader } from "./Shader"
  */
 export class ShaderP3_N3_T2_IDX extends Shader {
     pipeline: GPURenderPipeline
-    constructor(device: Device,
-        context: Context
-    ) {
-        super(device, code)
+    constructor(context: Context  ) {
         const label = 'p3-n3-t2-idx'
+        const device = context.device
+        super(device, label)
         const pipelineDef: GPURenderPipelineDescriptor = {
             label,
             layout: device.device.createPipelineLayout({
