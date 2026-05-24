@@ -31,11 +31,6 @@ export class ShaderP3_IDX extends Shader {
                     attributes: [
                         { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
                     ]
-                }, {
-                    arrayStride: FLOAT32_NUM_BYTES * 3,
-                    attributes: [
-                        { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
-                    ]
                 }],
                 module: this.module
             },

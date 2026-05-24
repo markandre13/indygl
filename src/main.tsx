@@ -131,6 +131,14 @@ export async function main() {
 
     // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
 
+    const matWire = new Material(context, [0, 0, 0, 1])
+    const matObjectSelected = new Material(context, [0.929, 0.341, 0, 1])
+    const matActiveObject = new Material(context, [1, 0.627, 0.157, 1])
+    const matTransform = new Material(context, [1, 0.627, 0.157, 1])
+
+    const background = new Material(context, context.backgroundColor)
+    // const black = new Material(context, [0, 0, 0, 1])
+
     context.paint = () => {
         // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
 
@@ -195,6 +203,10 @@ export async function main() {
                     case ViewportShading.WIREFRAME_XRAY:
                         lineNodes.push(node)
                         break
+                    case ViewportShading.WIREFRAME_XRAY:
+                        lineNodes.push(node)
+                        rgbNodes.push(node)
+                        break
                     default:
                         if (node.material?.texture !== undefined) {
                             texNodes.push(node)
@@ -203,7 +215,6 @@ export async function main() {
                         }
                 }
             }
-
             for (const child of node.children) {
                 prepare(child)
             }
@@ -215,15 +226,18 @@ export async function main() {
 
         if (lineNodes.length > 0) {
             pass.setPipeline(context.shader.p3_idx_line.pipeline)
+            pass.setBindGroup(2, matWire.bindGroup)
             for (const node of lineNodes) {
                 pass.setBindGroup(1, node.modelView.bindGroup)
-                node.material!.setBindGroup(pass, node)
+                // node.material!.setBindGroup(pass, node)
+                // pass.setBindGroup(2, node.material!.bindGroup)
+                pass.setVertexBuffer(0, node.points.buffer)
                 pass.setIndexBuffer(node.edgeIndices.buffer, 'uint32')
                 // if (node.groupSubset && node.groupSubset.has("body")) {
                 //     const group = node.group("body")!
                 //     pass.drawIndexed(group.length, 1, group.start)
                 // } else {
-                    pass.drawIndexed(node.edgeIndices.length)
+                pass.drawIndexed(node.edgeIndices.length)
                 // }
             }
         }

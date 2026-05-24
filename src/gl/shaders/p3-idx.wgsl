@@ -19,7 +19,6 @@ struct Vertex2Fragment {
 @vertex
 fn vertex_main(
     @location(0) position: vec4f,
-    @location(1) normal: vec4f,
 ) -> Vertex2Fragment {
 
     let gl_Position 
