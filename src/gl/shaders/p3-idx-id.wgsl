@@ -10,7 +10,7 @@ struct ColorUniforms {
 }
 @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
 @group(1) @binding(0) var<uniform> modelUniforms: ModelUniforms;
-@group(2) @binding(0) var<uniform> colorUniforms: ColorUniforms;
+// @group(2) @binding(0) var<uniform> colorUniforms: ColorUniforms;
 
 struct Vertex2Fragment {
     @builtin(position) Position: vec4f,

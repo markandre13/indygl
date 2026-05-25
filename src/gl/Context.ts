@@ -6,10 +6,26 @@ import { Mat4Model } from './Mat4Model'
 import { bind } from 'src/editor/appkit/details/decorators/bind'
 import { BindGroupLayoutCollection } from './details/BindGroupLayoutCollection'
 import { ShaderCollection } from './details/ShaderCollection'
+import type { IndyNode } from 'src/nodes/Mesh'
 
 export enum Projection {
     ORTHOGONAL,
     PERSPECTIVE
+}
+
+class Selection {
+    active?: IndyNode
+    selected = new Set<IndyNode>()
+
+    clear() {
+        this.active = undefined
+        this.selected.clear()
+    }
+
+    add(node: IndyNode) {
+        this.active = node
+        this.selected.add(node)
+    }
 }
 
 export class Context {
@@ -21,12 +37,14 @@ export class Context {
     private depthTexture?: GPUTexture
     private depthTextureView?: GPUTextureView
 
+    readonly selection = new Selection()
+
     bindGroupLayout: BindGroupLayoutCollection
     shader: ShaderCollection
 
     sampler: GPUSampler
     sceneUniforms: SceneUniform
-    renderPassDescriptor: GPURenderPassDescriptor
+    // renderPassDescriptor: GPURenderPassDescriptor
 
     private _controllerStack: Controller[] = []
 
@@ -77,22 +95,22 @@ export class Context {
             minFilter: 'linear',
         })
 
-        this.renderPassDescriptor = {
-            colorAttachments: [
-                {
-                    view: undefined as any, // assigned later
-                    clearValue: this.backgroundColor,
-                    loadOp: 'clear',
-                    storeOp: 'store',
-                },
-            ],
-            depthStencilAttachment: {
-                view: undefined as any, // assigned later
-                depthClearValue: 1.0,
-                depthLoadOp: 'clear',
-                depthStoreOp: 'store',
-            },
-        }
+        // this.renderPassDescriptor = {
+        //     colorAttachments: [
+        //         {
+        //             view: undefined as any, // assigned later
+        //             clearValue: this.backgroundColor,
+        //             loadOp: 'clear',
+        //             storeOp: 'store',
+        //         },
+        //     ],
+        //     depthStencilAttachment: {
+        //         view: undefined as any, // assigned later
+        //         depthClearValue: 1.0,
+        //         depthLoadOp: 'clear',
+        //         depthStoreOp: 'store',
+        //     },
+        // }
 
         this.shader = new ShaderCollection(this)
     }
@@ -178,13 +196,29 @@ export class Context {
         return this.depthTextureView!
     }
 
-    getRenderPassDescriptor(textureView?: GPUTextureView) {
-        this.renderPassDescriptor.colorAttachments[0]!.clearValue = this.backgroundColor
-        // set render destination
-        this.renderPassDescriptor.colorAttachments[0]!.view =
-            textureView ? textureView : this.getCanvasView()
-        this.renderPassDescriptor.depthStencilAttachment!.view = this.getDepthTextureView()
-        return this.renderPassDescriptor
+    getRenderPassDescriptor(view = this.getCanvasView(), backgroundColor = this.backgroundColor) {
+        const renderPassDescriptor: GPURenderPassDescriptor = {
+            colorAttachments: [
+                {
+                    view: view,
+                    clearValue: backgroundColor,
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                },
+            ],
+            depthStencilAttachment: {
+                view: this.getDepthTextureView(),
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store',
+            },
+        }
+
+        // renderPassDescriptor.colorAttachments[0]!.clearValue = this.backgroundColor
+        // // set render destination
+        // renderPassDescriptor.colorAttachments[0]!.view = textureView ? textureView : this.getCanvasView()
+        // renderPassDescriptor.depthStencilAttachment!.view = this.getDepthTextureView()
+        return renderPassDescriptor
     }
 
     private adjustSize() {

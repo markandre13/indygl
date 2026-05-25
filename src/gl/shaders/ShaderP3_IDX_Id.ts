@@ -9,7 +9,8 @@ export class ShaderP3_IDX_Id extends Shader {
     pipeline: GPURenderPipeline
 
     constructor(
-        context: Context
+        context: Context,
+        presentationFormat: GPUTextureFormat = context.presentationFormat
     ) {
         const label = 'p3-idx-id'
         const device = context.device
@@ -21,7 +22,7 @@ export class ShaderP3_IDX_Id extends Shader {
                 bindGroupLayouts: [
                     context.bindGroupLayout.scene,
                     context.bindGroupLayout.model,
-                    context.bindGroupLayout.materialRGBA
+                    // context.bindGroupLayout.materialRGBA
                 ]
             }),
             vertex: {
@@ -35,7 +36,7 @@ export class ShaderP3_IDX_Id extends Shader {
             },
             fragment: {
                 module: this.module,
-                targets: [{ format: context.presentationFormat }]
+                targets: [{ format: presentationFormat }]
             },
             primitive: { topology: 'triangle-list', cullMode: 'none' },
             depthStencil: {
