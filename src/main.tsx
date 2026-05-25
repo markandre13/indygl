@@ -238,6 +238,20 @@ export async function main() {
 
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
 
+        // steps to render the outline
+        // * render selection in texture
+        //   * the outline shader from https://webgpufundamentals.org/webgpu/lessons/webgpu-highlighting.html uses the
+        //     alpha channel
+        //   * blender uses 2 bits per pixel texture indicating: active, selected, transform. i can do this in a later step.
+        // * run outline shader
+        // * compose outline shader into view
+
+        // tricks used:
+        // * drawing a quad covering the whole viewport
+        //   instead of drawing two triangles, we draw a double the size triangle which covering the quad
+        //   https://webgpufundamentals.org/webgpu/lessons/webgpu-large-triangle-to-cover-clip-space.html
+
+
         // pass.setPipeline(context.shader.p3_idx_id.pipeline)
         // let i = 0
         // for (const node of rgbNodes) {

@@ -94,24 +94,6 @@ export class Context {
             magFilter: 'linear',
             minFilter: 'linear',
         })
-
-        // this.renderPassDescriptor = {
-        //     colorAttachments: [
-        //         {
-        //             view: undefined as any, // assigned later
-        //             clearValue: this.backgroundColor,
-        //             loadOp: 'clear',
-        //             storeOp: 'store',
-        //         },
-        //     ],
-        //     depthStencilAttachment: {
-        //         view: undefined as any, // assigned later
-        //         depthClearValue: 1.0,
-        //         depthLoadOp: 'clear',
-        //         depthStoreOp: 'store',
-        //     },
-        // }
-
         this.shader = new ShaderCollection(this)
     }
 

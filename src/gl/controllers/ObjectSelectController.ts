@@ -6,7 +6,7 @@ import { PICK_SIZE } from "../shaders/ShaderP3_PickPoint"
 import { Controller } from "./Controller"
 import { MouseButton } from "./details/MouseButton"
 
-// [ ] do this one quick'n dirty
+// [X] do this one quick'n dirty
 // [ ] then get the edge select controller working
 // [ ] then share code between the two via a new class called PickController
 

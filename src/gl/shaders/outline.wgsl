@@ -8,7 +8,7 @@ struct VSOutput {
 @vertex fn vs(
   @builtin(vertex_index) vertexIndex : u32,
 ) -> VSOutput {
-  var pos = array(
+  var pos = array( // ????
     vec2f(-1.0, -1.0),
     vec2f(-1.0,  3.0),
     vec2f( 3.0, -1.0),
