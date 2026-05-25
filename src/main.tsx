@@ -106,14 +106,15 @@ export async function main() {
     const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
     teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
 
-    // const teeth = new XForm(root)
-    // const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
-    // teethMesh.material = new Material(context, [1, 1, 1, 1])
+    const teeth = new XForm(root)
+    const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
+    teethMesh.material = new Material(context, [1, 1, 1, 1])
     // this wrecks the shading, guess through the normal matrix being messed up
-    // teeth.transform = mat4.create()
-    // mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
-    // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6,6,6))
-    // mat4.translate(teeth.transform, teeth.transform, vec3.fromValues(0,-5.5,-1))
+    teeth.transform = mat4.create()
+    mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
+    mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
+
+    mat4.translate(teeth.transform, teeth.transform, vec3.fromValues(0, -5.5, -1))
 
     const dodecahedron = new XForm(root)
     dodecahedron.transform = mat4.create()
@@ -194,7 +195,18 @@ export async function main() {
 
                 if (node instanceof Mesh) {
                     mat4.copy(node.modelView.modelViewMatrix, node.combined)
-                    mat4.invert(node.modelView.normalMatrix, node.combined)
+
+                    // FIXME: redesign to not have to remove scaling factor AND this hack just works for equal scaling
+                    const v0 = vec3.fromValues(0, 0, 0)
+                    const v1 = vec3.fromValues(1, 0, 0)
+                    vec3.transformMat4(v0, v0, node.combined)
+                    vec3.transformMat4(v1, v1, node.combined)
+                    vec3.sub(v1, v1, v0)
+                    const l = 1 / vec3.length(v1)
+                    mat4.scale(node.modelView.normalMatrix, node.combined, vec3.fromValues(l, l, l))
+                    node.modelView.normalMatrix[12] = node.modelView.normalMatrix[13] = node.modelView.normalMatrix[14] = 0
+
+                    mat4.invert(node.modelView.normalMatrix, node.modelView.normalMatrix)
                     mat4.transpose(node.modelView.normalMatrix, node.modelView.normalMatrix)
                     node.modelView.writeTo(device)
                 }
@@ -247,7 +259,7 @@ export async function main() {
                 } else {
                     pass.setBindGroup(2, matWire.bindGroup)
                 }
-                
+
 
                 // node.material!.setBindGroup(pass, node)
                 // pass.setBindGroup(2, node.material!.bindGroup)
