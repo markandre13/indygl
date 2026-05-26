@@ -125,11 +125,17 @@ export class ObjectSelectController extends Controller {
         // add to selection
         //
 
+        // TODO: move the logic below into Selection
         if (!ev.shiftKey) {
             this.context.selection.clear()
         }
         if (index >= 0) {
-            this.context.selection.add(allObjects[index])
+            if (this.context.selection.active === allObjects[index]) {
+                this.context.selection.active = undefined
+                this.context.selection.selected.delete(allObjects[index])
+            } else {
+                this.context.selection.add(allObjects[index])
+            }
         }
         this.context.invalidate()
     }
