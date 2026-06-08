@@ -128,8 +128,8 @@ export async function main() {
 
     // const human = new XForm(root)
     // const humanMesh = await loadMesh(human, "obj/mh/base.obj")
-    // const bodyTexture = new Texture()
-    // await bodyTexture.load(device.device!!, "img/young_caucasian_female_special_suit.jpg")
+    const bodyTexture = new Texture()
+    await bodyTexture.load(device.device!!, "img/young_caucasian_female_special_suit.jpg")
     // humanMesh.material = new Material(context, bodyTexture)
 
     // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
@@ -145,7 +145,7 @@ export async function main() {
     context.paint = () => {
         // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
 
-        const commandEncoder = device.device!.createCommandEncoder()
+        const commandEncoder = device.device!.createCommandEncoder({ label: 'main' })
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
 
         // https://github.com/gfx-rs/wgpu/issues/733
@@ -274,7 +274,6 @@ export async function main() {
                     pass.setBindGroup(2, matWire.bindGroup)
                 }
 
-
                 // node.material!.setBindGroup(pass, node)
                 // pass.setBindGroup(2, node.material!.bindGroup)
                 pass.setVertexBuffer(0, node.points.buffer)
@@ -319,6 +318,23 @@ export async function main() {
         }
 
         pass.end()
+
+        //
+        // OUTLINE
+        //
+
+        {
+            context.shader.outline.postProcessRenderPassDescriptor.colorAttachments[0]!.view = context.context!
+                .getCurrentTexture()
+                .createView()
+
+            const pass = commandEncoder.beginRenderPass(context.shader.outline.postProcessRenderPassDescriptor)
+            pass.setPipeline(context.shader.outline.pipeline)
+            pass.setBindGroup(0, context.getStencilBindgroup())
+            pass.draw(3)
+            pass.end()
+        }
+
         const commandBuffer = commandEncoder.finish()
         device.device.queue.submit([commandBuffer])
     }

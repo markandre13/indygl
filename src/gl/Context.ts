@@ -33,9 +33,7 @@ export class Context {
     canvas: HTMLCanvasElement
     context: GPUCanvasContext | null = null;
     presentationFormat: GPUTextureFormat
-    depthTextureFormat: GPUTextureFormat = 'depth24plus';
-    private depthTexture?: GPUTexture
-    private depthTextureView?: GPUTextureView
+
 
     readonly selection = new Selection()
 
@@ -160,22 +158,58 @@ export class Context {
             .createView() // map it into WebGPU
     }
 
-    getDepthTextureView(): GPUTextureView {
-        if (this.depthTexture === undefined || this.depthTextureView === undefined) {
+    //
+    // depth texture
+    //
+    depthTextureFormat: GPUTextureFormat = 'depth24plus-stencil8';
+    depthTexture?: GPUTexture
+    private depthTextureView?: GPUTextureView
+
+    invalidateDepthTexture() {
+        this.depthTexture?.destroy()
+        this.depthTexture = undefined
+        this.depthTextureView = undefined
+    }
+
+    getDepthTexture(): GPUTexture {
+        if (this.depthTexture === undefined) {
+            const label = 'depth-texture'
             this.depthTexture = this.device.device!.createTexture({
-                size: [this.canvas.width, this.canvas.height],
+                label,
+                size: [this.canvas.width, this.canvas.height, 1],
                 format: this.depthTextureFormat,
-                usage: GPUTextureUsage.RENDER_ATTACHMENT,
+                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
             })
-            if (this.depthTexture === undefined) {
-                throw Error(`failed to create depth texture`)
-            }
-            this.depthTextureView = this.depthTexture.createView()
-            if (this.depthTextureView === undefined) {
-                throw Error(`failed to create depth texture view`)
-            }
+        }
+        return this.depthTexture
+    }
+
+    getDepthTextureView(): GPUTextureView {
+        const depthTexture = this.getDepthTexture()
+        if (this.depthTextureView === undefined) {
+            const label = 'depth-texture'
+            this.depthTextureView = depthTexture.createView({ label })
         }
         return this.depthTextureView!
+    }
+
+    private postProcessBindGroup?: GPUBindGroup
+    getStencilBindgroup() {
+        if (this.postProcessBindGroup === undefined) {
+            this.postProcessBindGroup = this.device.device!.createBindGroup({
+                label: 'outline',
+                layout: this.shader.outline.outlineBindGroupLayout,
+                entries: [
+                    {
+                        binding: 0,
+                        resource: this.depthTexture!.createView(
+                            { aspect: 'stencil-only' }
+                        )
+                    },
+                ],
+            })
+        }
+        return this.postProcessBindGroup
     }
 
     getRenderPassDescriptor(view = this.getCanvasView(), backgroundColor = this.backgroundColor) {
@@ -190,9 +224,14 @@ export class Context {
             ],
             depthStencilAttachment: {
                 view: this.getDepthTextureView(),
+
                 depthClearValue: 1.0,
                 depthLoadOp: 'clear',
                 depthStoreOp: 'store',
+
+                stencilClearValue: 0,
+                stencilLoadOp: 'clear',
+                stencilStoreOp: 'store'
             },
         }
 
@@ -217,8 +256,7 @@ export class Context {
         this.canvas.width = pixelWidth
         this.canvas.height = pixelHeight
 
-        this.depthTexture?.destroy()
-        this.depthTexture = undefined
+        this.invalidateDepthTexture()
 
         const fieldOfView = (45 * Math.PI) / 180 // in radians
         const aspect = pixelWidth / pixelHeight

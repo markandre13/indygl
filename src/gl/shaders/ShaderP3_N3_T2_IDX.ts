@@ -1,6 +1,5 @@
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import type { Context } from "../Context"
-import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
 /**

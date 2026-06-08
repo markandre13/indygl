@@ -1,39 +1,20 @@
 import type { Texture } from "./buffers/Texture"
 import type { Context } from "./Context"
-import { Shader } from "./shaders/Shader"
+import { ShaderOutline } from "./shaders/ShaderOutline"
 
 class Overlay {
 
 }
 
-class OutlineShader extends Shader {
-    pipeline: GPURenderPipeline
-
-    constructor(context: Context) {
-        const label = 'outline'
-        super(context.device, label)
-
-        this.pipeline = context.device.device.createRenderPipeline({
-            layout: 'auto',
-            vertex: { module: this.module },
-            fragment: {
-                module: this.module,
-                targets: [{ format: 'rgba8unorm' }],
-            },
-        })
-
-    }
-}
-
 class Outline extends Overlay {
     context: Context
-    shader: OutlineShader
+    shader: ShaderOutline
     texture?: GPUTexture
     bindGroup!: GPUBindGroup
     constructor(context: Context) {
         super()
         this.context = context
-        this.shader = new OutlineShader(context)
+        this.shader = new ShaderOutline(context)
     }
 
     render() {
@@ -50,8 +31,7 @@ class Outline extends Overlay {
             this.texture = device.createTexture({
                 format: 'rgba8unorm',
                 size: [canvas.width, canvas.height, 1],
-                usage: GPUTextureUsage.RENDER_ATTACHMENT |
-                    GPUTextureUsage.TEXTURE_BINDING,
+                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
             })
             // read from texture
             this.bindGroup = device.createBindGroup({

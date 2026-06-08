@@ -1,4 +1,3 @@
-import type { Context } from '../Context'
 import type { Device } from '../Device'
 
 export class BindGroupLayoutCollection {
@@ -6,6 +5,7 @@ export class BindGroupLayoutCollection {
     model: GPUBindGroupLayout
     materialRGBA: GPUBindGroupLayout
     materialTexture: GPUBindGroupLayout
+    depthTexture: GPUBindGroupLayout
 
     constructor(device: Device) {
         const d = device.device
@@ -53,6 +53,18 @@ export class BindGroupLayoutCollection {
                 binding: 1,
                 visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
                 texture: {}
+            }]
+        })
+        this.depthTexture = d.createBindGroupLayout({
+            label: 'depth-texture',
+            entries: [{
+                binding: 0,
+                visibility: GPUShaderStage.FRAGMENT,
+                texture: {
+                    // multisampled?: boolean;
+                    sampleType: 'depth'
+                    // viewDimension?: GPUTextureViewDimension;
+                }
             }]
         })
     }

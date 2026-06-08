@@ -1,4 +1,5 @@
 import type { Context } from '../Context'
+import { ShaderOutline } from '../shaders/ShaderOutline'
 import { ShaderP3_IDX } from '../shaders/ShaderP3_IDX'
 import { ShaderP3_IDX_Id } from "../shaders/ShaderP3_IDX_Id"
 import { ShaderP3_IDX_LineList } from '../shaders/ShaderP3_IDX_LineList'
@@ -117,27 +118,21 @@ X transform using the panel on the right
 [ ] undo/redo
 [ ] two objects (MH & ARKit neutral)
 */
+
 export class ShaderCollection {
     readonly p3_idx: ShaderP3_IDX
     readonly p3_idx_id: ShaderP3_IDX_Id
     readonly p3_idx_line: ShaderP3_IDX_LineList
     readonly p3_n3_idx: ShaderP3_N3_IDX
     readonly p3_n3_t2_idx: ShaderP3_N3_T2_IDX
-    // readonly p3_n3_idx_alpha: ShaderP3_N3_IDX_Alpha
+    readonly outline: ShaderOutline
+
     constructor(context: Context) {
         this.p3_idx = new ShaderP3_IDX(context)
         this.p3_idx_id = new ShaderP3_IDX_Id(context)
         this.p3_idx_line = new ShaderP3_IDX_LineList(context)
         this.p3_n3_idx = new ShaderP3_N3_IDX(context)
         this.p3_n3_t2_idx = new ShaderP3_N3_T2_IDX(context)
-        // this.p3_n3_idx_alpha = new ShaderP3_N3_IDX_Alpha(device, context)
-        // // const shaderPickPoint = new ShaderP3_PickPoint(device, context)
-        // const shaderPickPoints = new ShaderP3_C3_Point(device, context)
-        // this.p3_idx = new ShaderP3_IDX(device, context)
-        // // const shaderColor = new ShaderP3_C3_IDX(device, context)
-        // const shaderShadedTexture = new ShaderP4N4T2(device, context)
-        // const shaderShadedTexture2 = new ShaderP3_N3_T2(device, context)
-        // // const shaderShadedMono = new ShaderP3N3(device, context)
-        // const shaderLines = new ShaderP3_C3_IDX_LineList(device, context) // need ShaderP3_C3_IDX_LineList
+        this.outline = new ShaderOutline(context)
     }
 }
