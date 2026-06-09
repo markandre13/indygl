@@ -12,6 +12,7 @@ import { deg2rad } from './gl/algorithms/deg2rad'
 import { Texture } from './gl/buffers/Texture'
 import { ViewportShading } from './editor/app/ViewportShading'
 import { ObjectSelectController } from './gl/controllers/ObjectSelectController'
+import { EditMode } from 'toad.js/table/adapter/TableAdapter'
 
 // [ ] render both texture & rgb
 // [ ] select object
@@ -143,10 +144,10 @@ export async function main() {
     // const black = new Material(context, [0, 0, 0, 1])
 
     context.paint = () => {
-        // In a render_pass, all draw calls are executed at the same time, so inserting buffer updates in the render_pass will not give the expected result.
 
-        const commandEncoder = device.device!.createCommandEncoder({ label: 'main' })
-        const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
+
+        // In a render_pass, all draw calls are executed at the same time, 
+        // so inserting buffer updates in the render_pass will not give the expected result.
 
         // https://github.com/gfx-rs/wgpu/issues/733
         //   "all draws within a render pass are executed in parallel"
@@ -217,7 +218,7 @@ export async function main() {
                     case ViewportShading.WIREFRAME_XRAY:
                         lineNodes.push(node)
                         break
-                    case ViewportShading.WIREFRAME_XRAY:
+                    case ViewportShading.WIREFRAME:
                         lineNodes.push(node)
                         rgbNodes.push(node)
                         break
@@ -236,30 +237,14 @@ export async function main() {
         }
         prepare(root)
 
+        const commandEncoder = device.device!.createCommandEncoder({ label: 'main' })
+
+        //
+        // RENDER PASS
+        //
+
+        const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
-
-        // steps to render the outline
-        // * render selection in texture
-        //   * the outline shader from https://webgpufundamentals.org/webgpu/lessons/webgpu-highlighting.html uses the
-        //     alpha channel
-        //   * blender uses 2 bits per pixel texture indicating: active, selected, transform. i can do this in a later step.
-        // * run outline shader
-        // * compose outline shader into view
-
-        // tricks used:
-        // * drawing a quad covering the whole viewport
-        //   instead of drawing two triangles, we draw a double the size triangle which covering the quad
-        //   https://webgpufundamentals.org/webgpu/lessons/webgpu-large-triangle-to-cover-clip-space.html
-
-
-        // pass.setPipeline(context.shader.p3_idx_id.pipeline)
-        // let i = 0
-        // for (const node of rgbNodes) {
-        //     pass.setBindGroup(1, node.modelView.bindGroup)
-        //     pass.setVertexBuffer(0, node.points.buffer)
-        //     pass.setIndexBuffer(node.indices.buffer, 'uint32')
-        //     pass.drawIndexed(node.indices.length, 1, 0, 0, i++)
-        // }
 
         if (lineNodes.length > 0) {
             pass.setPipeline(context.shader.p3_idx_line.pipeline)
@@ -288,10 +273,19 @@ export async function main() {
         }
 
         if (rgbNodes.length > 0) {
-            pass.setPipeline(context.shader.p3_n3_idx.pipeline)
+            if (editorModel.viewportShading.value === ViewportShading.WIREFRAME) {
+                pass.setBindGroup(2, background.bindGroup)
+                pass.setPipeline(context.shader.p3_idx.pipeline)
+            } else {
+                pass.setPipeline(context.shader.p3_n3_idx.pipeline)
+            }
             for (const node of rgbNodes) {
                 pass.setBindGroup(1, node.modelView.bindGroup)
-                node.material!.setBindGroup(pass, node)
+                if (editorModel.viewportShading.value !== ViewportShading.WIREFRAME) {
+                    pass.setBindGroup(2, node.material!.bindGroup)
+                }
+                pass.setVertexBuffer(0, node.points.buffer)
+                pass.setVertexBuffer(1, node.normals.buffer)
                 pass.setIndexBuffer(node.indices.buffer, 'uint32')
                 if (node.groupSubset && node.groupSubset.has("body")) {
                     const group = node.group("body")!
@@ -320,7 +314,7 @@ export async function main() {
         pass.end()
 
         //
-        // OUTLINE
+        // OUTLINE PASS
         //
 
         {
