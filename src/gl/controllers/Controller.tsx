@@ -1,4 +1,5 @@
 import { vec3 } from "gl-matrix"
+import type { JSX } from "toad.jsx/jsx-runtime"
 
 export class Controller {
     /**
@@ -9,7 +10,9 @@ export class Controller {
      * 
      * @returns text shown when controller is active
      */
-    info(): string | undefined { return undefined }
+    info(): JSX.Element | undefined { 
+        return undefined 
+    }
     /**
      * 
      * @returns a center to rotate around

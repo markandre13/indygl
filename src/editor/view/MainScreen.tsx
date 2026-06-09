@@ -48,7 +48,7 @@ export function MainScreen(props: { model: EditorModel }) {
             Dimensions<br />
             <TripleInput model={transform.dimensions} />
         </div>
-        <div ref={status} class="status">
+        <div ref={status} class="status" id="status">
             <IconMouseLeft /><span>Select</span>
             <IconMouseMiddle /><span>Rotate View</span>
             <IconMouseRight /><span>Options</span>

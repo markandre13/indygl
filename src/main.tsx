@@ -99,9 +99,6 @@ export async function main() {
     context.pushController(new BasicMode(context))
     context.pushController(new ObjectSelectController(context, root))
 
-    // const modelUniform = new ModelUniform(context)
-
-
     const teapot = new XForm(root)
     const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
     teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
@@ -122,8 +119,8 @@ export async function main() {
     const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
     dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
-    context.selection.add(teapotMesh)
-    context.selection.add(dodecahedronMesh)
+    // context.selection.add(teapotMesh)
+    // context.selection.add(dodecahedronMesh)
 
     // const cube = new XForm(root)
     // const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")

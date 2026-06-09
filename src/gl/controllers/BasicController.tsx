@@ -4,12 +4,17 @@ import { Projection, type Context } from '../Context'
 import { deg2rad } from '../algorithms/deg2rad'
 import { MouseButton } from './details/MouseButton'
 import { FlyMode } from './FlyMode'
+import { IconKey } from 'src/editor/viewkit/InputIcons'
 
 interface Point {
     x: number,
     y: number
 }
 
+/**
+ * [`] to enable flymode
+ * numpad to rotate/set camera
+ */
 export class BasicMode extends Controller {
     private context: Context
     constructor(view: Context) {
@@ -17,7 +22,7 @@ export class BasicMode extends Controller {
         this.context = view
     }
     override info() {
-        return "Basic: `: FlyMode"
+        return <>BASIC: <IconKey key="`" />Flymode</>
     }
     override keydown(ev: KeyboardEvent): void {
         const ctx = this.context

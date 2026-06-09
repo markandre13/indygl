@@ -2,6 +2,7 @@ import { mat4, vec2, vec3 } from 'gl-matrix'
 import { euler2matrix } from '../algorithms/euler'
 import { Controller } from './Controller'
 import type { Context } from '../Context'
+import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from 'src/editor/viewkit/InputIcons'
 
 export const D = 180 / Math.PI
 
@@ -59,7 +60,18 @@ export class FlyMode extends Controller {
         // this._cartet .setAttributeNS(null, 'cy', `${pixelY}`)
     }
     override info() {
-        return "FlyMode: ◧ Confirm ◨/␛ Cancel 🅆🄰🅂🄳 Move 🄴🅀 Up/Down 🅁🄵 Local Up/Down ⇧ Fast ⌥ Slow +− Acceleration 🅉 Z Axis Correction"
+        return <>
+            <span>FLYMODE:</span>
+            <IconMouseLeft /><span>Confirm</span>
+            <IconMouseRight />/ESC<span>Cancel</span>
+            <IconKey key='W' /><IconKey key='A' /><IconKey key='S' /><IconKey key='D' /><span>Move</span>
+            <IconKey key='E' /><IconKey key='Q' /><span>Up/Down</span>
+            <IconKey key='R' /><IconKey key='F' /><span>Local Up/Down</span>
+            <IconShift /><span>Fast</span>
+            <IconOption /><span>Slow</span>
+            <IconKey key='+' /><IconKey key='-' /><span>Acceleration</span>
+            <IconKey key='Z' /><span>Z Axis Correction</span>
+        </>
     }
     override pointerdown(ev: PointerEvent): void {
         ev.preventDefault()

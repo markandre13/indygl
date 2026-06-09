@@ -5,11 +5,12 @@ import { ShaderP3_IDX_Id } from "../shaders/ShaderP3_IDX_Id"
 import { PICK_SIZE } from "../shaders/ShaderP3_PickPoint"
 import { Controller } from "./Controller"
 import { MouseButton } from "./details/MouseButton"
+import { IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption } from "src/editor/viewkit/InputIcons"
+import { ObjectGrabController } from "./ObjectGrabController"
 
-// [X] do this one quick'n dirty
-// [ ] then get the edge select controller working
-// [ ] then share code between the two via a new class called PickController
-
+/**
+ * * select object with mouse
+ */
 export class ObjectSelectController extends Controller {
     context: Context
     root: IndyNode
@@ -18,6 +19,23 @@ export class ObjectSelectController extends Controller {
         this.context = context
         this.root = root
     }
+    override info() {
+        return <>
+            <IconMouseLeft /><span>Select</span>
+            <IconMouseMiddle /><span>Rotate View</span>
+            <IconMouseRight /><span>Options</span>
+        </>
+    }
+
+    // Grab, Scale, Rotate
+    override keydown(ev: KeyboardEvent): void {
+        switch (ev.code) {
+            case 'KeyG': // grab
+                this.context.pushController(new ObjectGrabController(this.context, this.root))
+                break
+        }
+    }
+
     override async pointerdown(ev: PointerEvent) {
         if (ev.button !== MouseButton.LEFT) {
             return

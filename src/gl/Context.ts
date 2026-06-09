@@ -7,6 +7,7 @@ import { bind } from 'src/editor/appkit/details/decorators/bind'
 import { BindGroupLayoutCollection } from './details/BindGroupLayoutCollection'
 import { ShaderCollection } from './details/ShaderCollection'
 import type { IndyNode } from 'src/nodes/Mesh'
+import { replaceChildren } from 'toad.jsx/jsx-runtime'
 
 export enum Projection {
     ORTHOGONAL,
@@ -49,10 +50,24 @@ export class Context {
     pushController(controller: Controller) {
         this._controllerStack.push(controller)
         this.invalidate()
-        // console.log(controller.info())
+        const status = document.getElementById("status")
+        if (status) {
+            const info = controller.info()
+            if (info) {
+                replaceChildren(status, info)
+            }
+        }
     }
     popController() {
         this._controllerStack.pop()
+        const status = document.getElementById("status")
+        if (status) {
+            const controller = this._controllerStack[this._controllerStack.length - 1]
+            const info = controller.info()
+            if (info) {
+                replaceChildren(status, info)
+            }
+        }
         this.invalidate()
     }
 
@@ -197,17 +212,17 @@ export class Context {
     getStencilBindgroup() {
         // re-use causes errors when resizing
         // if (this.postProcessBindGroup === undefined) {
-            this.postProcessBindGroup = this.device.device!.createBindGroup({
-                label: 'outline',
-                layout: this.shader.outline.outlineBindGroupLayout,
-                entries: [
-                    {
-                        binding: 0,
-                        resource: this.getDepthTexture()
-                            .createView({ aspect: 'stencil-only' })
-                    },
-                ],
-            })
+        this.postProcessBindGroup = this.device.device!.createBindGroup({
+            label: 'outline',
+            layout: this.shader.outline.outlineBindGroupLayout,
+            entries: [
+                {
+                    binding: 0,
+                    resource: this.getDepthTexture()
+                        .createView({ aspect: 'stencil-only' })
+                },
+            ],
+        })
         // }
         return this.postProcessBindGroup
     }
