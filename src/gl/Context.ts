@@ -176,7 +176,7 @@ export class Context {
             const label = 'depth-texture'
             this.depthTexture = this.device.device!.createTexture({
                 label,
-                size: [this.canvas.width, this.canvas.height, 1],
+                size: [this.canvas.width, this.canvas.height],
                 format: this.depthTextureFormat,
                 usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
             })
@@ -195,20 +195,20 @@ export class Context {
 
     private postProcessBindGroup?: GPUBindGroup
     getStencilBindgroup() {
-        if (this.postProcessBindGroup === undefined) {
+        // re-use causes errors when resizing
+        // if (this.postProcessBindGroup === undefined) {
             this.postProcessBindGroup = this.device.device!.createBindGroup({
                 label: 'outline',
                 layout: this.shader.outline.outlineBindGroupLayout,
                 entries: [
                     {
                         binding: 0,
-                        resource: this.depthTexture!.createView(
-                            { aspect: 'stencil-only' }
-                        )
+                        resource: this.getDepthTexture()
+                            .createView({ aspect: 'stencil-only' })
                     },
                 ],
             })
-        }
+        // }
         return this.postProcessBindGroup
     }
 

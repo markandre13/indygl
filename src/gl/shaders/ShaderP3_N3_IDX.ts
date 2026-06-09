@@ -1,10 +1,10 @@
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import { type Context } from "../Context"
-import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
 export class ShaderP3_N3_IDX extends Shader {
     pipeline: GPURenderPipeline
+    pipelineOutline: GPURenderPipeline
 
     constructor(context: Context) {
         const label = 'p3-n3-idx'
@@ -43,13 +43,28 @@ export class ShaderP3_N3_IDX extends Shader {
                 cullMode: 'none',
             },
             depthStencil: {
+                format: context.depthTextureFormat,
+
                 depthWriteEnabled: true,
                 depthBias: 1, // this make points and lines look better
                 depthBiasSlopeScale: 1,
                 depthCompare: 'less',
-                format: context.depthTextureFormat,
+
+                stencilFront: {
+                    compare: "always",
+                    passOp: "replace"
+                },
+                stencilBack: {
+                    compare: "always",
+                    passOp: "replace"
+                }
             },
         }
+        this.pipelineOutline = device.device!.createRenderPipeline(pipelineDef)
+
+        // only touch the depth flag
+        pipelineDef.depthStencil!.stencilWriteMask = 0x04
+
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
 }

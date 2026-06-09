@@ -6,7 +6,6 @@ export class ShaderOutline extends Shader {
     outlineBindGroupLayout: GPUBindGroupLayout
     pipeline: GPURenderPipeline
     postProcessRenderPassDescriptor: GPURenderPassDescriptor
-    // postProcessBindGroup: GPUBindGroup
 
     constructor(context: Context) {
         const label = 'outline'
@@ -56,19 +55,5 @@ export class ShaderOutline extends Shader {
                 { loadOp: 'load', storeOp: 'store' },
             ],
         } as GPURenderPassDescriptor
-
-        // this.postProcessBindGroup = device.device!.createBindGroup({
-        //     label: 'outline',
-        //     layout: this.outlineBindGroupLayout,
-        //     entries: [
-        //         {
-        //             binding: 0, 
-        //             resource: context.depthTexture!.createView(
-        //                 { aspect: 'stencil-only' }
-        //             )
-        //         },
-        //     ],
-        // })
-
     }
 }

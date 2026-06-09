@@ -27,8 +27,9 @@ fn isOnEdge(pos: vec2i) -> u32 {
     // texel coordinates with textureLoad as that returns
     // different results on different GPUs
     let size = vec2i(textureDimensions(mask, 0));
-    let start = max(pos - 1, vec2i(0));
-    let end = min(pos + 1, size);
+    let range = 1;
+    let start = max(pos - range, vec2i(0));
+    let end = min(pos + range, size);
 
     var edge = false;
     var count1: u32 = 0;
@@ -38,9 +39,8 @@ fn isOnEdge(pos: vec2i) -> u32 {
     for (var y = start.y; y <= end.y; y++) {
         for (var x = start.x; x <= end.x; x++) {
             // textureLoad: Reads a single texel from a texture without sampling or filtering.
-            // 
-            let s = textureLoad(mask, vec2i(x, y), 0).r;
-            switch(s & 3) {
+            let stencilValue = textureLoad(mask, vec2i(x, y), 0).r;
+            switch(stencilValue & 3) {
                 case 0: {
                     edge = true;
                 }
@@ -52,9 +52,6 @@ fn isOnEdge(pos: vec2i) -> u32 {
                 }
                 default: {}
             }
-            // if (s == 0) {
-            //     edge = true;
-            // }
         }
     }
     if (!edge && !(count1 > 0 && count2 > 0)) {
@@ -67,6 +64,18 @@ fn isOnEdge(pos: vec2i) -> u32 {
 };
 
 @fragment fn fs2d(fsInput: VSOutput) -> @location(0) vec4f {
+    // let pos = vec2i(fsInput.position.xy);
+    // let t = textureLoad(mask, pos, 0);
+    // var r = 0.0;
+    // var g = 0.0;
+    // var b = 0.0;
+
+    // if ((t.r & 1) != 0) { r = 1.0; }
+    // if ((t.r & 2) != 0) { g = 1.0; }
+    // if ((t.r & 4) != 0) { b = 1.0; }
+
+    // return vec4f(r, g, b, 1);
+
     let pos = vec2i(fsInput.position.xy);
 
     // get the current. If it's not 0 we're inside the selected objects
@@ -83,9 +92,7 @@ fn isOnEdge(pos: vec2i) -> u32 {
     let selectedObject = vec4f(0.929, 0.341, 0, 1); // #ed5700
 
     var alpha = 1.0;
-    if ((s & 4) == 0) {
-        alpha = 0.3;
-    }
+    if ((s & 4) == 0) { alpha = 0.3; }
 
     switch(hit) {
         case 1: {

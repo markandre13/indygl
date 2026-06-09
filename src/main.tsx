@@ -12,7 +12,6 @@ import { deg2rad } from './gl/algorithms/deg2rad'
 import { Texture } from './gl/buffers/Texture'
 import { ViewportShading } from './editor/app/ViewportShading'
 import { ObjectSelectController } from './gl/controllers/ObjectSelectController'
-import { EditMode } from 'toad.js/table/adapter/TableAdapter'
 
 // [ ] render both texture & rgb
 // [ ] select object
@@ -123,6 +122,9 @@ export async function main() {
     const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
     dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
+    context.selection.add(teapotMesh)
+    context.selection.add(dodecahedronMesh)
+
     // const cube = new XForm(root)
     // const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
     // cubeMesh.material = new Material(context, [1, 1, 1, 1])
@@ -172,6 +174,8 @@ export async function main() {
 
         const rgbNodes: Mesh[] = []
         const texNodes: Mesh[] = []
+        const rgbNodesSelected: Mesh[] = []
+        const texNodesSelected: Mesh[] = []
         const lineNodes: Mesh[] = []
 
         function prepare(node: IndyNode) {
@@ -224,9 +228,17 @@ export async function main() {
                         break
                     default:
                         if (node.material?.texture !== undefined) {
-                            texNodes.push(node)
+                            if (context.selection.selected.has(node)) {
+                                texNodesSelected.push(node)
+                            } else {
+                                texNodes.push(node)
+                            }
                         } else {
-                            rgbNodes.push(node)
+                            if (context.selection.selected.has(node)) {
+                                rgbNodesSelected.push(node)
+                            } else {
+                                rgbNodes.push(node)
+                            }
                         }
                 }
             }
@@ -272,26 +284,44 @@ export async function main() {
             }
         }
 
-        if (rgbNodes.length > 0) {
-            if (editorModel.viewportShading.value === ViewportShading.WIREFRAME) {
-                pass.setBindGroup(2, background.bindGroup)
-                pass.setPipeline(context.shader.p3_idx.pipeline)
-            } else {
-                pass.setPipeline(context.shader.p3_n3_idx.pipeline)
-            }
-            for (const node of rgbNodes) {
-                pass.setBindGroup(1, node.modelView.bindGroup)
-                if (editorModel.viewportShading.value !== ViewportShading.WIREFRAME) {
-                    pass.setBindGroup(2, node.material!.bindGroup)
-                }
-                pass.setVertexBuffer(0, node.points.buffer)
-                pass.setVertexBuffer(1, node.normals.buffer)
-                pass.setIndexBuffer(node.indices.buffer, 'uint32')
-                if (node.groupSubset && node.groupSubset.has("body")) {
-                    const group = node.group("body")!
-                    pass.drawIndexed(group.length, 1, group.start)
+        // we need to draw the outline first, then the faces to remove the depth
+        // information (which also mean we will have to handle texture within
+        // this loop)
+        for (let outline of [true, false]) {
+            const list = outline ? rgbNodesSelected : rgbNodes
+            if (list.length > 0) {
+                if (editorModel.viewportShading.value === ViewportShading.WIREFRAME) {
+                    pass.setBindGroup(2, background.bindGroup)
+                    pass.setPipeline(context.shader.p3_idx.pipeline)
                 } else {
-                    pass.drawIndexed(node.indices.length)
+                    if (outline) {
+                        pass.setPipeline(context.shader.p3_n3_idx.pipelineOutline)
+                    } else {
+                        pass.setStencilReference(0)
+                        pass.setPipeline(context.shader.p3_n3_idx.pipeline)
+                    }
+                }
+                for (const node of list) {
+                    if (outline) {
+                        if (context.selection.active === node) {
+                            pass.setStencilReference(1 + 4)
+                        } else {
+                            pass.setStencilReference(2 + 4)
+                        }
+                    }
+                    pass.setBindGroup(1, node.modelView.bindGroup)
+                    if (editorModel.viewportShading.value !== ViewportShading.WIREFRAME) {
+                        pass.setBindGroup(2, node.material!.bindGroup)
+                    }
+                    pass.setVertexBuffer(0, node.points.buffer)
+                    pass.setVertexBuffer(1, node.normals.buffer)
+                    pass.setIndexBuffer(node.indices.buffer, 'uint32')
+                    if (node.groupSubset && node.groupSubset.has("body")) {
+                        const group = node.group("body")!
+                        pass.drawIndexed(group.length, 1, group.start)
+                    } else {
+                        pass.drawIndexed(node.indices.length)
+                    }
                 }
             }
         }
