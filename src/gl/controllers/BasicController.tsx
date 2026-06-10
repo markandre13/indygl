@@ -5,11 +5,7 @@ import { deg2rad } from '../algorithms/deg2rad'
 import { MouseButton } from './details/MouseButton'
 import { FlyMode } from './FlyMode'
 import { IconKey } from 'src/editor/viewkit/InputIcons'
-
-interface Point {
-    x: number,
-    y: number
-}
+import type { Point } from '../types/Point'
 
 /**
  * [`] to enable flymode

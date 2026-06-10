@@ -8,6 +8,7 @@ import { BindGroupLayoutCollection } from './details/BindGroupLayoutCollection'
 import { ShaderCollection } from './details/ShaderCollection'
 import type { IndyNode } from "src/nodes/IndyNode"
 import { replaceChildren } from 'toad.jsx/jsx-runtime'
+import { deg2rad } from './algorithms/deg2rad'
 
 export enum Projection {
     ORTHOGONAL,
@@ -273,7 +274,7 @@ export class Context {
 
         this.invalidateDepthTexture()
 
-        const fieldOfView = (45 * Math.PI) / 180 // in radians
+        const fieldOfView = deg2rad(45)
         const aspect = pixelWidth / pixelHeight
         const zNear = 0.1
         const zFar = 100.0

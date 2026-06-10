@@ -20,6 +20,9 @@ export class SceneUniform extends Uniform {
             ],
         })
     }
+    get projectionMatrix(): mat4 {
+        return this.values[0]
+    }
     perspective(fovy: number, aspect: number, near: number, far: number) {
         this._dirty = true
         mat4.perspectiveZO(this._perspective, fovy, aspect, near, far)

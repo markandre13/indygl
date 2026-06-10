@@ -262,6 +262,14 @@
             border-radius: 4px;
         }
 
+        .overlay {
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .overlay > * {
+            position: absolute;
+        }
+
         .status {
             background-color: #181818;
             color: #ccc;
@@ -275,7 +283,7 @@
 
         .status>span {
             display: inline-block;
-            vertical-align:top;
+            vertical-align: top;
             line-height: normal;
             padding-left: 2px;
             padding-right: 2px;

@@ -26,7 +26,6 @@ export default defineConfig({
         },
     },
     test: {
-        environment: "node",
         browser: {
             provider: playwright(),
             enabled: true,

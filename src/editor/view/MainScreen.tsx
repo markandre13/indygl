@@ -7,7 +7,7 @@ import { TripleInput } from "../viewkit/TripleInput"
 import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from "../viewkit/InputIcons"
 
 export function MainScreen(props: { model: EditorModel }) {
-    let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement
+    let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement, overlay!: HTMLElement
     const selectionMode = props.model.selectionMode
     const viewportShading = props.model.viewportShading
     const transform = props.model.transform
@@ -36,6 +36,7 @@ export function MainScreen(props: { model: EditorModel }) {
             </div>
         </div>
         <canvas ref={canvas} class="canvas"></canvas>
+        <div ref={overlay} class="overlay" id="overlay"></div>
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />
@@ -84,6 +85,10 @@ export function MainScreen(props: { model: EditorModel }) {
         { element: canvas, where: ["left"] },
         { element: canvas, where: ["bottom"], which: status },
         { element: canvas, where: ["right"], which: panel },
+        { element: overlay, where: ["top"], which: toolbar },
+        { element: overlay, where: ["left"] },
+        { element: overlay, where: ["bottom"], which: status },
+        { element: overlay, where: ["right"], which: panel },
         { element: panel, where: ["top"], which: toolbar },
         { element: panel, where: ["right"] },
         { element: panel, where: ["bottom"], which: status },
