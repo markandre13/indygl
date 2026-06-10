@@ -6,7 +6,10 @@ import { WavefrontObj } from './gl/file/WavefrontObj'
 import { replaceChildren } from 'toad.jsx'
 import { EditorModel } from './editor/app/EditorModel'
 import { MainScreen } from './editor/view/MainScreen'
-import { IndyNode, Mesh, Root, XForm } from './nodes/Mesh'
+import { Mesh } from './nodes/Mesh'
+import { XForm } from "./nodes/XForm"
+import { Root } from "./nodes/Root"
+import { IndyNode } from "./nodes/IndyNode"
 import { Material } from "./nodes/Material"
 import { deg2rad } from './gl/algorithms/deg2rad'
 import { Texture } from './gl/buffers/Texture'

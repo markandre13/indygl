@@ -1,4 +1,5 @@
-import { IndyNode, Mesh } from "src/nodes/Mesh"
+import { Mesh } from "src/nodes/Mesh"
+import { IndyNode } from "src/nodes/IndyNode"
 import { Texture } from "../buffers/Texture"
 import type { Context } from "../Context"
 import { ShaderP3_IDX_Id } from "../shaders/ShaderP3_IDX_Id"

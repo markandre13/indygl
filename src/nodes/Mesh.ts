@@ -3,42 +3,15 @@ import { PositionBuffer } from "../gl/buffers/PositionBuffer"
 import { triangulate } from "../gl/algorithms/triangulate"
 import { decoupleXYZandUV, type MeshDataSingleIndex } from "../gl/algorithms/decoupleXYZandUV"
 import { VertexBuffer } from "../gl/buffers/VertexBuffer"
-import { mat4 } from "gl-matrix"
 import type { Material } from "./Material"
 import { ModelUniform } from "../gl/buffers/ModelUniform"
-import type { Context } from "../gl/Context"
 import { smoothShading } from "src/gl/algorithms/smoothShading"
-import { flatShading } from "src/gl/algorithms/flatShading"
 import type { MeshData } from "../gl/algorithms/MeshData"
 import type { MeshSubset } from "src/gl/algorithms/MeshSubset"
 import { edges } from "src/gl/algorithms/edges"
-
-export class IndyNode {
-    constructor(parent: IndyNode) {
-        if (parent) {
-            this.parent = parent
-            this.context = parent.context
-            parent.children.push(this)
-        }
-    }
-    context!: Context
-    parent?: IndyNode
-    children: IndyNode[] = []
-    // runtime
-    readonly combined = mat4.create()
-    dirty = true
-}
-
-export class Root extends IndyNode {
-    constructor(context: Context) {
-        super(undefined as any)
-        this.context = context
-    }
-}
-
-export class XForm extends IndyNode {
-    transform?: mat4
-}
+import { IndyNode } from "./IndyNode"
+import type { XForm } from "./XForm"
+import { vec3 } from "gl-matrix"
 
 export class Mesh extends IndyNode implements MeshData {
     modelView: ModelUniform
@@ -83,6 +56,37 @@ export class Mesh extends IndyNode implements MeshData {
     protected _texcoords?: VertexBuffer
 
     material?: Material
+
+    override get origin(): vec3 | undefined {
+        const xyz = this.xyz!
+        let i = 0
+        let x = xyz[i++]
+        let y = xyz[i++]
+        let z = xyz[i++]
+        let minx = x, maxx = x, miny = y, maxy = y, minz = z, maxz = z
+        while (i < xyz.length) {
+            x = xyz[i++]
+            y = xyz[i++]
+            z = xyz[i++]
+            minx = Math.min(minx, x)
+            maxx = Math.max(maxx, x)
+            miny = Math.min(minx, y)
+            maxy = Math.max(maxx, y)
+            minz = Math.min(minx, z)
+            maxz = Math.max(maxx, z)
+        }
+
+        x = (minx + maxx) / 2
+        y = (miny + maxy) / 2
+        z = (minz + maxz) / 2
+
+        const origin = this.parent!.origin!
+        origin[0] += x
+        origin[1] += y
+        origin[2] += z
+
+        return origin
+    }
 
     /**
      * triangulate mesh and create unified index for rendering via WebGPU

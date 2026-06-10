@@ -6,7 +6,7 @@ import { Mat4Model } from './Mat4Model'
 import { bind } from 'src/editor/appkit/details/decorators/bind'
 import { BindGroupLayoutCollection } from './details/BindGroupLayoutCollection'
 import { ShaderCollection } from './details/ShaderCollection'
-import type { IndyNode } from 'src/nodes/Mesh'
+import type { IndyNode } from "src/nodes/IndyNode"
 import { replaceChildren } from 'toad.jsx/jsx-runtime'
 
 export enum Projection {
