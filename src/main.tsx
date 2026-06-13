@@ -125,9 +125,9 @@ export async function main() {
     // context.selection.add(teapotMesh)
     // context.selection.add(dodecahedronMesh)
 
-    // const cube = new XForm(root)
-    // const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
-    // cubeMesh.material = new Material(context, [1, 1, 1, 1])
+    const cube = new XForm(root)
+    const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
+    cubeMesh.material = new Material(context, [0, 0.2, 1, 1])
 
     // const human = new XForm(root)
     // const humanMesh = await loadMesh(human, "obj/mh/base.obj")

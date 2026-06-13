@@ -6,7 +6,8 @@ import { Controller } from "./Controller"
 import { mat4, vec3, vec4 } from "gl-matrix"
 // import { screen2world, world2screen } from "../algorithms/coordinates"
 import type { XForm } from "src/nodes/XForm"
-import { screen2pointInPlane, setMat4Translation } from "../algorithms/coordinates"
+import { screen2pointInPlane, setMat4Translation, world2screen } from "../algorithms/coordinates"
+import type { Point } from "../types/Point"
 
 // [X] do this one quick'n dirty
 // [ ] then get the edge select controller working
@@ -16,10 +17,8 @@ export class ObjectGrabController extends Controller {
     context: Context
     root: IndyNode
     grabbing = false
-    modelViewMatrix!: mat4
-    delta?: vec3
-    x = 0
-    y = 0
+    initialCenter?: vec3
+    delta?: Point
     label?: HTMLElement
     constructor(context: Context, root: IndyNode) {
         super()
@@ -56,41 +55,33 @@ export class ObjectGrabController extends Controller {
         if (node instanceof Mesh) {
 
             if (!this.grabbing) {
-                // this.grabbing = true
-                this.x = ev.offsetX
-                this.y = ev.offsetY
-                this.modelViewMatrix = mat4.clone(node.combined)
+                this.grabbing = true
+                this.initialCenter = mat4.getTranslation(vec3.create(), node.combined)
+                const screen = world2screen(this.initialCenter, this.context.sceneUniforms.projectionMatrix, this.context.canvas)
+                screen.x -= ev.offsetX
+                screen.y -= ev.offsetY
+                this.delta = screen
             }
 
             const pt = screen2pointInPlane(
-                {x: ev.offsetX, y: ev.offsetY},
-                mat4.getTranslation(vec3.create(), this.modelViewMatrix),
+                {x: ev.offsetX + this.delta!.x, y: ev.offsetY + this.delta!.y},
+                this.initialCenter!,
                 this.context.sceneUniforms.perspective,
                 this.context.sceneUniforms.camera,
                 this.context.canvas
             )
 
-            if (!this.grabbing) {
-                this.grabbing = true
-                this.delta = vec3.sub(vec3.create(), mat4.getTranslation(vec3.create(), this.modelViewMatrix), pt)
-            }
-            vec3.add(pt, pt, this.delta!)
-
             const parent = (node.parent as XForm)
             if (parent.transform === undefined) {
                 parent.transform = mat4.create()
             }
-            status!.innerText = vec3.str(pt)
+            // status!.innerText = vec3.str(pt)
             setMat4Translation(parent.transform, pt)
             parent.dirty = true
 
-            status!.innerText = `grab to ${ev.offsetX}, ${ev.offsetY}`
-
+            // status!.innerText = `grab to ${ev.offsetX}, ${ev.offsetY}`
 
             this.context.invalidate()
-
-        } else {
-            status!.innerText = "node is not a mesh"
         }
     }
     /**
