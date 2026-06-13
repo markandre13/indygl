@@ -37,6 +37,7 @@ export class ShaderFloor extends Shader {
             primitive: { topology: 'triangle-list', cullMode: 'none' },
             depthStencil: {
                 depthWriteEnabled: false,
+                stencilWriteMask: 0,
                 // depthBias: 1, depthBiasSlopeScale: 1,
                 depthCompare: 'less',
                 format: context.depthTextureFormat,

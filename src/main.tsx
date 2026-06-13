@@ -342,7 +342,6 @@ export async function main() {
         }
 
         pass.setPipeline(context.shader.floor.pipeline)
-        pass.setStencilReference(0xffff)
         pass.draw(6)
 
         pass.end()
@@ -351,17 +350,17 @@ export async function main() {
         // OUTLINE PASS
         //
 
-        // {
-        //     context.shader.outline.postProcessRenderPassDescriptor.colorAttachments[0]!.view = context.context!
-        //         .getCurrentTexture()
-        //         .createView()
+        {
+            context.shader.outline.postProcessRenderPassDescriptor.colorAttachments[0]!.view = context.context!
+                .getCurrentTexture()
+                .createView()
 
-        //     const pass = commandEncoder.beginRenderPass(context.shader.outline.postProcessRenderPassDescriptor)
-        //     pass.setPipeline(context.shader.outline.pipeline)
-        //     pass.setBindGroup(0, context.getStencilBindgroup())
-        //     pass.draw(3)
-        //     pass.end()
-        // }
+            const pass = commandEncoder.beginRenderPass(context.shader.outline.postProcessRenderPassDescriptor)
+            pass.setPipeline(context.shader.outline.pipeline)
+            pass.setBindGroup(0, context.getStencilBindgroup())
+            pass.draw(3)
+            pass.end()
+        }
 
         const commandBuffer = commandEncoder.finish()
         device.device.queue.submit([commandBuffer])
