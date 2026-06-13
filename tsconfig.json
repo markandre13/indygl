@@ -35,7 +35,7 @@
         "moduleDetection": "force",
         "noImplicitOverride": true,
         "noUnusedLocals": false,
-        "noUnusedParameters": true,
+        "noUnusedParameters": false,
         "erasableSyntaxOnly": false,
         "noFallthroughCasesInSwitch": true
     },

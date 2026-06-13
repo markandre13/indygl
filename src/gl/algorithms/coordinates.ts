@@ -1,4 +1,4 @@
-import { mat4, vec3, vec4 } from "gl-matrix"
+import { mat4, vec3, vec4, type ReadonlyVec3 } from "gl-matrix"
 import type { Size } from "../types/Size"
 import type { Point } from "../types/Point"
 import { intersectLineAndPlane } from "./intersectLineAndPlane"
@@ -94,4 +94,10 @@ export function screen2pointInPlane(screen: Point, point: vec3, perspective: mat
     )!
 
     return out
+}
+
+export function setMat4Translation(m: mat4, pos: ReadonlyVec3) {
+    m[12] = pos[0]
+    m[13] = pos[1]
+    m[14] = pos[2]
 }
