@@ -1,4 +1,4 @@
-import { mat4 } from "gl-matrix"
+import { mat4, vec3, vec4 } from "gl-matrix"
 import { Uniform } from "./Uniform"
 import type { Context } from "../Context"
 import type { Device } from "../Device"
@@ -11,7 +11,7 @@ export class SceneUniform extends Uniform {
     private _dirty = false
     bindGroup: GPUBindGroup
     constructor(context: Context) {
-        super(context.device.device, ["mat4x4f"])
+        super(context.device.device, ["mat4x4f", "vec4f"])
         this.bindGroup = context.device.device.createBindGroup({
             label: 'camera-bind-group',
             layout: context.bindGroupLayout.scene,
@@ -37,6 +37,13 @@ export class SceneUniform extends Uniform {
     override writeTo(device: Device): void {
         if (this._dirty) {
             mat4.mul(this.values[0], this._perspective, this._camera)
+
+            const camMat = mat4.invert(mat4.create(), this._camera)!
+            const p = vec4.fromValues(0,0,0,1)
+            vec4.transformMat4(this.values[1], p, camMat)
+
+            // mat4.getTranslation(this.values[1], this._camera)
+            // console.log(`camera at: ${vec3.str(this.values[1])}`)
             this._dirty = false
         }
         super.writeTo(device)

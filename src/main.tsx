@@ -106,15 +106,15 @@ export async function main() {
     const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
     teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
 
-    const teeth = new XForm(root)
-    const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
-    teethMesh.material = new Material(context, [1, 1, 1, 1])
-    // this wrecks the shading, guess through the normal matrix being messed up
-    teeth.transform = mat4.create()
-    mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
-    mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
+    // const teeth = new XForm(root)
+    // const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
+    // teethMesh.material = new Material(context, [1, 1, 1, 1])
+    // // this wrecks the shading, guess through the normal matrix being messed up
+    // teeth.transform = mat4.create()
+    // mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
+    // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
 
-    mat4.translate(teeth.transform, teeth.transform, vec3.fromValues(0, -5.5, -1))
+    // mat4.translate(teeth.transform, teeth.transform, vec3.fromValues(0, -5.5, -1))
 
     const dodecahedron = new XForm(root)
     dodecahedron.transform = mat4.create()
@@ -122,20 +122,20 @@ export async function main() {
     const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
     dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
-    // context.selection.add(teapotMesh)
-    // context.selection.add(dodecahedronMesh)
+    // // context.selection.add(teapotMesh)
+    // // context.selection.add(dodecahedronMesh)
 
     const cube = new XForm(root)
     const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
     cubeMesh.material = new Material(context, [0, 0.2, 1, 1])
 
-    // const human = new XForm(root)
-    // const humanMesh = await loadMesh(human, "obj/mh/base.obj")
-    const bodyTexture = new Texture()
-    await bodyTexture.load(device.device!!, "img/young_caucasian_female_special_suit.jpg")
-    // humanMesh.material = new Material(context, bodyTexture)
+    // // const human = new XForm(root)
+    // // const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    // const bodyTexture = new Texture()
+    // await bodyTexture.load(device.device!!, "img/young_caucasian_female_special_suit.jpg")
+    // // humanMesh.material = new Material(context, bodyTexture)
 
-    // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
+    // // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
 
     const matWire = new Material(context, [0, 0, 0, 1])
     const matObjectSelected = new Material(context, [0.929, 0.341, 0, 1])
@@ -341,23 +341,27 @@ export async function main() {
             }
         }
 
+        pass.setPipeline(context.shader.floor.pipeline)
+        pass.setStencilReference(0xffff)
+        pass.draw(6)
+
         pass.end()
 
         //
         // OUTLINE PASS
         //
 
-        {
-            context.shader.outline.postProcessRenderPassDescriptor.colorAttachments[0]!.view = context.context!
-                .getCurrentTexture()
-                .createView()
+        // {
+        //     context.shader.outline.postProcessRenderPassDescriptor.colorAttachments[0]!.view = context.context!
+        //         .getCurrentTexture()
+        //         .createView()
 
-            const pass = commandEncoder.beginRenderPass(context.shader.outline.postProcessRenderPassDescriptor)
-            pass.setPipeline(context.shader.outline.pipeline)
-            pass.setBindGroup(0, context.getStencilBindgroup())
-            pass.draw(3)
-            pass.end()
-        }
+        //     const pass = commandEncoder.beginRenderPass(context.shader.outline.postProcessRenderPassDescriptor)
+        //     pass.setPipeline(context.shader.outline.pipeline)
+        //     pass.setBindGroup(0, context.getStencilBindgroup())
+        //     pass.draw(3)
+        //     pass.end()
+        // }
 
         const commandBuffer = commandEncoder.finish()
         device.device.queue.submit([commandBuffer])

@@ -1,4 +1,5 @@
 import type { Device } from "../Device"
+import floor from "./floor.wgsl"
 import outline from "./outline.wgsl"
 import p3_idx from "./p3-idx.wgsl"
 import p3_idx_id from "./p3-idx-id.wgsl"
@@ -16,6 +17,7 @@ export class Shader {
         if (module === undefined) {
             let code: string
             switch(label) {
+                case 'floor': code = floor; break
                 case 'outline': code = outline; break
                 case 'p3-idx': code = p3_idx; break
                 case 'p3-idx-id': code = p3_idx_id; break
