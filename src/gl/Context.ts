@@ -278,7 +278,7 @@ export class Context {
         const aspect = pixelWidth / pixelHeight
         const zNear = 0.1
         const zFar = 100.0
-        this.sceneUniforms.perspective(fieldOfView, aspect, zNear, zFar)
+        this.sceneUniforms.setPerspective(fieldOfView, aspect, zNear, zFar)
         this.sceneUniforms.writeTo(this.device)
     }
 
