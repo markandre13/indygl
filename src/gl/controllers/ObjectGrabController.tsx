@@ -17,6 +17,7 @@ export class ObjectGrabController extends Controller {
     root: IndyNode
     grabbing = false
     modelViewMatrix!: mat4
+    delta?: vec3
     x = 0
     y = 0
     label?: HTMLElement
@@ -55,7 +56,7 @@ export class ObjectGrabController extends Controller {
         if (node instanceof Mesh) {
 
             if (!this.grabbing) {
-                this.grabbing = true
+                // this.grabbing = true
                 this.x = ev.offsetX
                 this.y = ev.offsetY
                 this.modelViewMatrix = mat4.clone(node.combined)
@@ -68,6 +69,13 @@ export class ObjectGrabController extends Controller {
                 this.context.sceneUniforms.camera,
                 this.context.canvas
             )
+
+            if (!this.grabbing) {
+                this.grabbing = true
+                this.delta = vec3.sub(vec3.create(), mat4.getTranslation(vec3.create(), this.modelViewMatrix), pt)
+            }
+            vec3.add(pt, pt, this.delta!)
+
             const parent = (node.parent as XForm)
             if (parent.transform === undefined) {
                 parent.transform = mat4.create()
