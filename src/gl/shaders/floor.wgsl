@@ -70,14 +70,16 @@ fn fragment_main(in: Transfer) -> @location(0) vec4f {
     // fade out far away grid
     let camera = vec2f(scene.camera.x, scene.camera.z);
     let here = in.worldPos.xz;
-    let d = distance(camera, here);
+    var d = distance(camera, here);
     let depthFade = 1 - clamp(d / s, 0.0, 1.0);
 
-    if(aCoarse > 0.1) {
-        if (abs(in.worldPos.x) < 0.1) {
+    d /= 400;
+
+    if(aCoarse > d) {
+        if (abs(in.worldPos.x) < d) {
             return vec4f(gridColorAxisX.rgb, aFine * depthFade);
         }
-        if (abs(in.worldPos.z) < 0.1) {
+        if (abs(in.worldPos.z) < d) {
             return vec4f(gridColorAxisZ.rgb, aFine * depthFade);
         }
         return vec4f(gridColorCoarse.rgb, aFine * depthFade);
