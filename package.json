@@ -10,7 +10,7 @@
     },
     "scripts": {
         "build": "npm run wgsl && tsgo && vite build",
-        "start": "npm run wgsl && tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo' 'npm run vite",
+        "start": "npm run wgsl && tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo:watch' 'npm run vite'",
         "test": "npm run wgsl && npm run tsgo && npm run vitest",
         "test:watch": "npm run wgsl && tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo:watch' 'npm run vitest:watch'",
         "wgsl": "mkdir -p js/src/gl/shaders && ln -f src/gl/shaders/*wgsl js/src/gl/shaders",
