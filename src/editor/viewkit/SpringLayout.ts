@@ -230,11 +230,6 @@ export class SpringLayout {
                     // can be calculated from the objects size
                     //------------------------------------------------------------
                     // console.log(`2nd strategy`)
-
-                    //         printf("Placing %s now:\n",ptr->name.c_str());
-                    //         #endif
-                    //         // no top and/or left attachment
-                    //         #ifdef DEBUG
                     if (ptr.nflag & HAS_T) {
                         debug && console.log(`${ename}: has no top attachment, calculating it from bottom(${ptr.coord[BOTTOM]}) - height(${ptr.shape.height})`)
                         ptr.coord[TOP] = ptr.coord[BOTTOM] - ptr.shape.height
@@ -272,104 +267,13 @@ export class SpringLayout {
 
                     ptr.done = HAS_ALL
                     ++done
-                    //         #ifdef DEBUG
-                    //         printf("  set to (%i,%i)-(%i,%i)\n" ,ptr->coord[DLEFT]
-                    //                                             ,ptr->coord[DTOP]
-                    //                                             ,ptr->coord[DRIGHT]
-                    //                                             ,ptr->coord[DBOTTOM] );
-                    //         #endif
                 }
             }
 
             if (done >= nChildren) {
                 debug && console.log("done")
-                // //      cout << "TForm: >>>done<<<" << endl;
-                //       running = false;
                 return
             }
-
-            //     if (count>nChildren) {
-            //       bool bNoGuess = true;
-            //       count=0;
-            //       while(count<nChildren) {
-            //         if (ptr->done != HAS_ALL) {
-            //           ptr->getShape(window, &shape);
-            //           if ( (ptr->nflag&LEFT) && !(ptr->done&LEFT) && (ptr->done&RIGHT) ) {
-            //             #ifdef DEBUG
-            //             printf("guessing left side of %s\n",ptr->name.c_str());
-            //             #endif
-            //             ptr->coord[DLEFT] = ptr->coord[DRIGHT] - shape.w;
-            //             ptr->done|=HAS_L;
-            //             bNoGuess = false;
-            //           }
-            //           if ( (ptr->nflag&RIGHT) && !(ptr->done&RIGHT) && (ptr->done&LEFT) ) {
-            //             #ifdef DEBUG
-            //             printf("guessing right side of %s\n",ptr->name.c_str());
-            //             #endif
-            //             ptr->coord[DRIGHT] = ptr->coord[DLEFT] + shape.w;
-            //             ptr->done|=HAS_R;
-            //             bNoGuess = false;
-            //           }
-            //           if ( !(ptr->nflag&TOP) && !(ptr->done&TOP) && (ptr->done&BOTTOM) ) {
-            //             #ifdef DEBUG
-            //             printf("guessing top side of %s\n",ptr->name.c_str());
-            //             #endif
-            //             ptr->coord[DTOP] = ptr->coord[DBOTTOM] - shape.h;
-            //             ptr->done|=HAS_T;
-            //             bNoGuess = false;
-            //           }
-            //           if ( (ptr->nflag&BOTTOM) && !(ptr->done&BOTTOM) && (ptr->done&TOP) ) {
-            //             #ifdef DEBUG
-            //             printf("guessing bottom side of %s\n",ptr->name.c_str());
-            //             #endif
-            //             ptr->coord[DBOTTOM] = ptr->coord[DTOP] + shape.h;
-            //             ptr->done|=HAS_B;
-            //             bNoGuess = false;
-            //           }
-            //           if (ptr->done == HAS_ALL) {
-            //             cout << "TForm: looks like recursive attachment" << endl;
-            //           }
-            //         }
-            //         count++;
-            //         ptr = ptr->next;
-            //       }
-
-            //       if(bNoGuess) {
-            //         printf("*TForm: Can't handle recursive attachment. Stopped.\n");
-            //         #ifdef DEBUG
-            //         count=0;
-            //         while(count<nChildren) {
-            //           printf("%25s : ",ptr->name.c_str());
-            //           printf( ptr->done&HAS_T ? "t" : "-");
-            //           printf( ptr->done&HAS_B ? "b" : "-");
-            //           printf( ptr->done&HAS_L ? "l" : "-");
-            //           printf( ptr->done&HAS_R ? "r" : "-");
-            //           printf("\n");
-            //           count++;
-            //           ptr = ptr->next;
-            //         } 
-            //         #endif
-            //         running = false;
-            //         return;
-            //       }
-            //       #ifdef DEBUG
-            //       printf("trying again\n");
-            //       #endif
-            //       count = 0;
-            //     }
-            //     ptr = ptr->next;
         }
-        // for (const ptr of this.flist.values()) {
-        //     const x = ptr.coord[LEFT]
-        //     const y = ptr.coord[TOP]
-        //     const w = ptr.coord[RIGHT] - ptr.coord[LEFT]
-        //     const h = ptr.coord[BOTTOM] - ptr.coord[TOP]
-        //     console.log(`<${ptr.element.nodeName.toLowerCase()} class="${ptr.element.className}" /> -> ${x}, ${y}, ${w}, ${h}`)
-        //     ptr.element.style.position = 'absolute'
-        //     ptr.element.style.left = `${x}px`
-        //     ptr.element.style.top = `${y}px`
-        //     ptr.element.style.width = `${w}px`
-        //     ptr.element.style.height = `${h}px`
-        // }
     }
 }
