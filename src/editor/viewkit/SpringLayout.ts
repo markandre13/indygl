@@ -8,9 +8,9 @@ enum How {
 }
 
 export interface SpringDefinition {
-    element: HTMLElement
+    element: HTMLElementApi
     where: SpringWhere[]
-    which?: HTMLElement
+    which?: HTMLElementApi
     width?: number
     height?: number
 }
@@ -29,7 +29,7 @@ const Side = ["TOP", "BOTTOM", "LEFT", "RIGHT"]
 
 class FormNode {
     element!: HTMLElementApi
-    shape!: DOMRect
+    shape!: DOMRectApi
     how: How[] = [How.NONE, How.NONE, How.NONE, How.NONE]
     which: (HTMLElementApi | undefined)[] = [undefined, undefined, undefined, undefined]
     dist: number[] = [0, 0, 0, 0] // nope, that's what margin is for
@@ -51,9 +51,16 @@ export interface CSSStyleDeclarationApi {
     height: string
 }
 
+export interface DOMRectApi {
+    left: number
+    top: number
+    width: number
+    height: number
+}
+
 export interface HTMLElementApi {
     parentElement: HTMLElementApi | null
-    getBoundingClientRect: () => DOMRect
+    getBoundingClientRect: () => DOMRectApi
     style: CSSStyleDeclarationApi
 }
 
@@ -118,7 +125,11 @@ export class SpringLayout {
             return
         }
         this._invalidated = true
-        requestAnimationFrame(this.arrange)
+        if (this.#parent instanceof HTMLElement) {
+            requestAnimationFrame(this.arrange)
+        } else {
+            this.arrange()
+        }
     }
     @bind arrange() {
         this._invalidated = false
@@ -141,8 +152,8 @@ export class SpringLayout {
             }
             if ((ptr.nflag & 3) == 3 || (ptr.nflag & 12) == 12) {
                 //     if (!ptr -> it(window) -> flagShell && !ptr -> it(window) -> flagPopup) {
-                console.log('has undefined attachment')
-                console.log(ptr)
+                // console.log('has undefined attachment')
+                // console.log(ptr)
                 //         fprintf(stderr, "toad: '%s' within TForm has undefined attachment\n",
                 //             ptr -> name.c_str())
                 //         bError = true
@@ -154,10 +165,8 @@ export class SpringLayout {
         const form = [0, 0, 0, 0]
         {
             const shape = this.#parent.getBoundingClientRect()
-            form[TOP] = shape.top
-            form[BOTTOM] = shape.top + shape.height
-            form[LEFT] = shape.left
-            form[RIGHT] = shape.left + shape.width
+            form[BOTTOM] = shape.height
+            form[RIGHT] = shape.width
         }
 
         // arrange children
@@ -215,7 +224,13 @@ export class SpringLayout {
                             } break
                             case How.ELEMENT: {
                                 // debug && console.log(`${ename}: attach ${Side[i]} to element`)
-                                const ptr2 = this.#def.get(ptr.which[i]!)! // opposite window
+                                if (!ptr.which[i]) {
+                                    throw Error(`no which for ${How[i]} ${ptr}`)
+                                }
+                                const ptr2 = this.#def.get(ptr.which[i]!) // opposite window
+                                if (!ptr2) {
+                                    throw Error(`no form node for ${How[i]} ${ptr}`)
+                                }
                                 if ((ptr2.done) & (1 << (i ^ 1))) {    // opposite side is set
                                     ptr.done |= (1 << i)
                                     ptr.coord[i] = ptr2.coord[i ^ 1]
@@ -269,10 +284,19 @@ export class SpringLayout {
                     // const style = getComputedStyle(ptr.element)
                     // console.log(parseFloat(style.paddingLeft))
 
-                    const x = ptr.coord[LEFT]
-                    const y = ptr.coord[TOP]
-                    const w = ptr.coord[RIGHT] - ptr.coord[LEFT]
-                    const h = ptr.coord[BOTTOM] - ptr.coord[TOP]
+                    let x = ptr.coord[LEFT]
+                    let y = ptr.coord[TOP]
+                    let w = ptr.coord[RIGHT] - ptr.coord[LEFT]
+                    let h = ptr.coord[BOTTOM] - ptr.coord[TOP]
+                    if (w < 0) {
+                        w = -w
+                        x -= w
+                    }
+                    if (h < 0) {
+                        h = -h
+                        y -= h
+                    }
+
                     // debug && console.log(`<${ptr.element.nodeName.toLowerCase()} class="${ptr.element.className}" /> -> ${x}, ${y}, ${w}, ${h}`)
                     // ptr.element.style.
                     ptr.element.style.position = 'absolute'
