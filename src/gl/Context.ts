@@ -5,7 +5,7 @@ import type { Controller } from './controllers/Controller'
 import { Mat4Model } from './Mat4Model'
 import { bind } from 'src/editor/appkit/details/decorators/bind'
 import { BindGroupLayoutCollection } from './details/BindGroupLayoutCollection'
-import { ShaderCollection } from './details/ShaderCollection'
+import { ShaderCollection } from './shaders/ShaderCollection'
 import type { IndyNode } from "src/nodes/IndyNode"
 import { replaceChildren } from 'toad.jsx/jsx-runtime'
 import { deg2rad } from './algorithms/deg2rad'

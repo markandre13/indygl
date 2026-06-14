@@ -76,14 +76,14 @@ export class Mesh extends IndyNode implements MeshData {
             maxz = Math.max(maxx, z)
         }
 
-        x = (minx + maxx) / 2
-        y = (miny + maxy) / 2
-        z = (minz + maxz) / 2
+        const origin = vec3.fromValues((minx + maxx) / 2, (miny + maxy) / 2, (minz + maxz) / 2,)
 
-        const origin = this.parent!.origin!
-        origin[0] += x
-        origin[1] += y
-        origin[2] += z
+        vec3.transformMat3(origin, origin, this.combined)
+
+        // const origin = this.parent!.origin!
+        // origin[0] += x
+        // origin[1] += y
+        // origin[2] += z
 
         return origin
     }

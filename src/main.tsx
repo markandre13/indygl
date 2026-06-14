@@ -15,6 +15,8 @@ import { deg2rad } from './gl/algorithms/deg2rad'
 import { Texture } from './gl/buffers/Texture'
 import { ViewportShading } from './editor/app/ViewportShading'
 import { ObjectSelectController } from './gl/controllers/ObjectSelectController'
+import { VertexBuffer } from './gl/buffers/VertexBuffer'
+import { IndexBuffer } from './gl/buffers/IndexBuffer'
 
 // [ ] render both texture & rgb
 // [ ] select object
@@ -57,6 +59,52 @@ import { ObjectSelectController } from './gl/controllers/ObjectSelectController'
 //       or draw everything to texture, draw normal object to erase, then compose into image?
 
 // [ ] re-enable edit mode
+
+class AxisRenderer {
+    context: Context
+    active?: Mesh
+    points: VertexBuffer
+    indices: IndexBuffer // TODO: we could do without (and one with colors..., no depth check, ...)
+    materialXAxis: Material // won't be needed with different shader
+
+    constructor(context: Context) {
+        this.context = context
+        const device = context.device
+        const s = 30
+        this.points = new VertexBuffer(device, [
+            -s, 0, 0,
+            s, 0, 0
+        ])
+        this.indices = new IndexBuffer(device, [0, 1])
+
+        this.materialXAxis = new Material(context, [1, 0, 0, 1])
+    }
+    render(pass: GPURenderPassEncoder) {
+        const context = this.context
+        const selection = context.selection
+        if (!selection.active) {
+            this.active = undefined
+            return
+        }
+        if (selection.active !== this.active) {
+            // console.log("PREPARE AXIS")
+            this.active = selection.active as Mesh
+            // const origin = this.active.origin!
+            // const s = 30
+            // this.points.update([
+            //     -s, 0, 0,
+            //     s, 0, 0
+            // ])
+        }
+        // console.log("DRAW AXIS")
+        pass.setPipeline(context.shader.p3_idx_line.pipeline)
+        pass.setBindGroup(1, this.active.modelView.bindGroup)
+        pass.setBindGroup(2, this.materialXAxis.bindGroup)
+        pass.setVertexBuffer(0, this.points.buffer)
+        pass.setIndexBuffer(this.indices.buffer, 'uint32')
+        pass.drawIndexed(2)
+    }
+}
 
 export async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
@@ -102,6 +150,8 @@ export async function main() {
     context.pushController(new BasicMode(context))
     context.pushController(new ObjectSelectController(context, root))
 
+    const axisRenderer = new AxisRenderer(context)
+
     // const teapot = new XForm(root)
     // const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
     // teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
@@ -144,6 +194,7 @@ export async function main() {
 
     const background = new Material(context, context.backgroundColor)
     // const black = new Material(context, [0, 0, 0, 1])
+
 
     context.paint = () => {
 
@@ -343,6 +394,8 @@ export async function main() {
 
         pass.setPipeline(context.shader.floor.pipeline)
         pass.draw(6)
+
+        axisRenderer.render(pass)
 
         pass.end()
 

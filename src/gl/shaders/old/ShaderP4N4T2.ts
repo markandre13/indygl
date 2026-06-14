@@ -11,9 +11,7 @@ import { Shader } from "../Shader"
  */
 export class ShaderP4N4T2 extends Shader {
     pipeline: GPURenderPipeline
-    constructor(device: Device,
-        context: Context
-    ) {
+    constructor(device: Device, context: Context) {
         super(device, code)
         const pipelineDef: GPURenderPipelineDescriptor = {
             layout: 'auto',
