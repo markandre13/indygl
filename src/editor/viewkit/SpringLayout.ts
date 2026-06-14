@@ -1,18 +1,33 @@
 import { bind } from "../appkit/details/decorators/bind"
 
 // type SpringHow = "none" | "form" | "window" | "opposite"
-type SpringWhere = "top" | "bottom" | "left" | "right"
+
+/**
+ * Specifies which sides of an element to position.
+ */
+enum SpringWhere {
+    TOP, BOTTOM, LEFT, RIGHT
+}
 
 enum How {
     NONE, FORM, ELEMENT, OPPOSITE
 }
 
+/**
+ * Definition for how an element should be positioned.
+ */
 export interface SpringDefinition {
-    element: HTMLElementApi
+    /** The HTML element to position */
+    element: SpringLayoutElementApi
+    /** Which sides to position */
     where: SpringWhere[]
-    which?: HTMLElementApi
-    width?: number
-    height?: number
+    /** Optional reference element for element-based positioning */
+    which?: SpringLayoutElementApi
+
+    /** Optional width for the element */
+    // width?: number
+    /** Optional height for the element */
+    // height?: number
 }
 
 const HAS_T = 1
@@ -25,14 +40,12 @@ const BOTTOM = 1
 const LEFT = 2
 const RIGHT = 3
 
-const Side = ["TOP", "BOTTOM", "LEFT", "RIGHT"]
-
 class FormNode {
-    element!: HTMLElementApi
+    element!: SpringLayoutElementApi
     shape!: DOMRectApi
     how: How[] = [How.NONE, How.NONE, How.NONE, How.NONE]
-    which: (HTMLElementApi | undefined)[] = [undefined, undefined, undefined, undefined]
-    dist: number[] = [0, 0, 0, 0] // nope, that's what margin is for
+    which: (SpringLayoutElementApi | undefined)[] = [undefined, undefined, undefined, undefined]
+    dist: number[] = [0, 0, 0, 0] // TODO: this is what margin is for
     coord: number[] = [0, 0, 0, 0]
     w: number = 0
     h: number = 0
@@ -42,7 +55,7 @@ class FormNode {
 
 const debug = false
 
-export interface CSSStyleDeclarationApi {
+interface CSSStyleDeclarationApi {
     position: string
     boxSizing: string
     left: string
@@ -51,27 +64,139 @@ export interface CSSStyleDeclarationApi {
     height: string
 }
 
-export interface DOMRectApi {
+interface DOMRectApi {
     left: number
     top: number
     width: number
     height: number
 }
 
-export interface HTMLElementApi {
-    parentElement: HTMLElementApi | null
+export interface SpringLayoutElementApi {
+    parentElement: SpringLayoutElementApi | null
     getBoundingClientRect: () => DOMRectApi
     style: CSSStyleDeclarationApi
 }
 
 /**
- * HTML/CSS is designed with text documents in mind.
+ * Builder class for creating SpringLayout definitions with a fluent API.
  * 
+ * @example
+ * ```typescript
+ * SpringLayout.create()
+ *   .element(element1).top().left()
+ *   .element(element2).top(element1)
+ *   .build()
+ * ```
+ */
+class SpringLayoutBuilder {
+    private definitions: SpringDefinition[] = [];
+    private currentElement?: SpringLayoutElementApi
+
+    /**
+     * Specifies the element to be positioned.
+     * 
+     * @param element The HTML element to position
+     * @returns This builder instance for chaining
+     */
+    element(element: SpringLayoutElementApi): SpringLayoutBuilder {
+        this.currentElement = element
+        return this
+    }
+
+    /**
+     * Adds top positioning constraint. Optionally specify an element to position
+     * this element relative to.
+     * 
+     * @param element Optional element to position relative to
+     * @returns This builder instance for chaining
+     */
+    top(element?: SpringLayoutElementApi): SpringLayoutBuilder {
+        return this.define(SpringWhere.TOP, element)
+    }
+
+    /**
+     * Adds bottom positioning constraint. Optionally specify an element to position
+     * this element relative to.
+     * 
+     * @param element Optional element to position relative to
+     * @returns This builder instance for chaining
+     */
+    bottom(element?: SpringLayoutElementApi): SpringLayoutBuilder {
+        return this.define(SpringWhere.BOTTOM, element)
+    }
+
+    /**
+     * Adds left positioning constraint. Optionally specify an element to position
+     * this element relative to.
+     * 
+     * @param element Optional element to position relative to
+     * @returns This builder instance for chaining
+     */
+    left(element?: SpringLayoutElementApi): SpringLayoutBuilder {
+        return this.define(SpringWhere.LEFT, element)
+    }
+
+    /**
+     * Adds right positioning constraint. Optionally specify an element to position
+     * this element relative to.
+     * 
+     * @param element Optional element to position relative to
+     * @returns This builder instance for chaining
+     */
+    right(element?: SpringLayoutElementApi): SpringLayoutBuilder {
+        return this.define(SpringWhere.RIGHT, element)
+    }
+
+    /**
+     * Finalizes the SpringLayout definition and creates a new SpringLayout instance.
+     * 
+     * @returns A new SpringLayout instance with the defined constraints
+     */
+    build(): SpringLayout {
+        return new SpringLayout(this.definitions)
+    }
+
+    private define(where: SpringWhere, which?: SpringLayoutElementApi): SpringLayoutBuilder {
+        for (const def of this.definitions) {
+            if (def.element === this.currentElement && def.which === which) {
+                if (!def.where.includes(where)) {
+                    def.where.push(where)
+                }
+                return this
+            }
+        }
+        this.definitions.push({
+            element: this.currentElement!,
+            where: [where],
+            which
+        })
+        return this
+    }
+}
+
+/**
+ * SpringLayout provides a flexible layout system for positioning HTML elements
+ * using spring-based constraints similar to traditional GUI layout managers.
  * 
+ * Elements can be positioned relative to their parent container (form-based)
+ * or relative to other elements (element-based).
+ * 
+ * @example Using fluent API:
+ * ```typescript
+ * SpringLayout.create()
+ *   .element(element1).top().left()
+ *   .element(element2).top(element1)
+ *   .build()
+ * ```
  */
 export class SpringLayout {
-    #def = new Map<HTMLElementApi, FormNode>()
-    #parent!: HTMLElementApi
+    #def = new Map<SpringLayoutElementApi, FormNode>()
+    #parent!: SpringLayoutElementApi
+
+    /**
+     * Fluent API for building SpringLayout definitions
+     */
+    static create() { return new SpringLayoutBuilder() }
 
     constructor(def: SpringDefinition[]) {
         this.#initialize(def)
@@ -81,7 +206,7 @@ export class SpringLayout {
         this.resize()
     }
     #initialize(def: SpringDefinition[]) {
-        let p: HTMLElementApi | undefined
+        let p: SpringLayoutElementApi | undefined
         for (const d of def) {
             if (p === undefined) {
                 if (d.element.parentElement === null) {
@@ -101,19 +226,19 @@ export class SpringLayout {
                 node.element = d.element
                 this.#def.set(d.element, node)
             }
-            if (d.where.includes("top")) {
+            if (d.where.includes(SpringWhere.TOP)) {
                 node.which[TOP] = d.which
                 node.how[TOP] = d.which !== undefined ? How.ELEMENT : How.FORM
             }
-            if (d.where.includes("bottom")) {
+            if (d.where.includes(SpringWhere.BOTTOM)) {
                 node.which[BOTTOM] = d.which
                 node.how[BOTTOM] = d.which !== undefined ? How.ELEMENT : How.FORM
             }
-            if (d.where.includes("left")) {
+            if (d.where.includes(SpringWhere.LEFT)) {
                 node.which[LEFT] = d.which
                 node.how[LEFT] = d.which !== undefined ? How.ELEMENT : How.FORM
             }
-            if (d.where.includes("right")) {
+            if (d.where.includes(SpringWhere.RIGHT)) {
                 node.which[RIGHT] = d.which
                 node.how[RIGHT] = d.which !== undefined ? How.ELEMENT : How.FORM
             }

@@ -77,23 +77,30 @@ export function MainScreen(props: { model: EditorModel }) {
     //  panel { toolbar <- top, status <- bottom , form <- right }
     //  status { form <- bottom, left, right  }
     //
-    new SpringLayout([
-        { element: menubar, where: ["top", "left", "right"] },
-        { element: toolbar, where: ["top"], which: menubar },
-        { element: toolbar, where: ["left", "right"] },
-        { element: canvas, where: ["top"], which: toolbar },
-        { element: canvas, where: ["left"] },
-        { element: canvas, where: ["bottom"], which: status },
-        { element: canvas, where: ["right"], which: panel },
-        { element: overlay, where: ["top"], which: toolbar },
-        { element: overlay, where: ["left"] },
-        { element: overlay, where: ["bottom"], which: status },
-        { element: overlay, where: ["right"], which: panel },
-        { element: panel, where: ["top"], which: toolbar },
-        { element: panel, where: ["right"] },
-        { element: panel, where: ["bottom"], which: status },
-        { element: status, where: ["bottom", "left", "right"] },
-    ])
-
+    // new SpringLayout([
+    //     { element: menubar, where: ["top", "left", "right"] },
+    //     { element: toolbar, where: ["top"], which: menubar },
+    //     { element: toolbar, where: ["left", "right"] },
+    //     { element: canvas, where: ["top"], which: toolbar },
+    //     { element: canvas, where: ["left"] },
+    //     { element: canvas, where: ["bottom"], which: status },
+    //     { element: canvas, where: ["right"], which: panel },
+    //     { element: overlay, where: ["top"], which: toolbar },
+    //     { element: overlay, where: ["left"] },
+    //     { element: overlay, where: ["bottom"], which: status },
+    //     { element: overlay, where: ["right"], which: panel },
+    //     { element: panel, where: ["top"], which: toolbar },
+    //     { element: panel, where: ["right"] },
+    //     { element: panel, where: ["bottom"], which: status },
+    //     { element: status, where: ["bottom", "left", "right"] },
+    // ])
+    SpringLayout.create()
+        .element(menubar).top().left().right()
+        .element(toolbar).top(menubar).left().right()
+        .element(canvas).top(toolbar).left().bottom(status).right(panel)
+        .element(overlay).top(toolbar).left().bottom(status).right(panel)
+        .element(panel).top(toolbar).right().bottom(status)
+        .element(status).bottom().left().right()
+        .build()
     return root
 }
