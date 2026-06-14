@@ -9,6 +9,7 @@ import { ShaderCollection } from './shaders/ShaderCollection'
 import type { IndyNode } from "src/nodes/IndyNode"
 import { replaceChildren } from 'toad.jsx/jsx-runtime'
 import { deg2rad } from './algorithms/deg2rad'
+import { AxisRenderer } from './AxisRenderer'
 
 export enum Projection {
     ORTHOGONAL,
@@ -36,14 +37,17 @@ export class Context {
     context: GPUCanvasContext | null = null;
     presentationFormat: GPUTextureFormat
 
-
     readonly selection = new Selection()
 
     bindGroupLayout: BindGroupLayoutCollection
     shader: ShaderCollection
 
+
     sampler: GPUSampler
     sceneUniforms: SceneUniform
+
+    axisRenderer: AxisRenderer
+
     // renderPassDescriptor: GPURenderPassDescriptor
 
     private _controllerStack: Controller[] = []
@@ -109,6 +113,7 @@ export class Context {
             minFilter: 'linear',
         })
         this.shader = new ShaderCollection(this)
+        this.axisRenderer = new AxisRenderer(this)
     }
 
     /**

@@ -76,10 +76,10 @@ fn fragment_main(in: Transfer) -> @location(0) vec4f {
     d /= 400;
 
     if(aCoarse > d) {
-        if (abs(in.worldPos.x) < d) {
+        if (abs(in.worldPos.z) < d) {
             return vec4f(gridColorAxisX.rgb, aFine * depthFade);
         }
-        if (abs(in.worldPos.z) < d) {
+        if (abs(in.worldPos.x) < d) {
             return vec4f(gridColorAxisZ.rgb, aFine * depthFade);
         }
         return vec4f(gridColorCoarse.rgb, aFine * depthFade);

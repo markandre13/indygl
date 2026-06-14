@@ -99,5 +99,11 @@ describe("world/screen coordinate system conversions", () => {
 function fromWorldToScreenAndBack(point: vec3, perspective: mat4, camera: mat4, canvas: Size) {
     const perspectiveCamera = mat4.multiply(mat4.create(), perspective, camera)
     const screen = world2screen(point, perspectiveCamera, canvas)
-    return screen2pointInPlane(screen, point, perspective, camera, canvas)
+
+    const camMat = mat4.invert(mat4.create(), camera)!
+    const pn = vec3.fromValues(0, 0, 1)
+    vec3.transformMat4(pn, pn, camMat)
+    vec3.normalize(pn, pn)
+
+    return screen2pointInPlane(screen, point, perspective, camera, pn, canvas)
 }

@@ -15,89 +15,6 @@ import { deg2rad } from './gl/algorithms/deg2rad'
 import { Texture } from './gl/buffers/Texture'
 import { ViewportShading } from './editor/app/ViewportShading'
 import { ObjectSelectController } from './gl/controllers/ObjectSelectController'
-import { VertexBuffer } from './gl/buffers/VertexBuffer'
-import { IndexBuffer } from './gl/buffers/IndexBuffer'
-
-// [ ] render both texture & rgb
-// [ ] select object
-// [ ] render object as selected
-//     Blender, Viewport Overlays, Objects, Outline Selected, Show an outline hightlight around selected objects.
-//     source/blender/draw/engines/overlay/overlay_base.hh
-//     source/blender/draw/engines/overlay/overlay_outline.hh
-//     source/blender/draw/engines/overlay/shaders/overlay_outline_prepass_vert.glsl
-//     * the overlay outline prepass writes 2 bits (0-4)
-//       * 3 last selected (active): light orange
-//       * 1 other selected: dark orange
-//       * 0 during transform: white
-//     * width: 2px
-//     * can be seen through non-selected objects
-//     * on intersections with other selected objects
-//
-//     this is close to what i need, let's start here:
-//       https://webgpufundamentals.org/webgpu/lessons/webgpu-highlighting.html
-//     in WebGPU blur seems to be a compute pass? some use a fragment shader...
-
-// https://www.reddit.com/r/opengl/comments/14jisvu/how_can_i_outline_selected_meshes/
-// https://learnopengl.com/Advanced-OpenGL/Stencil-testing
-
-//     https://www.marginallyclever.com/2025/09/drawing-thick-outlines-in-opengl/
-//     Ben Golus’ Jump Flood Algorithm (JFA) is the final answer for most people.
-//     It’s the hardest to do and the most efficient at run time. 
-//     https://en.wikipedia.org/wiki/Jump_flooding_algorithm  
-//
-//     source/blender/editors/object/object_modes.cc
-//       OB_MODE_EDIT | OB_MODE_OBJECT
-//     source/blender/editors/object/object_edit.cc
-//       context_active_object(), objects_in_mode_or_selected()
-//       BKE_view_layer_active_object_get()
-//     source/blender/blenkernel/intern/paint.cc
-//        /* default to image paint */
-//        return &ts->imapaint.paint;
-//     maybe start with
-//     * move edges by smooth normal to the outside
-//     * draw backface culled... (if the orientation is correct...)
-//       or draw everything to texture, draw normal object to erase, then compose into image?
-
-// [ ] re-enable edit mode
-
-class AxisRenderer {
-    context: Context
-    active?: Mesh
-    points: VertexBuffer
-    // indices: IndexBuffer // TODO: we could do without (and one with colors..., no depth check, ...)
-    // materialXAxis: Material // won't be needed with different shader
-
-    constructor(context: Context) {
-        this.context = context
-        const device = context.device
-        const s = 100
-        this.points = new VertexBuffer(device, [
-            -s, 0, 0, 1, 0, 0,
-            s, 0, 0, 1, 0, 0,
-
-            0, -s, 0, 0, 1, 0,
-            0, s, 0, 0, 1, 0,
-
-            0, 0, -s, 0, 0, 1,
-            0, 0, s, 0, 0, 1,
-        ])
-    }
-    render(pass: GPURenderPassEncoder) {
-        const context = this.context
-        const selection = context.selection
-        if (!selection.active) {
-            this.active = undefined
-            return
-        }
-        if (selection.active !== this.active) {
-            this.active = selection.active as Mesh
-        }
-        pass.setPipeline(context.shader.p3c3_line.pipeline)
-        pass.setBindGroup(1, this.active.modelView.bindGroup)
-        pass.setVertexBuffer(0, this.points.buffer)
-        pass.draw(6)
-    }
-}
 
 export async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
@@ -143,8 +60,6 @@ export async function main() {
     context.pushController(new BasicMode(context))
     context.pushController(new ObjectSelectController(context, root))
 
-    const axisRenderer = new AxisRenderer(context)
-
     // const teapot = new XForm(root)
     // const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
     // teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
@@ -161,12 +76,12 @@ export async function main() {
 
     const dodecahedron = new XForm(root)
     dodecahedron.transform = mat4.create()
-    mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15, 3.4, 0))
+    // mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15, 3.4, 0))
     const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
     dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
     // // context.selection.add(teapotMesh)
-    context.selection.add(dodecahedronMesh)
+    // context.selection.add(dodecahedronMesh)
 
     // const cube = new XForm(root)
     // const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
@@ -187,7 +102,6 @@ export async function main() {
 
     const background = new Material(context, context.backgroundColor)
     // const black = new Material(context, [0, 0, 0, 1])
-
 
     context.paint = () => {
 
@@ -388,7 +302,7 @@ export async function main() {
         pass.setPipeline(context.shader.floor.pipeline)
         pass.draw(6)
 
-        axisRenderer.render(pass)
+        context.axisRenderer.render(pass)
 
         pass.end()
 

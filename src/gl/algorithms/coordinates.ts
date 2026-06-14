@@ -70,16 +70,11 @@ export function screen2world(screen: Point, m: mat4, canvas: Size) {
     return result
 }
 
-export function screen2pointInPlane(screen: Point, point: vec3, perspective: mat4, camera: mat4, canvas: Size) {
+export function screen2pointInPlane(screen: Point, point: vec3, perspective: mat4, camera: mat4, pn: vec3, canvas: Size) {
     const perspectiveCamera = mat4.multiply(mat4.create(), perspective, camera)
     const camMat = mat4.invert(mat4.create(), camera)!
 
     const world = screen2world(screen, perspectiveCamera, canvas)
-
-    // plane normal in camera space, along which we want to move during grab
-    const pn = vec3.fromValues(0, 0, 1)
-    vec3.transformMat4(pn, pn, camMat)
-    vec3.normalize(pn, pn)
 
     // in WebGPU/OpenGL, the camera is always at (0, 0, 0) and the camera
     // matrix is moving the world around the camera. to have a matrix that
