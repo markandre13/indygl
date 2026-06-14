@@ -1,15 +1,15 @@
-import type { ModelUniform } from "../buffers/ModelUniform"
-import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
-import type { Texture } from "../buffers/Texture"
-import type { VertexBuffer } from "../buffers/VertexBuffer"
-import type { Context } from "../Context"
-import type { Device } from "../Device"
-import { Shader } from "./Shader"
+import type { ModelUniform } from "../../buffers/ModelUniform"
+import { FLOAT32_NUM_BYTES } from "../../buffers/sizeof"
+import type { Texture } from "../../buffers/Texture"
+import type { VertexBuffer } from "../../buffers/VertexBuffer"
+import type { Context } from "../../Context"
+import type { Device } from "../../Device"
+import { Shader } from "../Shader"
 
 /**
  * single vertex consisting of: point4f, normal4f, texCoord2
  */
-export class ShaderP3_N3_T2 extends Shader {
+export class ShaderP4N4T2 extends Shader {
     pipeline: GPURenderPipeline
     constructor(device: Device,
         context: Context
@@ -19,22 +19,13 @@ export class ShaderP3_N3_T2 extends Shader {
             layout: 'auto',
             vertex: {
                 buffers: [{
-                    arrayStride: FLOAT32_NUM_BYTES * 3,
+                    arrayStride: FLOAT32_NUM_BYTES * 10,
                     attributes: [
-                        { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
+                        { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x4' },
+                        { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 4, format: 'float32x4' },
+                        { shaderLocation: 2, offset: FLOAT32_NUM_BYTES * 8, format: 'float32x2' }
                     ]
-                }, {
-                    arrayStride: FLOAT32_NUM_BYTES * 3,
-                    attributes: [
-                        { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
-                    ]
-                }, {
-                    arrayStride: FLOAT32_NUM_BYTES * 2,
-                    attributes: [
-                        { shaderLocation: 2, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x2' }
-                    ]
-                }
-                ],
+                }],
                 module: this.module
             },
             fragment: {
@@ -75,9 +66,7 @@ export class ShaderP3_N3_T2 extends Shader {
     draw(pass: GPURenderPassEncoder,
         context: Context,
         modelUniforms: ModelUniform,
-        points: VertexBuffer,
-        normals: VertexBuffer,
-        texcoords: VertexBuffer,
+        positions: VertexBuffer,
         texture: Texture
     ) {
         if (texture.texture !== this.texture) {
@@ -86,10 +75,8 @@ export class ShaderP3_N3_T2 extends Shader {
         }
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
-        pass.setVertexBuffer(0, points.buffer)
-        pass.setVertexBuffer(1, normals.buffer)
-        pass.setVertexBuffer(2, texcoords.buffer)
-        pass.draw(points.buffer.size / FLOAT32_NUM_BYTES / 3)
+        pass.setVertexBuffer(0, positions.buffer)
+        pass.draw(positions.buffer.size / FLOAT32_NUM_BYTES / 10)
     }
 }
 
@@ -114,12 +101,12 @@ const code = /* wgsl */`
 
     @vertex
     fn vertex_main(
-        @location(0) position: vec3f,
-        @location(1) normal: vec3f,
+        @location(0) position: vec4f,
+        @location(1) normal: vec4f,
         @location(2) uv: vec2f
     ) -> Vertex2Fragment {
 
-        let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4f(position.xyz, 1);
+        let gl_Position = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * position;
 
         let ambientLight = vec3f(0.3, 0.3, 0.3);
         let directionalLightColor = vec3f(1, 1, 1);

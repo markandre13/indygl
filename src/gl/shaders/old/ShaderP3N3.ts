@@ -1,13 +1,12 @@
-import { ColorUniform } from "../buffers/ColorUniform"
-import type { IndexBuffer } from "../buffers/IndexBuffer"
-import type { ModelUniform } from "../buffers/ModelUniform"
-import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
-import type { VertexBuffer } from "../buffers/VertexBuffer"
-import type { Context } from "../Context"
-import type { Device } from "../Device"
-import { Shader } from "./Shader"
+import { ColorUniform } from "../../buffers/ColorUniform"
+import type { ModelUniform } from "../../buffers/ModelUniform"
+import { FLOAT32_NUM_BYTES } from "../../buffers/sizeof"
+import type { VertexBuffer } from "../../buffers/VertexBuffer"
+import type { Context } from "../../Context"
+import type { Device } from "../../Device"
+import { Shader } from "../Shader"
 
-export class ShaderP3_N3_IDX_Alpha extends Shader {
+export class ShaderP3N3 extends Shader {
     pipeline: GPURenderPipeline
     colorUniform: ColorUniform
     constructor(device: Device,
@@ -19,40 +18,24 @@ export class ShaderP3_N3_IDX_Alpha extends Shader {
             layout: 'auto',
             vertex: {
                 buffers: [{
-                    arrayStride: FLOAT32_NUM_BYTES * 3,
+                    arrayStride: FLOAT32_NUM_BYTES * 6,
                     attributes: [
                         { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
-                    ]
-                }, {
-                    arrayStride: FLOAT32_NUM_BYTES * 3,
-                    attributes: [
-                        { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
+                        { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 3, format: 'float32x3' },
                     ]
                 }],
                 module: this.module
             },
             fragment: {
                 module: this.module,
-                targets: [{
-                    format: context.presentationFormat,
-                    blend: {
-                        color: {
-                            srcFactor: 'src-alpha',
-                            dstFactor: 'one-minus-src-alpha'
-                        },
-                        alpha: {
-                            srcFactor: 'src-alpha',
-                            dstFactor: 'one-minus-src-alpha'
-                        },
-                    },
-                }]
+                targets: [{ format: context.presentationFormat }]
             },
             primitive: {
                 topology: 'triangle-list',
-                cullMode: 'back',
+                cullMode: 'none',
             },
             depthStencil: {
-                depthWriteEnabled: false,
+                depthWriteEnabled: true,
                 depthCompare: 'less',
                 format: context.depthTextureFormat,
             },
@@ -78,9 +61,7 @@ export class ShaderP3_N3_IDX_Alpha extends Shader {
     draw(pass: GPURenderPassEncoder,
         context: Context,
         modelUniforms: ModelUniform,
-        positions: VertexBuffer,
-        normals: VertexBuffer,
-        indices: IndexBuffer,
+        vertices: VertexBuffer,
         rgba: number[]
     ) {
         this.colorUniform.rgba = rgba
@@ -88,10 +69,8 @@ export class ShaderP3_N3_IDX_Alpha extends Shader {
 
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
-        pass.setVertexBuffer(0, positions.buffer)
-        pass.setVertexBuffer(1, normals.buffer)
-        pass.setIndexBuffer(indices.buffer, 'uint32')
-        pass.drawIndexed(indices.length)
+        pass.setVertexBuffer(0, vertices.buffer)
+        pass.draw(vertices.buffer.size / FLOAT32_NUM_BYTES / 6)
     }
 }
 
@@ -143,6 +122,5 @@ const code = /* wgsl */`
         vin: Vertex2Fragment
     ) -> @location(0) vec4f {
         return vec4f(colorUniforms.uColor.xyz * vin.vLighting, colorUniforms.uColor.w);
-        // return vec4f(colorUniforms.uColor.xyz * vin.vLighting, 0.3);
     }
 `

@@ -1,12 +1,12 @@
-import { ColorBuffer } from "../buffers/ColorBuffer"
-import type { ModelUniform } from "../buffers/ModelUniform"
-import { PositionBuffer } from "../buffers/PositionBuffer"
-import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
-import { Uniform } from "../buffers/Uniform"
-import type { Context } from "../Context"
-import type { Device } from "../Device"
-import { Shader } from "./Shader"
-import { PICK_SIZE } from "./ShaderP3_PickPoint"
+import { ColorBuffer } from "../../buffers/ColorBuffer"
+import type { ModelUniform } from "../../buffers/ModelUniform"
+import { PositionBuffer } from "../../buffers/PositionBuffer"
+import { FLOAT32_NUM_BYTES } from "../../buffers/sizeof"
+import { Uniform } from "../../buffers/Uniform"
+import type { Context } from "../../Context"
+import type { Device } from "../../Device"
+import { Shader } from "../Shader"
+import { PICK_SIZE } from "../ShaderP3_PickPoint"
 
 export class ShaderP3_C3_Point extends Shader {
     pipeline: GPURenderPipeline

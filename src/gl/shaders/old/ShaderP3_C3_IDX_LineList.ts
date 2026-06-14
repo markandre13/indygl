@@ -1,6 +1,6 @@
-import type { Context } from "../Context"
-import type { Device } from "../Device"
-import { ShaderP3_C3_IDX } from "./ShaderP3_C3_IDX"
+import type { Context } from "../../Context"
+import type { Device } from "../../Device"
+import { ShaderP3_C3_IDX } from "../ShaderP3_C3_IDX"
 
 export class ShaderP3_C3_IDX_LineList extends ShaderP3_C3_IDX {
     constructor(device: Device, context: Context) {

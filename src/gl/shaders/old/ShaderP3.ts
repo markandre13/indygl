@@ -1,9 +1,9 @@
-import { ColorUniform } from "../buffers/ColorUniform"
-import type { ModelUniform } from "../buffers/ModelUniform"
-import { PositionBuffer } from "../buffers/PositionBuffer"
-import type { Context } from "../Context"
-import type { Device } from "../Device"
-import { Shader } from "./Shader"
+import { ColorUniform } from "../../buffers/ColorUniform"
+import type { ModelUniform } from "../../buffers/ModelUniform"
+import { PositionBuffer } from "../../buffers/PositionBuffer"
+import type { Context } from "../../Context"
+import type { Device } from "../../Device"
+import { Shader } from "../Shader"
 
 export class ShaderP3 extends Shader {
     pipeline: GPURenderPipeline
