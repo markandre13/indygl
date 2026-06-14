@@ -10,7 +10,13 @@ export class ShaderP3C3_Line extends Shader {
         super(device, 'p3c3')
         const pipelineDef: GPURenderPipelineDescriptor = {
             label,
-            layout: 'auto',
+            layout: device.device.createPipelineLayout({
+                label,
+                bindGroupLayouts: [
+                    context.bindGroupLayout.scene,
+                    context.bindGroupLayout.model,
+                ]
+            }),
             vertex: {
                 buffers: [{
                     arrayStride: FLOAT32_NUM_BYTES * 6,

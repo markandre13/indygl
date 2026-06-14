@@ -64,20 +64,23 @@ class AxisRenderer {
     context: Context
     active?: Mesh
     points: VertexBuffer
-    indices: IndexBuffer // TODO: we could do without (and one with colors..., no depth check, ...)
-    materialXAxis: Material // won't be needed with different shader
+    // indices: IndexBuffer // TODO: we could do without (and one with colors..., no depth check, ...)
+    // materialXAxis: Material // won't be needed with different shader
 
     constructor(context: Context) {
         this.context = context
         const device = context.device
-        const s = 30
+        const s = 100
         this.points = new VertexBuffer(device, [
-            -s, 0, 0,
-            s, 0, 0
-        ])
-        this.indices = new IndexBuffer(device, [0, 1])
+            -s, 0, 0, 1, 0, 0,
+            s, 0, 0, 1, 0, 0,
 
-        this.materialXAxis = new Material(context, [1, 0, 0, 1])
+            0, -s, 0, 0, 1, 0,
+            0, s, 0, 0, 1, 0,
+
+            0, 0, -s, 0, 0, 1,
+            0, 0, s, 0, 0, 1,
+        ])
     }
     render(pass: GPURenderPassEncoder) {
         const context = this.context
@@ -87,22 +90,12 @@ class AxisRenderer {
             return
         }
         if (selection.active !== this.active) {
-            // console.log("PREPARE AXIS")
             this.active = selection.active as Mesh
-            // const origin = this.active.origin!
-            // const s = 30
-            // this.points.update([
-            //     -s, 0, 0,
-            //     s, 0, 0
-            // ])
         }
-        // console.log("DRAW AXIS")
-        pass.setPipeline(context.shader.p3_idx_line.pipeline)
+        pass.setPipeline(context.shader.p3c3_line.pipeline)
         pass.setBindGroup(1, this.active.modelView.bindGroup)
-        pass.setBindGroup(2, this.materialXAxis.bindGroup)
         pass.setVertexBuffer(0, this.points.buffer)
-        pass.setIndexBuffer(this.indices.buffer, 'uint32')
-        pass.drawIndexed(2)
+        pass.draw(6)
     }
 }
 
@@ -173,7 +166,7 @@ export async function main() {
     dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
     // // context.selection.add(teapotMesh)
-    // // context.selection.add(dodecahedronMesh)
+    context.selection.add(dodecahedronMesh)
 
     // const cube = new XForm(root)
     // const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
