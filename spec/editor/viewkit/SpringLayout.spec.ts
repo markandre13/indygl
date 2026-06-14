@@ -283,19 +283,43 @@ describe("SpringLayout", () => {
             expect(child1.style).to.deep.equal({
                 "boxSizing": "border-box",
                 "position": "absolute",
-                "left": `${1920-52}px`,
+                "left": `${1920 - 52}px`,
                 "top": "11px",
                 "width": "52px",
-                "height": `${1080-11-13}px`,
+                "height": `${1080 - 11 - 13}px`,
             })
             expect(child2.style).to.deep.equal({
                 "boxSizing": "border-box",
                 "position": "absolute",
                 "left": "0px",
-                "top": `${1080-13}px`,
+                "top": `${1080 - 13}px`,
                 "width": "1920px",
                 "height": "13px",
             })
+        })
+    })
+    describe("error handling", () => {
+        it("left and right recursion", () => {
+            const parent = makeElement(null, 10, 20, 1920, 1080)
+            const child0 = makeElement(parent, 31, 41, 51, 11)
+            const child1 = makeElement(parent, 32, 43, 52, 12)
+            expect(() => {
+                SpringLayout.create()
+                    .element(child0).left(child1)
+                    .element(child1).right(child0)
+                    .build()
+            }).toThrow("FormLayout: circular dependency between left and right")
+        })
+        it("top and bottom recursion", () => {
+            const parent = makeElement(null, 10, 20, 1920, 1080)
+            const child0 = makeElement(parent, 31, 41, 51, 11)
+            const child1 = makeElement(parent, 32, 43, 52, 12)
+            expect(() => {
+                SpringLayout.create()
+                    .element(child0).top(child1)
+                    .element(child1).bottom(child0)
+                    .build()
+            }).toThrow("FormLayout: circular dependency between top and bottom")
         })
     })
 })
