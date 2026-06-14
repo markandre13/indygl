@@ -28,10 +28,10 @@ const RIGHT = 3
 const Side = ["TOP", "BOTTOM", "LEFT", "RIGHT"]
 
 class FormNode {
-    element: HTMLElement = undefined as any
+    element!: HTMLElementApi
     shape!: DOMRect
     how: How[] = [How.NONE, How.NONE, How.NONE, How.NONE]
-    which: (HTMLElement | undefined)[] = [undefined, undefined, undefined, undefined]
+    which: (HTMLElementApi | undefined)[] = [undefined, undefined, undefined, undefined]
     dist: number[] = [0, 0, 0, 0] // nope, that's what margin is for
     coord: number[] = [0, 0, 0, 0]
     w: number = 0
@@ -42,40 +42,57 @@ class FormNode {
 
 const debug = false
 
+export interface CSSStyleDeclarationApi {
+    position: string
+    boxSizing: string
+    left: string
+    top: string
+    width: string
+    height: string
+}
+
+export interface HTMLElementApi {
+    parentElement: HTMLElementApi | null
+    getBoundingClientRect: () => DOMRect
+    style: CSSStyleDeclarationApi
+}
+
 /**
  * HTML/CSS is designed with text documents in mind.
  * 
  * 
  */
 export class SpringLayout {
-    private def = new Map<HTMLElement, FormNode>()
-    parent!: HTMLElement
+    #def = new Map<HTMLElementApi, FormNode>()
+    #parent!: HTMLElementApi
 
     constructor(def: SpringDefinition[]) {
-        this.initialize(def)
-        new ResizeObserver(this.resize).observe(this.parent)
+        this.#initialize(def)
+        if (this.#parent instanceof HTMLElement) {
+            new ResizeObserver(this.resize).observe(this.#parent)
+        }
         this.resize()
     }
-    initialize(def: SpringDefinition[]) {
-        let p: HTMLElement | undefined
+    #initialize(def: SpringDefinition[]) {
+        let p: HTMLElementApi | undefined
         for (const d of def) {
             if (p === undefined) {
                 if (d.element.parentElement === null) {
                     throw Error(`element needs parent`)
                 }
                 p = d.element.parentElement
-                this.parent = p
+                this.#parent = p
             } else {
                 if (d.element.parentElement !== p) {
                     throw Error('children have different parents')
                 }
             }
 
-            let node = this.def.get(d.element)
+            let node = this.#def.get(d.element)
             if (node === undefined) {
                 node = new FormNode()
                 node.element = d.element
-                this.def.set(d.element, node)
+                this.#def.set(d.element, node)
             }
             if (d.where.includes("top")) {
                 node.which[TOP] = d.which
@@ -109,7 +126,7 @@ export class SpringLayout {
 
         // initialize data structures
         //---------------------------- 
-        for (const ptr of this.def.values()) {
+        for (const ptr of this.#def.values()) {
             ptr.done = 0
             ptr.nflag = 0
             ptr.shape = ptr.element.getBoundingClientRect()
@@ -123,20 +140,20 @@ export class SpringLayout {
                 }
             }
             if ((ptr.nflag & 3) == 3 || (ptr.nflag & 12) == 12) {
-            //     if (!ptr -> it(window) -> flagShell && !ptr -> it(window) -> flagPopup) {
+                //     if (!ptr -> it(window) -> flagShell && !ptr -> it(window) -> flagPopup) {
                 console.log('has undefined attachment')
                 console.log(ptr)
-            //         fprintf(stderr, "toad: '%s' within TForm has undefined attachment\n",
-            //             ptr -> name.c_str())
-            //         bError = true
-            //     }
+                //         fprintf(stderr, "toad: '%s' within TForm has undefined attachment\n",
+                //             ptr -> name.c_str())
+                //         bError = true
+                //     }
             }
 
-            debug && console.log(`<${ptr.element.nodeName.toLowerCase()} class="${ptr.element.className}" ${ptr.done} ${ptr.nflag}/>`)
+            // debug && console.log(`<${ptr.element.nodeName.toLowerCase()} class="${ptr.element.className}" ${ptr.done} ${ptr.nflag}/>`)
         }
         const form = [0, 0, 0, 0]
         {
-            const shape = this.parent.getBoundingClientRect()
+            const shape = this.#parent.getBoundingClientRect()
             form[TOP] = shape.top
             form[BOTTOM] = shape.top + shape.height
             form[LEFT] = shape.left
@@ -146,19 +163,19 @@ export class SpringLayout {
         // arrange children
         //+-----------------
 
-        const nChildren = this.def.size
+        const nChildren = this.#def.size
         let bKeepOwnBorder = true
         let nBorderOverlap = 0
 
         let count = 0
         let done = 0 // we're done when `done' equals `nChildren'
 
-        let iterator = this.def.values()
+        let iterator = this.#def.values()
 
-        while(true) {
+        while (true) {
             let next = iterator.next()
             if (next.done) {
-                iterator = this.def.values()
+                iterator = this.#def.values()
                 next = iterator.next()
             }
             const ptr = next.value!
@@ -172,14 +189,14 @@ export class SpringLayout {
                 // attach all sides where the opposite side of another object is known
                 //---------------------------------------------------------------------
 
-                const ename = `<${ptr.element.nodeName.toLowerCase()} class="${ptr.element.className}" />`
+                // const ename = `<${ptr.element.nodeName.toLowerCase()} class="${ptr.element.className}" />`
 
                 for (let i = 0; i < 4; i++) {
                     if (!(ptr.done & (1 << i))) {
                         // console.log(`    ${How[ptr.how[i]]}`)
                         switch (ptr.how[i]) {
                             case How.FORM: {
-                                debug && console.log(`${ename}: attach ${Side[i]} to form`)
+                                // debug && console.log(`${ename}: attach ${Side[i]} to form`)
                                 ptr.done |= (1 << i)
                                 ptr.coord[i] = form[i]
                                 if (!bKeepOwnBorder) {
@@ -197,8 +214,8 @@ export class SpringLayout {
                                 count = 0
                             } break
                             case How.ELEMENT: {
-                                debug && console.log(`${ename}: attach ${Side[i]} to element`)
-                                const ptr2 = this.def.get(ptr.which[i]!)! // opposite window
+                                // debug && console.log(`${ename}: attach ${Side[i]} to element`)
+                                const ptr2 = this.#def.get(ptr.which[i]!)! // opposite window
                                 if ((ptr2.done) & (1 << (i ^ 1))) {    // opposite side is set
                                     ptr.done |= (1 << i)
                                     ptr.coord[i] = ptr2.coord[i ^ 1]
@@ -231,19 +248,19 @@ export class SpringLayout {
                     //------------------------------------------------------------
                     // console.log(`2nd strategy`)
                     if (ptr.nflag & HAS_T) {
-                        debug && console.log(`${ename}: has no top attachment, calculating it from bottom(${ptr.coord[BOTTOM]}) - height(${ptr.shape.height})`)
+                        // debug && console.log(`${ename}: has no top attachment, calculating it from bottom(${ptr.coord[BOTTOM]}) - height(${ptr.shape.height})`)
                         ptr.coord[TOP] = ptr.coord[BOTTOM] - ptr.shape.height
                     }
                     if (ptr.nflag & HAS_B) {
-                        debug && console.log(`${ename}: has no bottom attachment, calculating it from top(${ptr.coord[TOP]}) + height(${ptr.shape.height})`)
+                        // debug && console.log(`${ename}: has no bottom attachment, calculating it from top(${ptr.coord[TOP]}) + height(${ptr.shape.height})`)
                         ptr.coord[BOTTOM] = ptr.coord[TOP] + ptr.shape.height
                     }
                     if (ptr.nflag & HAS_L) {
-                        debug && console.log(`${ename}: has no left attachment, calculating it from right(${ptr.coord[RIGHT]}) - width(${ptr.shape.width})`)
+                        // debug && console.log(`${ename}: has no left attachment, calculating it from right(${ptr.coord[RIGHT]}) - width(${ptr.shape.width})`)
                         ptr.coord[LEFT] = ptr.coord[RIGHT] - ptr.shape.width
                     }
                     if (ptr.nflag & HAS_R) {
-                        debug && console.log(`${ename}: has no right attachment, calculating it from left(${ptr.coord[RIGHT]}) + width(${ptr.shape.width})`)
+                        // debug && console.log(`${ename}: has no right attachment, calculating it from left(${ptr.coord[RIGHT]}) + width(${ptr.shape.width})`)
                         ptr.coord[RIGHT] = ptr.coord[LEFT] + ptr.shape.width
                     }
 
@@ -256,7 +273,7 @@ export class SpringLayout {
                     const y = ptr.coord[TOP]
                     const w = ptr.coord[RIGHT] - ptr.coord[LEFT]
                     const h = ptr.coord[BOTTOM] - ptr.coord[TOP]
-                    debug && console.log(`<${ptr.element.nodeName.toLowerCase()} class="${ptr.element.className}" /> -> ${x}, ${y}, ${w}, ${h}`)
+                    // debug && console.log(`<${ptr.element.nodeName.toLowerCase()} class="${ptr.element.className}" /> -> ${x}, ${y}, ${w}, ${h}`)
                     // ptr.element.style.
                     ptr.element.style.position = 'absolute'
                     ptr.element.style.boxSizing = 'border-box'
