@@ -15,7 +15,7 @@ export class AxisRenderer {
     constructor(context: Context) {
         this.context = context
         const device = context.device
-        const s = 100
+        const s = 10000
         this.points = new VertexBuffer(device, [
             -s, 0, 0, 1, 0, 0,
             s, 0, 0, 1, 0, 0,

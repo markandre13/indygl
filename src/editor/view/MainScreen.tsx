@@ -7,7 +7,8 @@ import { TripleInput } from "../viewkit/TripleInput"
 import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from "../viewkit/InputIcons"
 
 export function MainScreen(props: { model: EditorModel }) {
-    let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement, overlay!: HTMLElement
+    let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement,
+        overlay!: HTMLElement, svg!: SVGElement
     const selectionMode = props.model.selectionMode
     const viewportShading = props.model.viewportShading
     const transform = props.model.transform
@@ -36,6 +37,7 @@ export function MainScreen(props: { model: EditorModel }) {
             </div>
         </div>
         <canvas ref={canvas} class="canvas"></canvas>
+        <svg ref={svg} class="overlay" id="svg-overlay"></svg>
         <div ref={overlay} class="overlay" id="overlay"></div>
         <div ref={panel} class="panel">
             Transform<br />
@@ -62,43 +64,12 @@ export function MainScreen(props: { model: EditorModel }) {
         </div>
     </div>
 
-    //  the definition below sucks. how about ascii art:
-    //
-    //    menubar
-    //    toolbar
-    //    canvas panel
-    //    status
-    //
-    // or 
-    //
-    //  menubar { form <- top, left, right }
-    //  toolbar { menubar <- top, left, form <- right }
-    //  canvas { toolbar <- top, status <- bottom -> status, form <- left, panel <- right }
-    //  panel { toolbar <- top, status <- bottom , form <- right }
-    //  status { form <- bottom, left, right  }
-    //
-    // new SpringLayout([
-    //     { element: menubar, where: ["top", "left", "right"] },
-    //     { element: toolbar, where: ["top"], which: menubar },
-    //     { element: toolbar, where: ["left", "right"] },
-    //     { element: canvas, where: ["top"], which: toolbar },
-    //     { element: canvas, where: ["left"] },
-    //     { element: canvas, where: ["bottom"], which: status },
-    //     { element: canvas, where: ["right"], which: panel },
-    //     { element: overlay, where: ["top"], which: toolbar },
-    //     { element: overlay, where: ["left"] },
-    //     { element: overlay, where: ["bottom"], which: status },
-    //     { element: overlay, where: ["right"], which: panel },
-    //     { element: panel, where: ["top"], which: toolbar },
-    //     { element: panel, where: ["right"] },
-    //     { element: panel, where: ["bottom"], which: status },
-    //     { element: status, where: ["bottom", "left", "right"] },
-    // ])
     SpringLayout.create()
         .element(menubar).top().left().right()
         .element(toolbar).top(menubar).left().right()
         .element(canvas).top(toolbar).left().bottom(status).right(panel)
         .element(overlay).top(toolbar).left().bottom(status).right(panel)
+        .element(svg).top(toolbar).left().bottom(status).right(panel)
         .element(panel).top(toolbar).right().bottom(status)
         .element(status).bottom().left().right()
         .build()

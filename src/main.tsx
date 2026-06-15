@@ -76,7 +76,7 @@ export async function main() {
 
     const dodecahedron = new XForm(root)
     dodecahedron.transform = mat4.create()
-    // mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15, 3.4, 0))
+    mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15, 3.4, 0))
     const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj") // 5-gons
     dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
 
