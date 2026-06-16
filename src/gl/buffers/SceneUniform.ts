@@ -36,12 +36,14 @@ export class SceneUniform extends Uniform {
     }
     override writeTo(device: Device): void {
         if (this._dirty) {
+            const camMat = mat4.invert(mat4.create(), this._camera)
+            if (camMat === null) {
+                throw Error(`failed to invert this._camera=${mat4.str(this._camera)}`)
+            }
             mat4.mul(this.values[0], this._perspective, this._camera)
 
-            const camMat = mat4.invert(mat4.create(), this._camera)!
-            const p = vec4.fromValues(0,0,0,1)
+            const p = vec4.fromValues(0, 0, 0, 1)
             vec4.transformMat4(this.values[1], p, camMat)
-
             // mat4.getTranslation(this.values[1], this._camera)
             // console.log(`camera at: ${vec3.str(this.values[1])}`)
             this._dirty = false

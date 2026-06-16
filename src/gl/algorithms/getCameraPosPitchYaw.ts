@@ -22,7 +22,18 @@ export function getCameraPosPitchYaw(glCamera: mat4): PPY {
 
     const e = matrix2euler(camera)
     // console.log(`${rad2deg(e.x)}, ${rad2deg(e.y)}, ${rad2deg(e.z)}`)
-    const pitch = e.x
-    const yaw = -e.y
+    let pitch = e.x
+    let yaw = -e.y
+
+    if (pitch >= Math.PI / 2) {
+        pitch -= Math.PI
+        yaw = Math.PI - yaw
+    }
+
+    if (pitch <= -Math.PI / 2) {
+        pitch += Math.PI
+        yaw = Math.PI - yaw
+    }
+
     return { pos: cameraPos, pitch, yaw }
 }

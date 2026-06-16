@@ -5,10 +5,12 @@ import type { Context } from '../Context'
 import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from 'src/editor/viewkit/InputIcons'
 import { deg2rad } from '../algorithms/deg2rad'
 import { getCameraPosPitchYaw, type PPY } from '../algorithms/getCameraPosPitchYaw'
+import { rad2deg } from '../algorithms/rad2deg'
 
 // see https://learnopengl.com/Getting-started/Camera
 
 export const D = 180 / Math.PI
+const pitchLimit = deg2rad(89) // lookat will fail at -90 and 90 to create a valid rotation matrix
 
 /**
  * Fly Mode similar to Blender
@@ -61,6 +63,8 @@ export class FlyMode extends Controller {
         this._ctx = context
 
         this.ppy = getCameraPosPitchYaw(context.camera.value)
+
+        // console.log(`START FLYMODE: camera=${mat4.str(context.camera.value)}, pos=${vec3.str(this.ppy.pos)}, pitch=${rad2deg(this.ppy.pitch)}, yaw=${rad2deg(this.ppy.yaw)}`)
 
         this._initial = mat4.clone(context.camera.value)
         this._translate = mat4.create()
@@ -255,8 +259,8 @@ export class FlyMode extends Controller {
         this.ppy.yaw -= this._drift[0] / D / 10
         this.ppy.pitch += this._drift[1] / D / 10
 
-        this.ppy.pitch = Math.min(this.ppy.pitch, Math.PI / 2)
-        this.ppy.pitch = Math.max(this.ppy.pitch, -Math.PI / 2)
+        this.ppy.pitch = Math.min(this.ppy.pitch, pitchLimit)
+        this.ppy.pitch = Math.max(this.ppy.pitch, -pitchLimit)
 
         const ppy = this.ppy
 
@@ -266,8 +270,8 @@ export class FlyMode extends Controller {
         yaw += this._rotate0[0] / D / 10
         pitch -= this._rotate0[1] / D / 10
 
-        pitch = Math.min(pitch, Math.PI / 2)
-        pitch = Math.max(pitch, - Math.PI / 2)
+        pitch = Math.min(pitch, pitchLimit)
+        pitch = Math.max(pitch, -pitchLimit)
 
         // const status = document.getElementById("status")!
         // status.innerText = `${this._rotate0[0]} ${this._rotate1[0]} ${this._drift[0]}`
@@ -297,13 +301,19 @@ export class FlyMode extends Controller {
             vec3.sub(ppy.pos, ppy.pos, step)
         }
 
+        const focalPoint = vec3.add(vec3.create(), ppy.pos, cameraFront)
         const camera = mat4.lookAt(mat4.create(),
             ppy.pos, // eye
-            vec3.add(vec3.create(), ppy.pos, cameraFront), // focal point
+            focalPoint, // center
             cameraUp // up
         )
 
-        this._ctx.camera.value = camera
+        if (mat4.invert(mat4.create(), camera) === null) {
+            throw Error(`FlyMode.update() create a camera matrix that could not be inverted: ${mat4.str(camera)} from pos = ${vec3.str(ppy.pos)}, center = ${vec3.str(focalPoint)}, pitch = ${pitch}, yaw = ${yaw}`)
+        }
+
+        // this._ctx.camera.value = camera
+        mat4.copy(this._ctx.camera.value, camera)
 
         this.osd.update()
 
