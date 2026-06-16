@@ -23,11 +23,14 @@
         "update": "npx npm-check-updates -u && npm install"
     },
     "devDependencies": {
+        "@types/chai-almost": "^1.0.3",
         "@types/earcut": "^3.0.0",
         "@typescript/native-preview": "^7.0.0-dev.20260523.1",
         "@vitest/browser-playwright": "^4.1.7",
         "@webgpu/types": "^0.1.70",
+        "chai-almost": "^1.0.1",
         "concurrently": "^9.2.1",
+        "jsdom": "^29.1.1",
         "vite": "^8.0.14",
         "vite-plugin-glsl": "^1.6.0",
         "vite-plugin-solid": "^2.11.12",
