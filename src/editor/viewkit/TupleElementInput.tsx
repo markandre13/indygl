@@ -85,7 +85,6 @@ export function TupleElementInput(props: TupleElementInputProps) {
             }}
             onlostpointercapture={() => {
                 if (moved) {
-                    console.log("lost capture")
                     moved = false
                     input.blur()
                 }

@@ -61,7 +61,6 @@ export class FlyMode extends Controller {
         this._ctx = context
 
         this.ppy = getCameraPosPitchYaw(context.camera.value)
-        console.log(this.ppy)
 
         this._initial = mat4.clone(context.camera.value)
         this._translate = mat4.create()

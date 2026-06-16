@@ -3,11 +3,11 @@ import { Mesh } from "src/nodes/Mesh"
 import { type IndyNode } from "src/nodes/IndyNode"
 import type { Context } from "../Context"
 import { Controller } from "./Controller"
-import { mat4, vec3, vec4 } from "gl-matrix"
+import { mat4, vec3 } from "gl-matrix"
 import type { XForm } from "src/nodes/XForm"
 import { screen2pointInPlane, setMat4Translation, world2screen } from "../algorithms/coordinates"
 import type { Point } from "../types/Point"
-import { nearestPointOnLine2D } from "../algorithms/nearestPointOnLine2D"
+import { pointerToObjectAxisInScreenSpace } from "../algorithms/pointerToObjectAxisInScreenSpace"
 
 export class ObjectGrabController extends Controller {
     context: Context
@@ -68,7 +68,6 @@ export class ObjectGrabController extends Controller {
     }
 
     override pointermove(ev: PointerEvent): void {
-        // console.log("XXX")
         ev.preventDefault()
 
         // this.context.canvas.setPointerCapture(ev.pointerId)
@@ -97,7 +96,6 @@ export class ObjectGrabController extends Controller {
 
         let pn: vec3 | undefined
         const axis = this.context.axisRenderer
-        const status = document.getElementById("status")
 
         let pointerPosition = { x: ev.offsetX + this.delta!.x, y: ev.offsetY + this.delta!.y }
         if (!axis.x && !axis.y && !axis.z) {
@@ -135,9 +133,6 @@ export class ObjectGrabController extends Controller {
             this.context.canvas
         )
 
-        status!.innerText = `CONSTRAIN ${axis.x} ${axis.y} ${axis.z} => ${vec3.str(pt)}`
-
-        // status!.innerText = vec3.str(pt)
         setMat4Translation(parent.transform, pt)
         parent.dirty = true
 
@@ -183,32 +178,3 @@ export class ObjectGrabController extends Controller {
     }
 }
 
-/**
-  * return a point in screen space which is close the object's axis given by axis
-  * 
-  * @param pointer the pointer's position
-  * @param transform the object's transform
-  * @param axis the object's axis
-  * @param context context to get perspective, camera and canvas
-  * @returns 
-  */
-function pointerToObjectAxisInScreenSpace(ev: PointerEvent, transform: mat4, axis: vec3, context: Context) {
-    const scene = context.sceneUniforms
-    const m = mat4.mul(mat4.create(), scene.perspective, scene.camera)
-    mat4.mul(m, m, transform)
-
-    // axis as a line from p0 to p1
-    const p0 = vec3.fromValues(0, 0, 0)
-    const p1 = axis
-
-    // map the line representing the axis into screen space
-    const s0 = world2screen(p0, m, context.canvas)
-    const s1 = world2screen(p1, m, context.canvas)
-
-    // find the clostest point on screen
-    return nearestPointOnLine2D(
-        { x: ev.offsetX, y: ev.offsetY },
-        s0,
-        { x: s1.x - s0.x, y: s1.y - s0.y }
-    ).p
-}
