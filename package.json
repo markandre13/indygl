@@ -11,8 +11,8 @@
     "scripts": {
         "build": "npm run wgsl && tsgo && vite build",
         "start": "npm run wgsl && tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo:watch' 'npm run vite'",
-        "test": "npm run wgsl && npm run tsgo && npm run vitest",
-        "test:watch": "npm run wgsl && tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo:watch' 'npm run vitest:watch'",
+        "test": "rm -rf js && npm run wgsl && npm run tsgo && npm run vitest",
+        "test:watch": "rm -rf js && npm run wgsl && tsgo && concurrently --killothers --names tsgo,vite 'npm run tsgo:watch' 'npm run vitest:watch'",
         "wgsl": "mkdir -p js/src/gl/shaders && ln -f src/gl/shaders/*wgsl js/src/gl/shaders",
         "tsgo": "tsgo",
         "tsgo:watch": "tsgo --watch --preserveWatchOutput",
@@ -25,19 +25,19 @@
     "devDependencies": {
         "@types/chai-almost": "^1.0.3",
         "@types/earcut": "^3.0.0",
-        "@typescript/native-preview": "^7.0.0-dev.20260523.1",
-        "@vitest/browser-playwright": "^4.1.7",
+        "@typescript/native-preview": "^7.0.0-dev.20260616.1",
+        "@vitest/browser-playwright": "^4.1.9",
         "@webgpu/types": "^0.1.70",
         "chai-almost": "^1.0.1",
-        "concurrently": "^9.2.1",
+        "concurrently": "^10.0.3",
         "jsdom": "^29.1.1",
-        "vite": "^8.0.14",
+        "vite": "^8.0.16",
         "vite-plugin-glsl": "^1.6.0",
         "vite-plugin-solid": "^2.11.12",
-        "vitest": "^4.1.7"
+        "vitest": "^4.1.9"
     },
     "dependencies": {
-        "bignumber.js": "^11.1.1",
+        "bignumber.js": "^11.1.4",
         "earcut": "^3.0.2",
         "gl-matrix": "^3.4.4",
         "toad.js": "^0.3.5"

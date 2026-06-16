@@ -2,8 +2,14 @@ import BigNumber from "bignumber.js"
 import { hasFocus } from "toad.js/util/dom"
 import type { UnitModel } from "../appkit/units/UnitModel"
 import { Chevron } from "./Chevron"
+import type { HTMLElementProps } from "toad.jsx/jsx-runtime"
 
-export function TupleElementInput(props: { model: UnitModel; edit?: boolean }) {
+interface TupleElementInputProps extends HTMLElementProps {
+    model: UnitModel
+    edit?: boolean
+}
+
+export function TupleElementInput(props: TupleElementInputProps) {
     let oldValue!: BigNumber
     let pointerDownX: number | undefined
     let input!: HTMLInputElement
