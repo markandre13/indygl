@@ -14,6 +14,7 @@ import { IndyNode } from "./nodes/IndyNode"
 import { Material } from "./nodes/Material"
 import { ViewportShading } from './editor/app/ViewportShading'
 import { deg2rad } from './gl/algorithms/deg2rad'
+import { Texture } from './gl/buffers/Texture'
 
 export async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
@@ -172,7 +173,12 @@ function renderRGBFaces(
             pass.setVertexBuffer(0, node.points.buffer)
             pass.setVertexBuffer(1, node.normals.buffer)
             pass.setIndexBuffer(node.indices.buffer, 'uint32')
-            pass.drawIndexed(node.indices.length)
+            if (node.groupSubset?.has("body")) {
+                const group = node.group("body")!
+                pass.drawIndexed(group.length, 1, group.start)
+            } else {
+                pass.drawIndexed(node.indices.length)
+            }
         }
     }
 }
@@ -180,15 +186,40 @@ function renderRGBFaces(
 function renderTexFaces(
     pass: GPURenderPassEncoder,
     nodes: Mesh[],
-    context: Context
+    selectedNodes: Mesh[],
+    context: Context,
 ) {
-    if (nodes.length === 0) return
-    pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
-    for (const node of nodes) {
-        pass.setBindGroup(1, node.modelView.bindGroup)
-        node.material!.setBindGroup(pass, node)
-        pass.setIndexBuffer(node.indices.buffer, 'uint32')
-        pass.drawIndexed(node.indices.length)
+    for (const outline of [true, false]) {
+        const list = outline ? selectedNodes : nodes
+        if (list.length === 0) continue
+
+        // pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+        if (outline) {
+            pass.setPipeline(context.shader.p3_n3_t2_idx.pipelineOutline)
+        } else {
+            pass.setStencilReference(0)
+            pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+        }
+
+        for (const node of list) {
+            if (outline) {
+                pass.setStencilReference(context.selection.active === node ? 1 + 4 : 2 + 4)
+            }
+            pass.setBindGroup(1, node.modelView.bindGroup)
+
+            pass.setBindGroup(2, node.material!.bindGroup)
+            pass.setVertexBuffer(0, node.points.buffer)
+            pass.setVertexBuffer(1, node.normals.buffer)
+            pass.setVertexBuffer(2, node.texcoords.buffer)
+
+            pass.setIndexBuffer(node.indices.buffer, 'uint32')
+            if (node.groupSubset?.has("body")) {
+                const group = node.group("body")!
+                pass.drawIndexed(group.length, 1, group.start)
+            } else {
+                pass.drawIndexed(node.indices.length)
+            }
+        }
     }
 }
 
@@ -226,6 +257,14 @@ async function loadDemoScene(root: Root, context: Context) {
     mat4.translate(cube.transform, cube.transform, vec3.fromValues(2, 1, 4))
     const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
     cubeMesh.material = new Material(context, [0, 0.2, 1, 1])
+
+    const human = new XForm(root)
+    const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    const bodyTexture = new Texture()
+    await bodyTexture.load(context, "img/young_caucasian_female_special_suit.jpg")
+    humanMesh.material = new Material(context, bodyTexture)
+
+    // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
 
     const teeth = new XForm(root)
     const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
@@ -283,7 +322,7 @@ export async function main() {
 
         renderLines(pass, buckets.lineNodes, context, materials)
         renderRGBFaces(pass, buckets.rgbNodes, buckets.rgbNodesSelected, context, editorModel, background)
-        renderTexFaces(pass, buckets.texNodes, context)
+        renderTexFaces(pass, buckets.texNodes, buckets.texNodesSelected, context)
         renderFloorAndAxis(pass, context)
 
         pass.end()

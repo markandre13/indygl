@@ -1,8 +1,12 @@
+import type { Context } from "../Context"
+import type { Device } from "../Device"
 
 export class Texture {
     texture?: GPUTexture
     
-    async load(device: GPUDevice, filename: string) {
+    async load(context: Context, filename: string) {
+        const device = context.device.device
+
         const response = await fetch(filename)
         if (response.ok == false) {
             throw Error(`cube texture: fetch failed`)

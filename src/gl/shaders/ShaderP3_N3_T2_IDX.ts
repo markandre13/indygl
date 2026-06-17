@@ -7,7 +7,8 @@ import { Shader } from "./Shader"
  */
 export class ShaderP3_N3_T2_IDX extends Shader {
     pipeline: GPURenderPipeline
-    constructor(context: Context  ) {
+    pipelineOutline: GPURenderPipeline
+    constructor(context: Context) {
         const label = 'p3-n3-t2-idx'
         const device = context.device
         super(device, label)
@@ -50,13 +51,28 @@ export class ShaderP3_N3_T2_IDX extends Shader {
                 cullMode: 'none',
             },
             depthStencil: {
+                format: context.depthTextureFormat,
+
                 depthWriteEnabled: true,
                 depthBias: 1, // this make points and lines look better
                 depthBiasSlopeScale: 1,
                 depthCompare: 'less',
-                format: context.depthTextureFormat,
+
+                stencilFront: {
+                    compare: "always",
+                    passOp: "replace"
+                },
+                stencilBack: {
+                    compare: "always",
+                    passOp: "replace"
+                }
             },
         }
+        this.pipelineOutline = device.device!.createRenderPipeline(pipelineDef)
+
+        // only touch the depth flag
+        pipelineDef.depthStencil!.stencilWriteMask = 0x04
+
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
 }
