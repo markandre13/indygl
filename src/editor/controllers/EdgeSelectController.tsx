@@ -1,14 +1,15 @@
-import type { ColorBuffer } from "../buffers/ColorBuffer"
-import type { IndexBuffer } from "../buffers/IndexBuffer"
-import type { ModelUniform } from "../buffers/ModelUniform"
-import type { PositionBuffer } from "../buffers/PositionBuffer"
-import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
-import { Texture } from "../buffers/Texture"
-import type { Context } from "../Context"
-import { ShaderP3_IDX } from "../shaders/ShaderP3_IDX"
-import { PICK_SIZE, ShaderP3_PickPoint } from "../shaders/ShaderP3_PickPoint"
+
+import type { Context } from "src/gl/Context"
 import { Controller } from "./Controller"
 import { MouseButton } from "./details/MouseButton"
+import type { ModelUniform } from "src/gl/buffers/ModelUniform"
+import type { PositionBuffer } from "src/gl/buffers/PositionBuffer"
+import type { IndexBuffer } from "src/gl/buffers/IndexBuffer"
+import type { ColorBuffer } from "src/gl/buffers/ColorBuffer"
+import { Texture } from "src/gl/buffers/Texture"
+import { PICK_SIZE, ShaderP3_PickPoint } from "src/gl/shaders/ShaderP3_PickPoint"
+import { ShaderP3_IDX } from "src/gl/shaders/ShaderP3_IDX"
+import { FLOAT32_NUM_BYTES } from "src/gl/buffers/sizeof"
 
 export class EdgeSelectController extends Controller {
     context: Context

@@ -1,11 +1,11 @@
 import { mat4, vec2, vec3 } from 'gl-matrix'
-import { matrix2euler } from '../algorithms/euler'
 import { Controller } from './Controller'
-import type { Context } from '../Context'
-import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from 'src/editor/viewkit/InputIcons'
-import { deg2rad } from '../algorithms/deg2rad'
-import { getCameraPosPitchYaw, type PPY } from '../algorithms/getCameraPosPitchYaw'
-import { rad2deg } from '../algorithms/rad2deg'
+import { IconKey, IconMouseLeft, IconMouseRight, IconOption, IconShift } from 'src/editor/viewkit/InputIcons'
+import { deg2rad } from 'src/gl/algorithms/deg2rad'
+import type { Context } from 'src/gl/Context'
+import { getCameraPosPitchYaw, type PPY } from 'src/gl/algorithms/getCameraPosPitchYaw'
+import { matrix2euler } from 'src/gl/algorithms/euler'
+
 
 // see https://learnopengl.com/Getting-started/Camera
 
@@ -312,8 +312,8 @@ export class FlyMode extends Controller {
             throw Error(`FlyMode.update() create a camera matrix that could not be inverted: ${mat4.str(camera)} from pos = ${vec3.str(ppy.pos)}, center = ${vec3.str(focalPoint)}, pitch = ${pitch}, yaw = ${yaw}`)
         }
 
-        // this._ctx.camera.value = camera
-        mat4.copy(this._ctx.camera.value, camera)
+        this._ctx.camera.value = camera
+        // mat4.copy(this._ctx.camera.value, camera)
 
         this.osd.update()
 

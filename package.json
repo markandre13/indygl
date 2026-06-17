@@ -25,7 +25,7 @@
     "devDependencies": {
         "@types/chai-almost": "^1.0.3",
         "@types/earcut": "^3.0.0",
-        "@typescript/native-preview": "^7.0.0-dev.20260616.1",
+        "@typescript/native-preview": "^7.0.0-dev.20260617.2",
         "@vitest/browser-playwright": "^4.1.9",
         "@webgpu/types": "^0.1.70",
         "chai-almost": "^1.0.1",

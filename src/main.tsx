@@ -1,8 +1,6 @@
 import { mat4, vec3 } from 'gl-matrix'
 import { Context } from './gl/Context'
 import { Device } from './gl/Device'
-import { BasicMode } from './gl/controllers/BasicController'
-import { ObjectSelectController } from './gl/controllers/ObjectSelectController'
 import { WavefrontObj } from './gl/file/WavefrontObj'
 import { replaceChildren } from 'toad.jsx'
 import { EditorModel } from './editor/app/EditorModel'
@@ -15,6 +13,8 @@ import { Material } from "./nodes/Material"
 import { ViewportShading } from './editor/app/ViewportShading'
 import { deg2rad } from './gl/algorithms/deg2rad'
 import { Texture } from './gl/buffers/Texture'
+import { BasicMode } from './editor/controllers/BasicController'
+import { ObjectSelectController } from './editor/controllers/ObjectSelectController'
 
 export async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
@@ -272,7 +272,7 @@ async function loadDemoScene(root: Root, context: Context) {
     // this wrecks the shading, guess through the normal matrix being messed up
     teeth.transform = mat4.create()
     mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
-    mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
+    // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
 }
 
 export async function main() {

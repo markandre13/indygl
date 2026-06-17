@@ -1,11 +1,11 @@
 import { mat4, vec3 } from 'gl-matrix'
 import { Controller } from './Controller'
-import { Projection, type Context } from '../Context'
-import { deg2rad } from '../algorithms/deg2rad'
 import { MouseButton } from './details/MouseButton'
 import { FlyMode } from './FlyMode'
 import { IconKey } from 'src/editor/viewkit/InputIcons'
-import type { Point } from '../types/Point'
+import { Projection, type Context } from 'src/gl/Context'
+import { deg2rad } from 'src/gl/algorithms/deg2rad'
+import type { Point } from 'src/gl/types/Point'
 
 /**
  * [`] to enable flymode

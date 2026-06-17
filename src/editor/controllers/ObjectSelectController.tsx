@@ -1,13 +1,13 @@
 import { Mesh } from "src/nodes/Mesh"
 import { IndyNode } from "src/nodes/IndyNode"
-import { Texture } from "../buffers/Texture"
-import type { Context } from "../Context"
-import { ShaderP3_IDX_Id } from "../shaders/ShaderP3_IDX_Id"
-import { PICK_SIZE } from "../shaders/ShaderP3_PickPoint"
 import { Controller } from "./Controller"
 import { MouseButton } from "./details/MouseButton"
 import { IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption } from "src/editor/viewkit/InputIcons"
 import { ObjectGrabController } from "./ObjectGrabController"
+import type { Context } from "src/gl/Context"
+import { Texture } from "src/gl/buffers/Texture"
+import { ShaderP3_IDX_Id } from "src/gl/shaders/ShaderP3_IDX_Id"
+import { PICK_SIZE } from "src/gl/shaders/ShaderP3_PickPoint"
 
 /**
  * * select object with mouse

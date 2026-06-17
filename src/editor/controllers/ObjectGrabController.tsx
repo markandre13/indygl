@@ -1,13 +1,14 @@
 import { IconMouseLeft, IconMouseRight, IconKey, IconShift } from "src/editor/viewkit/InputIcons"
 import { Mesh } from "src/nodes/Mesh"
 import { type IndyNode } from "src/nodes/IndyNode"
-import type { Context } from "../Context"
 import { Controller } from "./Controller"
 import { mat4, vec3 } from "gl-matrix"
 import type { XForm } from "src/nodes/XForm"
-import { screen2pointInPlane, setMat4Translation, world2screen } from "../algorithms/coordinates"
-import type { Point } from "../types/Point"
-import { pointerToObjectAxisInScreenSpace } from "../algorithms/pointerToObjectAxisInScreenSpace"
+import type { Context } from "src/gl/Context"
+import type { Point } from "src/gl/types/Point"
+import { screen2pointInPlane, setMat4Translation, world2screen } from "src/gl/algorithms/coordinates"
+import { pointerToObjectAxisInScreenSpace } from "src/gl/algorithms/pointerToObjectAxisInScreenSpace"
+
 
 export class ObjectGrabController extends Controller {
     context: Context

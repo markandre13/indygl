@@ -1,7 +1,6 @@
 import { mat4 } from 'gl-matrix'
 import { SceneUniform } from './buffers/SceneUniform'
 import type { Device } from './Device'
-import type { Controller } from './controllers/Controller'
 import { Mat4Model } from './Mat4Model'
 import { bind } from 'src/editor/appkit/details/decorators/bind'
 import { BindGroupLayoutCollection } from './details/BindGroupLayoutCollection'
@@ -10,6 +9,7 @@ import type { IndyNode } from "src/nodes/IndyNode"
 import { replaceChildren } from 'toad.jsx/jsx-runtime'
 import { deg2rad } from './algorithms/deg2rad'
 import { AxisRenderer } from './AxisRenderer'
+import type { Controller } from 'src/editor/controllers/Controller'
 
 export enum Projection {
     ORTHOGONAL,
