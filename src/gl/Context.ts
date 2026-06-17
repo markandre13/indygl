@@ -1,4 +1,4 @@
-import { mat4 } from 'gl-matrix'
+import { mat4, vec3 } from 'gl-matrix'
 import { SceneUniform } from './buffers/SceneUniform'
 import type { Device } from './Device'
 import { Mat4Model } from './Mat4Model'
@@ -10,6 +10,10 @@ import { replaceChildren } from 'toad.jsx/jsx-runtime'
 import { deg2rad } from './algorithms/deg2rad'
 import { AxisRenderer } from './AxisRenderer'
 import type { Controller } from 'src/editor/controllers/Controller'
+import { EditorModel } from 'src/editor/app/EditorModel'
+import type { XForm } from 'src/nodes/XForm'
+import { getCameraPosPitchYaw } from './algorithms/getCameraPosPitchYaw'
+import { euler2matrix, matrix2euler } from './algorithms/euler'
 
 export enum Projection {
     ORTHOGONAL,
@@ -17,8 +21,13 @@ export enum Projection {
 }
 
 class Selection {
+    model: EditorModel
     active?: IndyNode
     selected = new Set<IndyNode>()
+
+    constructor(model: EditorModel) {
+        this.model = model
+    }
 
     clear() {
         this.active = undefined
@@ -26,6 +35,29 @@ class Selection {
     }
 
     add(node: IndyNode) {
+        // TODO: edit the active node via the panel
+        // HOW : make 'active' private, then everybody has to operate through the selection
+        //       which keeps everything updated. the way the IndyNode does not have to become
+        //       a 
+        if (node) {
+            const parent = node.parent as XForm
+            if (parent.transform) {
+                const m = mat4.invert(mat4.create(), parent.transform)!
+                const pos = vec3.create() // extract the position
+                vec3.transformMat4(pos, pos, m)
+                this.model.transform.translation.value = pos
+                const e = matrix2euler(m)
+                this.model.transform.rotation.x.value = e.x
+                this.model.transform.rotation.x.value = e.y
+                this.model.transform.rotation.x.value = e.z
+            } else {
+                this.model.transform.translation.value = vec3.create()
+                this.model.transform.rotation.x.value = 0
+                this.model.transform.rotation.x.value = 0
+                this.model.transform.rotation.x.value = 0
+            }
+        }
+
         this.active = node
         this.selected.add(node)
     }
@@ -37,12 +69,11 @@ export class Context {
     context: GPUCanvasContext | null = null;
     presentationFormat: GPUTextureFormat
 
-    readonly selection = new Selection()
+    editorModel: EditorModel
+    readonly selection: Selection
 
     bindGroupLayout: BindGroupLayoutCollection
     shader: ShaderCollection
-
-
     sampler: GPUSampler
     sceneUniforms: SceneUniform
 
@@ -76,9 +107,12 @@ export class Context {
         this.invalidate()
     }
 
-    constructor(device: Device, canvas: HTMLCanvasElement) {
+    constructor(device: Device, canvas: HTMLCanvasElement, editorModel: EditorModel) {
         this.device = device
         this.canvas = canvas
+
+        this.editorModel = editorModel
+        this.selection = new Selection(this.editorModel)
 
         this.bindGroupLayout = new BindGroupLayoutCollection(device)
 

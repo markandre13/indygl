@@ -24,4 +24,9 @@ export abstract class TripleModel {
         vec3.set(this.v, this.x.toNumber(), this.y.toNumber(), this.z.toNumber())
         return this.v
     }
+    set value(value: vec3) {
+        this.x.value = value[0]
+        this.y.value = value[1]
+        this.z.value = value[2]
+    }
 }

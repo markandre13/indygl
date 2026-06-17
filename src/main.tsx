@@ -276,6 +276,7 @@ async function loadDemoScene(root: Root, context: Context) {
 }
 
 export async function main() {
+
     const editorModel = new EditorModel()
     replaceChildren(document.body, <MainScreen model={editorModel} />)
 
@@ -286,7 +287,8 @@ export async function main() {
 
     const device = new Device()
     await device.init()
-    const context = new Context(device, canvas)
+    const context = new Context(device, canvas, editorModel)
+
     const root = new Root(context)
 
     editorModel.transform.signal.add(context.invalidate)
