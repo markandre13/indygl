@@ -9,6 +9,9 @@ interface TupleElementInputProps extends HTMLElementProps {
     edit?: boolean
 }
 
+// TODO: shift key jumps instead of moving from the current position
+// TODO: does blender limit the decimal places?
+// TODO: the cursor shoudld stay the same while dragging
 export function TupleElementInput(props: TupleElementInputProps) {
     let oldValue!: BigNumber
     let pointerDownX: number | undefined

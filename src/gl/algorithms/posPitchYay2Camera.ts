@@ -1,7 +1,7 @@
 import { mat4, vec3 } from 'gl-matrix'
-import type { PPY } from './getCameraPosPitchYaw'
+import type { PPY } from './camera2PosPitchYaw'
 
-export function toCam(ppy: PPY): mat4 {
+export function posPitchYay2Camera(ppy: PPY): mat4 {
     let pitch = ppy.pitch
     let yaw = ppy.yaw - Math.PI / 2
     const direction = vec3.fromValues(

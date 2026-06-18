@@ -1,21 +1,22 @@
 import { describe, expect, it, chai } from 'vitest'
 import { deg2rad } from 'src/gl/algorithms/deg2rad'
 import chaiAlmost from 'chai-almost'
-import { toCam } from 'src/gl/algorithms/toCam'
-import { getCameraPosPitchYaw, type PPY } from 'src/gl/algorithms/getCameraPosPitchYaw'
+import { posPitchYay2Camera } from 'src/gl/algorithms/posPitchYay2Camera'
+import { camera2PosPitchYaw, type PPY } from 'src/gl/algorithms/camera2PosPitchYaw'
 import { mat4, vec3 } from 'gl-matrix'
 
 chai.use(chaiAlmost())
 
-describe("getCameraPosPitchYaw", () => {
+describe("camera2PosPitchYaw()", () => {
     it("verify (0, 0, 0),   0,   0", () => {
         const input: PPY = {
             pos: vec3.create(),
             pitch: 0,
-            yaw: 0
+            yaw: 0,
+            roll: 0
         }
-        const camera = toCam(input)
-        const output = getCameraPosPitchYaw(camera)
+        const camera = posPitchYay2Camera(input)
+        const output = camera2PosPitchYaw(camera)
         expect(output).to.deep.almost.equal(input)
     })
 
@@ -23,10 +24,11 @@ describe("getCameraPosPitchYaw", () => {
         const input: PPY = {
             pos: vec3.create(),
             pitch: deg2rad(45),
-            yaw: 0
+            yaw: 0,
+            roll: 0
         }
-        const camera = toCam(input)
-        const output = getCameraPosPitchYaw(camera)
+        const camera = posPitchYay2Camera(input)
+        const output = camera2PosPitchYaw(camera)
         expect(output).to.deep.almost.equal(input)
     })
 
@@ -34,10 +36,11 @@ describe("getCameraPosPitchYaw", () => {
         const input: PPY = {
             pos: vec3.create(),
             pitch: deg2rad(-45),
-            yaw: 0
+            yaw: 0,
+            roll: 0
         }
-        const camera = toCam(input)
-        const output = getCameraPosPitchYaw(camera)
+        const camera = posPitchYay2Camera(input)
+        const output = camera2PosPitchYaw(camera)
         expect(output).to.deep.almost.equal(input)
     })
 
@@ -45,10 +48,11 @@ describe("getCameraPosPitchYaw", () => {
         const input: PPY = {
             pos: vec3.create(),
             pitch: deg2rad(0),
-            yaw: deg2rad(-45)
+            yaw: deg2rad(-45),
+            roll: 0
         }
-        const camera = toCam(input)
-        const output = getCameraPosPitchYaw(camera)
+        const camera = posPitchYay2Camera(input)
+        const output = camera2PosPitchYaw(camera)
         expect(output).to.deep.almost.equal(input)
     })
 
@@ -56,10 +60,11 @@ describe("getCameraPosPitchYaw", () => {
         const input: PPY = {
             pos: vec3.create(),
             pitch: deg2rad(0),
-            yaw: deg2rad(45)
+            yaw: deg2rad(45),
+            roll: 0
         }
-        const camera = toCam(input)
-        const output = getCameraPosPitchYaw(camera)
+        const camera = posPitchYay2Camera(input)
+        const output = camera2PosPitchYaw(camera)
         expect(output).to.deep.almost.equal(input)
     })
 
@@ -67,10 +72,11 @@ describe("getCameraPosPitchYaw", () => {
         const input: PPY = {
             pos: vec3.create(),
             pitch: deg2rad(45),
-            yaw: deg2rad(-45)
+            yaw: deg2rad(-45),
+            roll: 0
         }
-        const camera = toCam(input)
-        const output = getCameraPosPitchYaw(camera)
+        const camera = posPitchYay2Camera(input)
+        const output = camera2PosPitchYaw(camera)
         expect(output).to.deep.almost.equal(input)
     })
 
@@ -78,10 +84,11 @@ describe("getCameraPosPitchYaw", () => {
         const input: PPY = {
             pos: vec3.create(),
             pitch: deg2rad(45),
-            yaw: deg2rad(45)
+            yaw: deg2rad(45),
+            roll: 0
         }
-        const camera = toCam(input)
-        const output = getCameraPosPitchYaw(camera)
+        const camera = posPitchYay2Camera(input)
+        const output = camera2PosPitchYaw(camera)
         expect(output).to.deep.almost.equal(input)
     })
 
@@ -89,10 +96,11 @@ describe("getCameraPosPitchYaw", () => {
         const input: PPY = {
             pos: vec3.create(),
             pitch: deg2rad(-45),
-            yaw: deg2rad(-45)
+            yaw: deg2rad(-45),
+            roll: 0
         }
-        const camera = toCam(input)
-        const output = getCameraPosPitchYaw(camera)
+        const camera = posPitchYay2Camera(input)
+        const output = camera2PosPitchYaw(camera)
         expect(output).to.deep.almost.equal(input)
     })
 
@@ -100,10 +108,11 @@ describe("getCameraPosPitchYaw", () => {
         const input: PPY = {
             pos: vec3.create(),
             pitch: deg2rad(-45),
-            yaw: deg2rad(45)
+            yaw: deg2rad(45),
+            roll: 0
         }
-        const camera = toCam(input)
-        const output = getCameraPosPitchYaw(camera)
+        const camera = posPitchYay2Camera(input)
+        const output = camera2PosPitchYaw(camera)
         expect(output).to.deep.almost.equal(input)
     })
 
@@ -114,12 +123,13 @@ describe("getCameraPosPitchYaw", () => {
             0.9520572423934937, 0.007833240553736687, -0.3058195412158966, 0,
             -2.5034677982330322, -17.738000869750977, -53.25141143798828, 1
         )
-        const output = getCameraPosPitchYaw(camera)
+        const output = camera2PosPitchYaw(camera)
 
         expect(output).to.deep.almost.equal({
             pos: vec3.fromValues(-51.01521301269531, 19.095714569091797, -13.762931823730469),
             pitch: -0.02560831012058218,
-            yaw: 1.8817007729298854
+            yaw: 1.8817007729298854,
+            roll: 0
         })
     })
 
@@ -130,12 +140,13 @@ describe("getCameraPosPitchYaw", () => {
             0.921973705291748, -0.11872976273298264, -0.3686024248600006, 0,
             -2.4173598289489746, -2.5254592895507812, -13.932268142700195, 1
         )
-        const output = getCameraPosPitchYaw(camera)
+        const output = camera2PosPitchYaw(camera)
 
         expect(output).to.deep.almost.equal({
             pos: vec3.fromValues(-13.876567840576172, -1.8677332401275635, -3.2065727710723877),
             pitch: 0.3116138977480478,
-            yaw: 1.9684460341038013
+            yaw: 1.9684460341038013,
+            roll: 0
         })
     })
 })

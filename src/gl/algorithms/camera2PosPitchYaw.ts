@@ -1,20 +1,21 @@
 import { mat4, vec3 } from 'gl-matrix'
-import { matrix2euler } from '../algorithms/euler'
+import { matrix2euler } from './euler'
 
 export interface PPY {
     pos: vec3
-    pitch: number
-    yaw: number
+    pitch: number // x
+    yaw: number   // y
+    roll: number  // z
 }
 
 /**
  * extract real word camera postion, pitch (up/down) and yaw (left/right) from
- * OpenGL/WebGPU camera
+ * OpenGL/WebGPU camera (with a roll of 0)
  *
  * @param glCamera
  * @returns
  */
-export function getCameraPosPitchYaw(glCamera: mat4): PPY {
+export function camera2PosPitchYaw(glCamera: mat4): PPY {
     const camera = mat4.invert(mat4.create(), glCamera)! // OpenGL/WebGPU cam to world cam
 
     const cameraPos = vec3.create() // extract the position
@@ -35,5 +36,5 @@ export function getCameraPosPitchYaw(glCamera: mat4): PPY {
         yaw = Math.PI - yaw
     }
 
-    return { pos: cameraPos, pitch, yaw }
+    return { pos: cameraPos, pitch, yaw, roll: 0 }
 }

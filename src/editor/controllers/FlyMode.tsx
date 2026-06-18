@@ -3,7 +3,7 @@ import { Controller } from './Controller'
 import { IconKey, IconMouseLeft, IconMouseRight, IconOption, IconShift } from 'src/editor/viewkit/InputIcons'
 import { deg2rad } from 'src/gl/algorithms/deg2rad'
 import type { Context } from 'src/gl/Context'
-import { getCameraPosPitchYaw, type PPY } from 'src/gl/algorithms/getCameraPosPitchYaw'
+import { camera2PosPitchYaw, type PPY } from 'src/gl/algorithms/camera2PosPitchYaw'
 import { matrix2euler } from 'src/gl/algorithms/euler'
 
 
@@ -62,7 +62,7 @@ export class FlyMode extends Controller {
         super()
         this._ctx = context
 
-        this.ppy = getCameraPosPitchYaw(context.camera.value)
+        this.ppy = camera2PosPitchYaw(context.camera.value)
 
         // console.log(`START FLYMODE: camera=${mat4.str(context.camera.value)}, pos=${vec3.str(this.ppy.pos)}, pitch=${rad2deg(this.ppy.pitch)}, yaw=${rad2deg(this.ppy.yaw)}`)
 
