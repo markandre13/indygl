@@ -39,27 +39,31 @@ class Selection {
         // HOW : make 'active' private, then everybody has to operate through the selection
         //       which keeps everything updated. the way the IndyNode does not have to become
         //       a 
-        if (node) {
-            const parent = node.parent as XForm
-            if (parent.transform) {
-                const m = mat4.invert(mat4.create(), parent.transform)!
-                const pos = vec3.create() // extract the position
-                vec3.transformMat4(pos, pos, m)
-                this.model.transform.translation.value = pos
-                const e = matrix2euler(m)
-                this.model.transform.rotation.x.value = e.x
-                this.model.transform.rotation.x.value = e.y
-                this.model.transform.rotation.x.value = e.z
-            } else {
-                this.model.transform.translation.value = vec3.create()
-                this.model.transform.rotation.x.value = 0
-                this.model.transform.rotation.x.value = 0
-                this.model.transform.rotation.x.value = 0
-            }
-        }
-
         this.active = node
         this.selected.add(node)
+        this.update()
+    }
+    update() {
+        const node = this.active
+        if (!node) {
+            return
+        }
+        const parent = node.parent as XForm
+        if (parent.transform) {
+            const m = mat4.invert(mat4.create(), parent.transform)!
+            const pos = vec3.create() // extract the position
+            vec3.transformMat4(pos, pos, m)
+            this.model.transform.translation.value = pos
+            const e = matrix2euler(m)
+            this.model.transform.rotation.x.value = e.x
+            this.model.transform.rotation.x.value = e.y
+            this.model.transform.rotation.x.value = e.z
+        } else {
+            this.model.transform.translation.value = vec3.create()
+            this.model.transform.rotation.x.value = 0
+            this.model.transform.rotation.x.value = 0
+            this.model.transform.rotation.x.value = 0
+        }
     }
 }
 
