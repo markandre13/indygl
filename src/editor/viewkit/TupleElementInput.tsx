@@ -1,5 +1,4 @@
 import BigNumber from "bignumber.js"
-import { hasFocus } from "toad.js/util/dom"
 import type { UnitModel } from "../appkit/units/UnitModel"
 import { Chevron } from "./Chevron"
 import type { HTMLElementProps } from "toad.jsx/jsx-runtime"
@@ -10,8 +9,10 @@ interface TupleElementInputProps extends HTMLElementProps {
 }
 
 // TODO: shift key jumps instead of moving from the current position
+//       blender has that too and i don't like it. similar to switching axes during object grab
 // TODO: does blender limit the decimal places?
-// TODO: the cursor shoudld stay the same while dragging
+//       display limits to 4 decimal places, when editing 5 decimal places are shown, mouse changes are stored up to 6 decimal places
+//       drag changes the 2nd decimal place, shift+drag changes the 3rd decimal place
 export function TupleElementInput(props: TupleElementInputProps) {
     let oldValue!: BigNumber
     let pointerDownX: number | undefined
@@ -54,12 +55,24 @@ export function TupleElementInput(props: TupleElementInputProps) {
                 props.model.value = props.model.clip(value)
             }}
             onpointerdown={(e: PointerEvent) => {
+                const target = e.target as HTMLElement
+                target.setPointerCapture(e.pointerId)
+
+                // https://stackoverflow.com/questions/10750582/global-override-of-mouse-cursor-with-javascript
+                // keep col-resize cursor while dragginng
+                const cursorStyle = document.createElement('style')
+                cursorStyle.innerHTML = '*{cursor: col-resize!important;}'
+                cursorStyle.id = 'cursor-style'
+                document.head.appendChild(cursorStyle)
+
                 e.preventDefault()
-                if (!hasFocus(input)) {
-                    input.focus();
-                    (e.target as HTMLElement).setPointerCapture(e.pointerId)
-                    oldValue = BigNumber(props.model.value)
-                    pointerDownX = e.clientX
+                oldValue = BigNumber(props.model.value)
+                pointerDownX = e.clientX
+            }}
+            onpointerup={(e: PointerEvent) => {
+                e.preventDefault()
+                if (!moved) {
+                    input.focus()
                 }
             }}
             onpointermove={(e: PointerEvent) => {
@@ -86,12 +99,15 @@ export function TupleElementInput(props: TupleElementInputProps) {
                 }
                 props.model.value = props.model.clip(value)
             }}
-            onlostpointercapture={() => {
+            onlostpointercapture={(e) => {
                 if (moved) {
                     moved = false
                     input.blur()
                 }
                 pointerDownX = undefined
+
+                document.getElementById('cursor-style')?.remove()
+
             }}
         >
             <div class="label">{props.model.label}</div>
@@ -100,6 +116,7 @@ export function TupleElementInput(props: TupleElementInputProps) {
                 ref={input}
                 value={`${props.model.value} ${props.model.symbol}`.trim()}
                 onchange={() => {
+                    // TODO: minimum decimal places when moving
                     props.model.value = input.value
                 }} />
         </div>
