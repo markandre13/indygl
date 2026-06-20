@@ -32,7 +32,6 @@ export class Selection {
     selected = new Set<IndyNode>();
     private rotationQuat = quat.create()
     private lastEuler = { x: 0, y: 0, z: 0 }
-    private updating = false
 
     constructor(model: EditorModel) {
         this.model = model
@@ -89,7 +88,7 @@ export class Selection {
      */
     @bind
     transformActive() {
-        if (this.updating || !this.active) {
+        if (!this.active) {
             return
         }
 
@@ -151,15 +150,14 @@ export class Selection {
         mat4.getRotation(this.rotationQuat, m)
         const e = quat2euler(this.rotationQuat)
 
-        // Suppress transformActive while writing back to the model so it
-        // doesn't compute wrong deltas from stale state (setting translation
-        // fires a signal that calls transformActive before rotation is set)
-        this.updating = true
-        this.model.transform.translation.value = pos
-        this.model.transform.rotation.x.value = rad2deg(e.x)
-        this.model.transform.rotation.y.value = rad2deg(e.y)
-        this.model.transform.rotation.z.value = rad2deg(e.z)
-        this.updating = false
+        // Batch model writes so transformActive fires only once after all values
+        // are set, preventing it from computing wrong deltas from intermediate state
+        this.model.transform.signal.withLock(() => {
+            this.model.transform.translation.value = pos
+            this.model.transform.rotation.x.value = rad2deg(e.x)
+            this.model.transform.rotation.y.value = rad2deg(e.y)
+            this.model.transform.rotation.z.value = rad2deg(e.z)
+        })
 
         // Read back (possibly clipped) values to keep lastEuler in sync
         this.lastEuler = {
