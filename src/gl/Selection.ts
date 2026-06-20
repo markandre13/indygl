@@ -32,6 +32,7 @@ export class Selection {
     selected = new Set<IndyNode>();
     private rotationQuat = quat.create()
     private lastEuler = { x: 0, y: 0, z: 0 }
+    private updating = false
 
     constructor(model: EditorModel) {
         this.model = model
@@ -58,6 +59,23 @@ export class Selection {
         //       a 
         this.active = node
         this.selected.add(node)
+
+        // Initialize rotation state for the new active object so that
+        // transformActive sees correct deltas if signals fire during update()
+        const xform = node.parent as XForm | undefined
+        if (xform?.transform) {
+            mat4.getRotation(this.rotationQuat, xform.transform)
+            const e = quat2euler(this.rotationQuat)
+            this.lastEuler = {
+                x: rad2deg(e.x),
+                y: rad2deg(e.y),
+                z: rad2deg(e.z)
+            }
+        } else {
+            quat.identity(this.rotationQuat)
+            this.lastEuler = { x: 0, y: 0, z: 0 }
+        }
+
         this.update()
     }
 
@@ -71,7 +89,7 @@ export class Selection {
      */
     @bind
     transformActive() {
-        if (!this.active) {
+        if (this.updating || !this.active) {
             return
         }
 
@@ -79,10 +97,14 @@ export class Selection {
         const y = this.model.transform.rotation.y.value.toNumber()
         const z = this.model.transform.rotation.z.value.toNumber()
 
-        // Compute deltas from last known Euler values
-        const dx = x - this.lastEuler.x
-        const dy = y - this.lastEuler.y
-        const dz = z - this.lastEuler.z
+        // Compute deltas from last known Euler values, normalizing to [-180, 180]
+        // to handle wrapping (e.g. 359 → 2 should be +3°, not -357°)
+        let dx = x - this.lastEuler.x
+        let dy = y - this.lastEuler.y
+        let dz = z - this.lastEuler.z
+        if (dx > 180) dx -= 360; else if (dx < -180) dx += 360
+        if (dy > 180) dy -= 360; else if (dy < -180) dy += 360
+        if (dz > 180) dz -= 360; else if (dz < -180) dz += 360
 
         // Apply each delta as a local-axis rotation using axis-angle quaternions
         const qx = quat.setAxisAngle(quat.create(), [1, 0, 0], deg2rad(dx))
@@ -124,14 +146,20 @@ export class Selection {
         const m = mat4.clone(parent.transform)!
         const pos = vec3.create() // extract the position
         vec3.transformMat4(pos, pos, m)
-        this.model.transform.translation.value = pos
 
         // Extract the quaternion from the matrix (the source of truth)
         mat4.getRotation(this.rotationQuat, m)
         const e = quat2euler(this.rotationQuat)
+
+        // Suppress transformActive while writing back to the model so it
+        // doesn't compute wrong deltas from stale state (setting translation
+        // fires a signal that calls transformActive before rotation is set)
+        this.updating = true
+        this.model.transform.translation.value = pos
         this.model.transform.rotation.x.value = rad2deg(e.x)
         this.model.transform.rotation.y.value = rad2deg(e.y)
         this.model.transform.rotation.z.value = rad2deg(e.z)
+        this.updating = false
 
         // Read back (possibly clipped) values to keep lastEuler in sync
         this.lastEuler = {
