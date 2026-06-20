@@ -7,13 +7,13 @@ import type { XForm } from "src/nodes/XForm"
 import type { Context } from "src/gl/Context"
 import type { Point } from "src/gl/types/Point"
 
-
 export class ObjectRotateController extends Controller {
     context: Context
     root: IndyNode
     rotating = false
     initialMousePosition?: Point
     initialParentTransform?: mat4
+    pointerAngle?: number
     label?: HTMLElement
     constructor(context: Context, root: IndyNode) {
         super()
@@ -69,47 +69,68 @@ export class ObjectRotateController extends Controller {
         }
 
         const parent = (node.parent as XForm)
+        const canvas = this.context.canvas
+        const cx = canvas.width / 2
+        const cy = canvas.height / 2
 
         if (!this.rotating) {
             this.rotating = true
             this.initialParentTransform = parent.transform ? mat4.clone(parent.transform) : undefined
             this.initialMousePosition = { x: ev.offsetX, y: ev.offsetY }
+            this.pointerAngle = Math.atan2(ev.offsetY - cy, ev.offsetX - cx)
         }
 
         const dx = ev.offsetX - this.initialMousePosition!.x
-        const dy = ev.offsetY - this.initialMousePosition!.y
         const axis = this.context.axisRenderer
         const sensitivity = 0.005
 
-        if (this.initialParentTransform) {
-            parent.transform = mat4.clone(this.initialParentTransform)
-        } else {
+        const initial = this.initialParentTransform
+        if (!initial) {
             parent.transform = mat4.create()
-        }
-        const m = parent.transform!
-
-        if (!axis.x && !axis.y && !axis.z) {
-            mat4.rotateY(m, m, dx * sensitivity)
-            mat4.rotateX(m, m, dy * sensitivity)
-        } else if (axis.x && !axis.y && !axis.z) {
-            mat4.rotateX(m, m, dx * sensitivity)
-        } else if (!axis.x && axis.y && !axis.z) {
-            mat4.rotateY(m, m, dx * sensitivity)
-        } else if (!axis.x && !axis.y && axis.z) {
-            mat4.rotateZ(m, m, dx * sensitivity)
-        } else if (!axis.x && axis.y && axis.z) {
-            mat4.rotateY(m, m, dx * sensitivity)
-            mat4.rotateZ(m, m, dx * sensitivity)
-        } else if (axis.x && !axis.y && axis.z) {
-            mat4.rotateX(m, m, dx * sensitivity)
-            mat4.rotateZ(m, m, dx * sensitivity)
-        } else if (axis.x && axis.y && !axis.z) {
-            mat4.rotateX(m, m, dx * sensitivity)
-            mat4.rotateY(m, m, dx * sensitivity)
-        } else {
-            console.log(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED`)
+            parent.dirty = true
             return
         }
+
+        const pos = mat4.getTranslation(vec3.create(), initial)
+        const t = mat4.fromTranslation(mat4.create(), pos)
+        const tInv = mat4.fromTranslation(mat4.create(), vec3.negate(vec3.create(), pos))
+        const rot = mat4.create()
+
+        if (!axis.x && !axis.y && !axis.z) {
+            const currentAngle = Math.atan2(ev.offsetY - cy, ev.offsetX - cx)
+            const deltaAngle = currentAngle - this.pointerAngle!
+            const viewInv = mat4.invert(mat4.create(), this.context.sceneUniforms.camera)
+            if (!viewInv) return
+            const camZ = vec3.fromValues(viewInv[8], viewInv[9], viewInv[10])
+            vec3.normalize(camZ, camZ)
+            mat4.rotate(rot, rot, -deltaAngle, camZ)
+        } else {
+            if (axis.x && !axis.y && !axis.z) {
+                mat4.rotateX(rot, rot, dx * sensitivity)
+            } else if (!axis.x && axis.y && !axis.z) {
+                mat4.rotateY(rot, rot, dx * sensitivity)
+            } else if (!axis.x && !axis.y && axis.z) {
+                mat4.rotateZ(rot, rot, dx * sensitivity)
+            } else if (!axis.x && axis.y && axis.z) {
+                mat4.rotateY(rot, rot, dx * sensitivity)
+                mat4.rotateZ(rot, rot, dx * sensitivity)
+            } else if (axis.x && !axis.y && axis.z) {
+                mat4.rotateX(rot, rot, dx * sensitivity)
+                mat4.rotateZ(rot, rot, dx * sensitivity)
+            } else if (axis.x && axis.y && !axis.z) {
+                mat4.rotateX(rot, rot, dx * sensitivity)
+                mat4.rotateY(rot, rot, dx * sensitivity)
+            } else {
+                console.log(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED`)
+                return
+            }
+        }
+
+        const result = mat4.create()
+        mat4.multiply(result, t, rot)
+        mat4.multiply(result, result, tInv)
+        mat4.multiply(result, result, initial)
+        parent.transform = result
 
         parent.dirty = true
         this.context.selection.update()
