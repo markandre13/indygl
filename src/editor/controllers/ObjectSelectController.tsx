@@ -8,6 +8,7 @@ import type { Context } from "src/gl/Context"
 import { Texture } from "src/gl/buffers/Texture"
 import { ShaderP3_IDX_Id } from "src/gl/shaders/ShaderP3_IDX_Id"
 import { PICK_SIZE } from "src/gl/shaders/ShaderP3_PickPoint"
+import { ObjectScaleController } from "./ObjectScaleController"
 
 /**
  * * select object with mouse
@@ -33,6 +34,9 @@ export class ObjectSelectController extends Controller {
         switch (ev.code) {
             case 'KeyG': // grab
                 this.context.pushController(new ObjectGrabController(this.context, this.root))
+                break
+            case 'KeyS': // grab
+                this.context.pushController(new ObjectScaleController(this.context, this.root))
                 break
         }
     }
