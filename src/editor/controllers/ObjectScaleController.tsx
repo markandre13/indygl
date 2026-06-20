@@ -118,7 +118,7 @@ export class ObjectScaleController extends Controller {
         }
         mat4.scale(parent.transform, parent.transform, vec3.fromValues(sx, sy, sz))
         parent.dirty = true
-        this.context.selection.update()
+        this.context.selection.updateEditorModelFromActive()
 
         this.context.invalidate()
     }

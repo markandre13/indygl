@@ -11,6 +11,7 @@ import { AxisRenderer } from './AxisRenderer'
 import type { Controller } from 'src/editor/controllers/Controller'
 import { EditorModel } from 'src/editor/app/EditorModel'
 import { Selection } from './Selection'
+import type { Point } from './types/Point'
 
 export enum Projection {
     ORTHOGONAL,
@@ -49,7 +50,10 @@ export class Context {
         }
     }
     popController() {
-        this._controllerStack.pop()
+        const previousController = this._controllerStack.pop()
+
+        previousController?.destructor()
+
         const status = document.getElementById("status")
         if (status) {
             const controller = this._controllerStack[this._controllerStack.length - 1]
@@ -276,6 +280,14 @@ export class Context {
     }
 
     /**
+     * last PointerEvent's offsetX and offsetY values
+     * 
+     * can be used when a keyboard event launches a new controller and it needs
+     * the pointer position but has not received a PointerEvent yet
+     */
+    readonly lastPointerOffset: Point = { x: 0, y: 0 }
+
+    /**
      * setup handling of pointer, keyboard and resize event
      */
     private setupEventHandling(canvas: HTMLCanvasElement) {
@@ -295,6 +307,9 @@ export class Context {
             ev.preventDefault()
         }
         canvas.onpointerdown = (ev: PointerEvent) => {
+            this.lastPointerOffset.x = ev.offsetX
+            this.lastPointerOffset.y = ev.offsetY
+
             for (let i = this._controllerStack.length - 1; i >= 0; --i) {
                 this._controllerStack[i]!.pointerdown(ev)
                 if (ev.defaultPrevented) {
@@ -308,6 +323,8 @@ export class Context {
             downY = ev.y
         }
         canvas.onpointerup = (ev: PointerEvent) => {
+            this.lastPointerOffset.x = ev.offsetX
+            this.lastPointerOffset.y = ev.offsetY
             for (let i = this._controllerStack.length - 1; i >= 0; --i) {
                 this._controllerStack[i]!.pointerup(ev)
                 if (ev.defaultPrevented) {
@@ -318,6 +335,8 @@ export class Context {
             buttonDown = false
         }
         canvas.onpointermove = (ev: PointerEvent) => {
+            this.lastPointerOffset.x = ev.offsetX
+            this.lastPointerOffset.y = ev.offsetY
             for (let i = this._controllerStack.length - 1; i >= 0; --i) {
                 this._controllerStack[i]!.pointermove(ev)
                 if (ev.defaultPrevented) {

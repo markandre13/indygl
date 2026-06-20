@@ -136,7 +136,7 @@ export class ObjectGrabController extends Controller {
 
         setMat4Translation(parent.transform, pt)
         parent.dirty = true
-        this.context.selection.update()
+        this.context.selection.updateEditorModelFromActive()
 
         this.context.invalidate()
     }

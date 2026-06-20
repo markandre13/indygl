@@ -150,7 +150,7 @@ describe("Selection", () => {
             editor.transform.rotation.x.value = 20
             editor.transform.rotation.x.value = 30
 
-            sel.update()
+            sel.updateEditorModelFromActive()
             expect(editor.transform.rotation.x.value.toNumber()).to.be.closeTo(30, 1)
         })
 
@@ -168,7 +168,7 @@ describe("Selection", () => {
             // Net Z rotation from identity = -2° + 4° = +2°.
             editor.transform.rotation.z.value = 2
 
-            sel.update()
+            sel.updateEditorModelFromActive()
             // The resulting Z rotation should be ≈2°, not a huge negative number
             expect(editor.transform.rotation.z.value.toNumber()).to.be.closeTo(2, 1)
         })
@@ -188,7 +188,7 @@ describe("Selection", () => {
             parent.transform = m
             parent.dirty = true
 
-            sel.update()
+            sel.updateEditorModelFromActive()
 
             expect(editor.transform.translation.x.value.toNumber()).to.be.closeTo(2, 0.001)
             expect(editor.transform.translation.y.value.toNumber()).to.be.closeTo(4, 0.001)

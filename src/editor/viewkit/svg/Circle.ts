@@ -5,12 +5,11 @@ export class Circle {
     constructor(parent: HTMLElement, pt: Point, color: string) {
         const svgNS = "http://www.w3.org/2000/svg"
         const circle = document.createElementNS(svgNS, "circle")
-        circle.setAttribute("cx", `${pt.x}`)
-        circle.setAttribute("cy", `${pt.y}`)
         circle.setAttribute("r", "3")
         circle.setAttribute("fill", color)
         parent.appendChild(circle)
         this.#circle = circle
+        this.set(pt)
     }
     set(pt: Point) {
         this.#circle.setAttribute("cx", `${pt.x}`)

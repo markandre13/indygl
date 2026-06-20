@@ -3,22 +3,46 @@ import { Mesh } from "src/nodes/Mesh"
 import { type IndyNode } from "src/nodes/IndyNode"
 import { Controller } from "./Controller"
 import { mat4, vec3 } from "gl-matrix"
-import type { XForm } from "src/nodes/XForm"
 import type { Context } from "src/gl/Context"
 import type { Point } from "src/gl/types/Point"
+import { Circle } from "../viewkit/svg/Circle"
+import { world2screen } from "src/gl/algorithms/coordinates"
+import { LineWithArrows } from "../viewkit/svg/LineWithArrows"
+import { rad2deg } from "src/gl/algorithms/rad2deg"
+import type { XForm } from "src/nodes/XForm"
 
 export class ObjectRotateController extends Controller {
     context: Context
-    root: IndyNode
-    rotating = false
-    initialMousePosition?: Point
-    initialParentTransform?: mat4
-    pointerAngle?: number
+    // root: IndyNode
+    // rotating = false
+    // initialMousePosition?: Point
+    // initialParentTransform?: mat4
+
+    objectCenter?: vec3
+    originMarker!: Circle
+    lineToPointer!: LineWithArrows
+
+    initialAngle!: number
+    initialTransform!: mat4
     label?: HTMLElement
     constructor(context: Context, root: IndyNode) {
         super()
         this.context = context
-        this.root = root
+        // this.root = root
+
+        const node = this.context.selection.active as Mesh
+        const parent = node.parent as XForm
+        // console.log("active is Mesh")
+        this.objectCenter = mat4.getTranslation(vec3.create(), node.combined)
+        const canvas = context.canvas
+        const screenCenter = world2screen(this.objectCenter, context.sceneUniforms.projectionMatrix, canvas)
+        canvas.style.cursor = "none"
+
+        const overlay = document.getElementById('svg-overlay')!
+        this.originMarker = new Circle(overlay, screenCenter, "#f80")
+        this.lineToPointer = new LineWithArrows(overlay, screenCenter, this.context.lastPointerOffset, "#fff")
+        this.initialAngle = this.lineToPointer.angle
+        this.initialTransform = parent.transform ? mat4.clone(parent.transform) : mat4.create()
     }
     override info() {
         return <>
@@ -63,77 +87,43 @@ export class ObjectRotateController extends Controller {
     override pointermove(ev: PointerEvent): void {
         ev.preventDefault()
 
+        this.lineToPointer.setP1({ x: ev.offsetX, y: ev.offsetY })
         const node = this.context.selection.active
-        if (!(node instanceof Mesh)) {
-            return
-        }
-
+        if (!(node instanceof Mesh)) { return }
         const parent = (node.parent as XForm)
-        const canvas = this.context.canvas
-        const cx = canvas.width / 2
-        const cy = canvas.height / 2
 
-        if (!this.rotating) {
-            this.rotating = true
-            this.initialParentTransform = parent.transform ? mat4.clone(parent.transform) : undefined
-            this.initialMousePosition = { x: ev.offsetX, y: ev.offsetY }
-            this.pointerAngle = Math.atan2(ev.offsetY - cy, ev.offsetX - cx)
-        }
+        const angle = this.initialAngle - this.lineToPointer.angle
 
-        const dx = ev.offsetX - this.initialMousePosition!.x
-        const axis = this.context.axisRenderer
-        const sensitivity = 0.005
+        // ROTATION AROUND THE OBJECT'S LOCAL Z-AXIS
+        // * depending whether the axis points to or from the viewer, we need to use either angle or -angle
+        //   so that the direction matches that of the pointer around the object's origin
+        // parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, vec3.fromValues(0,0,1))
 
-        const initial = this.initialParentTransform
-        if (!initial) {
-            parent.transform = mat4.create()
-            parent.dirty = true
-            return
-        }
+        // ROTATION AROUND THE GLOBAL Z-AXIS
+        const p0 = vec3.fromValues(0, 0, 0)
+        const p1 = vec3.fromValues(0, 0, 1)
+        const m = mat4.clone(this.initialTransform)
+        mat4.invert(m,m)
+        vec3.transformMat4(p0, p0, m)
+        vec3.transformMat4(p1, p1, m)
+        vec3.sub(p1, p1, p0)
+        vec3.normalize(p1, p1)
+        parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, p1)
 
-        const pos = mat4.getTranslation(vec3.create(), initial)
-        const t = mat4.fromTranslation(mat4.create(), pos)
-        const tInv = mat4.fromTranslation(mat4.create(), vec3.negate(vec3.create(), pos))
-        const rot = mat4.create()
-
-        if (!axis.x && !axis.y && !axis.z) {
-            const currentAngle = Math.atan2(ev.offsetY - cy, ev.offsetX - cx)
-            const deltaAngle = currentAngle - this.pointerAngle!
-            const viewInv = mat4.invert(mat4.create(), this.context.sceneUniforms.camera)
-            if (!viewInv) return
-            const camZ = vec3.fromValues(viewInv[8], viewInv[9], viewInv[10])
-            vec3.normalize(camZ, camZ)
-            mat4.rotate(rot, rot, -deltaAngle, camZ)
-        } else {
-            if (axis.x && !axis.y && !axis.z) {
-                mat4.rotateX(rot, rot, dx * sensitivity)
-            } else if (!axis.x && axis.y && !axis.z) {
-                mat4.rotateY(rot, rot, dx * sensitivity)
-            } else if (!axis.x && !axis.y && axis.z) {
-                mat4.rotateZ(rot, rot, dx * sensitivity)
-            } else if (!axis.x && axis.y && axis.z) {
-                mat4.rotateY(rot, rot, dx * sensitivity)
-                mat4.rotateZ(rot, rot, dx * sensitivity)
-            } else if (axis.x && !axis.y && axis.z) {
-                mat4.rotateX(rot, rot, dx * sensitivity)
-                mat4.rotateZ(rot, rot, dx * sensitivity)
-            } else if (axis.x && axis.y && !axis.z) {
-                mat4.rotateX(rot, rot, dx * sensitivity)
-                mat4.rotateY(rot, rot, dx * sensitivity)
-            } else {
-                console.log(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED`)
-                return
-            }
-        }
-
-        const result = mat4.create()
-        mat4.multiply(result, t, rot)
-        mat4.multiply(result, result, tInv)
-        mat4.multiply(result, result, initial)
-        parent.transform = result
+        // ROTATION AROUND THE CAMERA'S Z-AXIS
+        // const p0 = vec3.fromValues(0, 0, 0)
+        // const p1 = vec3.fromValues(0, 0, 1)
+        // const m = mat4.clone(this.context.sceneUniforms.camera)
+        // mat4.mul(m,m,this.initialTransform)
+        // mat4.invert(m,m)
+        // vec3.transformMat4(p0, p0, m)
+        // vec3.transformMat4(p1, p1, m)
+        // vec3.sub(p1, p1, p0)
+        // vec3.normalize(p1, p1)
+        // parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, p1)
 
         parent.dirty = true
-        this.context.selection.update()
+        this.context.selection.updateEditorModelFromActive()
 
         this.context.invalidate()
     }
@@ -150,25 +140,25 @@ export class ObjectRotateController extends Controller {
         }
     }
 
+    override destructor(): void {
+        this.context.canvas.style.cursor = ""
+        this.originMarker.remove()
+        this.lineToPointer.remove()
+    }
+
     confirm() {
-        this.rotating = false
         this.context.axisRenderer.set(false, false, false)
         this.context.popController()
-
-        if (this.label) {
-            this.label.remove()
-            this.label = undefined
-        }
+        // if (this.label) {
+        //     this.label.remove()
+        //     this.label = undefined
+        // }
     }
 
     cancel() {
         const node = this.context.selection.active!
-        const parent = (node.parent as XForm)
-        if (this.initialParentTransform) {
-            parent.transform = mat4.clone(this.initialParentTransform)
-        } else {
-            parent.transform = undefined
-        }
+        const parent = node.parent as XForm
+        parent.transform = this.initialTransform
         parent.dirty = true
         this.context.invalidate()
 

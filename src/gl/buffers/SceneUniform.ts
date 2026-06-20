@@ -20,6 +20,9 @@ export class SceneUniform extends Uniform {
             ],
         })
     }
+    /**
+     * returns the projectionMatrix which is perspective * camera
+     */
     get projectionMatrix(): mat4 {
         return this.values[0]
     }

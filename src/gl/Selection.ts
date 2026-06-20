@@ -33,9 +33,19 @@ export class Selection {
     private rotationQuat = quat.create()
     private lastEuler = { x: 0, y: 0, z: 0 }
 
+    /**
+     * avoid executing each of updateActiveFromEditorModel() and updateActiveFromEditorModel()
+     * executing the other one as this can introduce jitter due to floating point inprecission.
+     * 
+     * it's also useless computation.
+     * 
+     * NOTE: it's the same issue as in toad.js' color dialog with RGB and HSV triggering each other
+     */
+    private lock = false
+
     constructor(model: EditorModel) {
         this.model = model
-        model.transform.signal.add(this.transformActive)
+        model.transform.signal.add(this.updateActiveFromEditorModel)
     }
 
     /**
@@ -75,7 +85,7 @@ export class Selection {
             this.lastEuler = { x: 0, y: 0, z: 0 }
         }
 
-        this.update()
+        this.updateEditorModelFromActive()
     }
 
     /**
@@ -87,10 +97,14 @@ export class Selection {
      * always around the local Z axis, regardless of the current orientation.
      */
     @bind
-    transformActive() {
+    updateActiveFromEditorModel() {
+        if (this.lock) {
+            return
+        }
         if (!this.active) {
             return
         }
+        this.lock = true
 
         const x = this.model.transform.rotation.x.value.toNumber()
         const y = this.model.transform.rotation.y.value.toNumber()
@@ -126,6 +140,8 @@ export class Selection {
         const parent = this.active.parent as XForm
         parent.transform = m
         parent.dirty = true
+
+        this.lock = false
     }
 
     /**
@@ -133,10 +149,10 @@ export class Selection {
      *
      * @returns
      */
-    update() {
-        if (!this.active) {
-            return
-        }
+    updateEditorModelFromActive() {
+        if (!this.active) { return }
+        if (this.lock) return
+        this.lock = true
         const node = this.active
         const parent = node.parent as XForm
         if (!parent.transform) {
@@ -150,14 +166,10 @@ export class Selection {
         mat4.getRotation(this.rotationQuat, m)
         const e = quat2euler(this.rotationQuat)
 
-        // Batch model writes so transformActive fires only once after all values
-        // are set, preventing it from computing wrong deltas from intermediate state
-        this.model.transform.signal.withLock(() => {
-            this.model.transform.translation.value = pos
-            this.model.transform.rotation.x.value = rad2deg(e.x)
-            this.model.transform.rotation.y.value = rad2deg(e.y)
-            this.model.transform.rotation.z.value = rad2deg(e.z)
-        })
+        this.model.transform.translation.value = pos
+        this.model.transform.rotation.x.value = rad2deg(e.x)
+        this.model.transform.rotation.y.value = rad2deg(e.y)
+        this.model.transform.rotation.z.value = rad2deg(e.z)
 
         // Read back (possibly clipped) values to keep lastEuler in sync
         this.lastEuler = {
@@ -165,5 +177,6 @@ export class Selection {
             y: this.model.transform.rotation.y.value.toNumber(),
             z: this.model.transform.rotation.z.value.toNumber()
         }
+        this.lock = false
     }
 }
