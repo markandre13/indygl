@@ -22,7 +22,7 @@ export class ObjectSelectController extends Controller {
         this.context = context
         this.root = root
     }
-    override info() {
+    override keyboardInfo() {
         return <>
             <IconMouseLeft /><span>Select</span>
             <IconMouseMiddle /><span>Rotate View</span>

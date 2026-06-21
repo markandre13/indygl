@@ -74,7 +74,7 @@ export class FlyMode extends Controller {
 
         this.osd = new FlyModeOnScreenDisplay(context)
     }
-    override info() {
+    override keyboardInfo() {
         return <>
             <span>FLYMODE:</span>
             <IconMouseLeft /><span>Confirm</span>

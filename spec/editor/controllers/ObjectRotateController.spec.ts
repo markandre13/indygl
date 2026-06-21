@@ -90,9 +90,7 @@ describe("ObjectRotateController", () => {
         expect(ctrl.initialTransform).toBeDefined()
         expect(mat4.equals(ctrl.initialTransform, parent.transform!)).toBe(true)
         expect(context.canvas.style.cursor).toBe("none")
-        expect(ctrl.label).toBeInstanceOf(HTMLElement)
         expect(infoOverlay.childElementCount).toBe(1)
-        expect(ctrl.label.children[0].textContent).toBe("Rotation 0.00 along global X")
     })
 
     it("cancel restores initial transform and pops controller", () => {

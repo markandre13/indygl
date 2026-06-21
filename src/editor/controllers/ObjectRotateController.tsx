@@ -17,11 +17,6 @@ export class ObjectRotateController extends Controller {
 
     initialAngle!: number
     initialTransform!: mat4
-    label: HTMLElement
-
-    setInfo(text: string) {
-        (this.label.children[0] as HTMLElement).innerText = text
-    }
 
     constructor(context: Context) {
         super()
@@ -34,13 +29,6 @@ export class ObjectRotateController extends Controller {
         const screenCenter = world2screen(objectCenter, context.sceneUniforms.projectionMatrix, canvas)
         canvas.style.cursor = "none"
 
-        const overlay = document.getElementById('overlay')!
-        const info = <div class="op-info">
-            <div></div>
-        </div> as HTMLElement
-        this.label = info
-        overlay.appendChild(info)
-
         const svgOverlay = document.getElementById('svg-overlay')!
         this.originMarker = new Circle(svgOverlay, screenCenter, "#f80")
         this.lineToPointer = new LineWithArrows(svgOverlay, screenCenter, this.context.lastPointerOffset, "#fff")
@@ -49,7 +37,7 @@ export class ObjectRotateController extends Controller {
 
         this.setInfo("Rotation 0.00 along global X")
     }
-    override info() {
+    override keyboardInfo() {
         return <>
             <span>ROTATE:</span>
             <IconMouseLeft /><span>Confirm</span>
@@ -111,7 +99,7 @@ export class ObjectRotateController extends Controller {
         let deg = rad2deg(angle)
         if (deg < 0) { deg += 360 }
         if (deg > 360) { deg -= 360 }
-        let degTxt = deg.toFixed(4) 
+        let degTxt = deg.toFixed(4)
         if (!axis.x && !axis.y && !axis.z) {
             p1 = vec3.fromValues(0, 0, 1)
             this.setInfo(`Rotation ${degTxt}`)
@@ -180,7 +168,6 @@ export class ObjectRotateController extends Controller {
         this.context.canvas.style.cursor = ""
         this.originMarker.remove()
         this.lineToPointer.remove()
-        this.label?.remove()
         this.context.axisRenderer.set(false, false, false)
     }
 

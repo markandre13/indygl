@@ -39,11 +39,13 @@ export class Context {
     private _controllerStack: Controller[] = []
 
     pushController(controller: Controller) {
+        const currentController = this._controllerStack[this._controllerStack.length - 1]
+        currentController?.hideInfo()
         this._controllerStack.push(controller)
         this.invalidate()
         const status = document.getElementById("status")
         if (status) {
-            const info = controller.info()
+            const info = controller.keyboardInfo()
             if (info) {
                 replaceChildren(status, info)
             }
@@ -51,13 +53,16 @@ export class Context {
     }
     popController() {
         const previousController = this._controllerStack.pop()
+        if (previousController) {
+            previousController.setInfo(undefined)
+            previousController.destructor()
+        }
 
-        previousController?.destructor()
-
+        const currentController = this._controllerStack[this._controllerStack.length - 1]
+        currentController.showInfo()
         const status = document.getElementById("status")
         if (status) {
-            const controller = this._controllerStack[this._controllerStack.length - 1]
-            const info = controller.info()
+            const info = currentController.keyboardInfo()
             if (info) {
                 replaceChildren(status, info)
             }

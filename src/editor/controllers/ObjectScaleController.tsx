@@ -14,13 +14,12 @@ export class ObjectScaleController extends Controller {
     scaling = false
     initialMousePosition?: Point
     initialParentTransform?: mat4
-    label?: HTMLElement
     constructor(context: Context, root: IndyNode) {
         super()
         this.context = context
         this.root = root
     }
-    override info() {
+    override keyboardInfo() {
         return <>
             <span>SCALE:</span>
             <IconMouseLeft /><span>Confirm</span>
@@ -135,15 +134,13 @@ export class ObjectScaleController extends Controller {
         }
     }
 
-    confirm() {
+    override destructor(): void {
         this.scaling = false
-        this.context.axisRenderer.set(false, false, false)
-        this.context.popController()
+        this.context.axisRenderer.set(false, false, false)       
+    }
 
-        if (this.label) {
-            this.label.remove()
-            this.label = undefined
-        }
+    confirm() {
+        this.context.popController()
     }
 
     cancel() {

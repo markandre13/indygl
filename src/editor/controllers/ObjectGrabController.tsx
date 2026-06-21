@@ -17,13 +17,19 @@ export class ObjectGrabController extends Controller {
     initialCenter?: vec3
     initialTransform?: mat4
     delta?: Point
-    label?: HTMLElement
     constructor(context: Context, root: IndyNode) {
         super()
         this.context = context
         this.root = root
+
+        const node = this.context.selection.active
+        if (node instanceof Mesh) {
+            this.initialCenter = mat4.getTranslation(vec3.create(), node.combined)
+            this.initialTransform = mat4.clone(node.combined)
+        }
+        this.updateLabel()
     }
-    override info() {
+    override keyboardInfo() {
         return <>
             <span>GRAB:</span>
             <IconMouseLeft /><span>Confirm</span>
@@ -65,6 +71,7 @@ export class ObjectGrabController extends Controller {
             this.initialCenter = mat4.getTranslation(vec3.create(), node.combined)
             this.initialTransform = mat4.clone(node.combined)
         }
+        this.updateLabel()
         this.context.invalidate()
     }
 
@@ -145,10 +152,43 @@ export class ObjectGrabController extends Controller {
         )
 
         setMat4Translation(parent.transform, pt)
+        this.updateLabel()
+
         parent.dirty = true
         this.context.selection.updateEditorModelFromActive()
 
         this.context.invalidate()
+    }
+
+    private updateLabel() {
+        const p0 = this.initialCenter!
+
+        const node = this.context.selection.active!
+        const parent = (node.parent as XForm)
+        const p1 = mat4.getTranslation(vec3.create(), parent.transform!)
+
+        vec3.sub(p1, p1, p0)
+        const dx = p1[0].toFixed(4)
+        const dy = p1[0].toFixed(4)
+        const dz = p1[0].toFixed(4)
+        const d = vec3.length(p1).toFixed(4)
+
+        const axis = this.context.axisRenderer
+        if (!axis.x && !axis.y && !axis.z) {
+            this.setInfo(`𝛥y ${dx} m 𝛥y: ${dy} m 𝛥z: ${dz} m (${d} m)`)
+        } else if (!axis.x && axis.y && axis.z) {
+            this.setInfo(`𝛥y: ${dy} m  𝛥z: ${dz} m (${d}) locking global X`)
+        } else if (axis.x && !axis.y && axis.z) {
+            this.setInfo(`𝛥x: ${dx} m  𝛥z: ${dz} m (${d}) locking global Y`)
+        } else if (axis.x && axis.y && !axis.z) {
+            this.setInfo(`𝛥x: ${dx} m  𝛥y: ${dy} m (${d}) locking global Z`)
+        } else if (axis.x && !axis.y && !axis.z) {
+            this.setInfo(`𝛥x: ${dx} m (${d}) along global X`)
+        } else if (!axis.x && axis.y && !axis.z) {
+            this.setInfo(`𝛥y: ${dy} m (${d}) along global Y`)
+        } else if (!axis.x && !axis.y && axis.z) {
+            this.setInfo(`𝛥z: ${dz} m (${d}) along global Z`)
+        }
     }
 
     override pointerdown(ev: PointerEvent): void {
@@ -169,11 +209,6 @@ export class ObjectGrabController extends Controller {
         this.grabbing = false
         this.context.axisRenderer.set(false, false, false)
         this.context.popController()
-
-        if (this.label) {
-            this.label.remove()
-            this.label = undefined
-        }
     }
     /**
      * quit grab

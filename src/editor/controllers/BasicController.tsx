@@ -17,7 +17,7 @@ export class BasicMode extends Controller {
         super()
         this.context = view
     }
-    override info() {
+    override keyboardInfo() {
         return <>BASIC: <IconKey key="`" />Flymode</>
     }
     override keydown(ev: KeyboardEvent): void {
