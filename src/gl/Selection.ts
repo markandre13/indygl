@@ -158,25 +158,21 @@ export class Selection {
         if (!parent.transform) {
             parent.transform = mat4.create()
         }
-        const m = mat4.clone(parent.transform)!
-        const pos = vec3.create() // extract the position
-        vec3.transformMat4(pos, pos, m)
 
-        // Extract the quaternion from the matrix (the source of truth)
-        mat4.getRotation(this.rotationQuat, m)
+        const pos = vec3.create()
+        const scale = vec3.create()
+        mat4.decompose(this.rotationQuat, pos, scale, parent.transform)
         const e = quat2euler(this.rotationQuat)
+        this.lastEuler = {x: rad2deg(e.x), y: rad2deg(e.y), z: rad2deg(e.z)}
 
         this.model.transform.translation.value = pos
         this.model.transform.rotation.x.value = rad2deg(e.x)
         this.model.transform.rotation.y.value = rad2deg(e.y)
         this.model.transform.rotation.z.value = rad2deg(e.z)
+        this.model.transform.scale.x.value = scale[0]
+        this.model.transform.scale.y.value = scale[1]
+        this.model.transform.scale.z.value = scale[2]
 
-        // Read back (possibly clipped) values to keep lastEuler in sync
-        this.lastEuler = {
-            x: this.model.transform.rotation.x.value.toNumber(),
-            y: this.model.transform.rotation.y.value.toNumber(),
-            z: this.model.transform.rotation.z.value.toNumber()
-        }
         this.lock = false
     }
 }
