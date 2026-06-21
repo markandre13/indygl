@@ -1,8 +1,11 @@
 import type { Mesh } from "src/nodes/Mesh"
 import { VertexBuffer } from "./buffers/VertexBuffer"
 import type { Context } from "./Context"
+import { ModelUniform } from "./buffers/ModelUniform"
+import { mat4, vec3 } from "gl-matrix"
 
 export class AxisRenderer {
+    modelView: ModelUniform
     context: Context
     active?: Mesh
     points: VertexBuffer
@@ -15,6 +18,8 @@ export class AxisRenderer {
     constructor(context: Context) {
         this.context = context
         const device = context.device
+        this.modelView = new ModelUniform(context)
+
         const s = 10000
         this.points = new VertexBuffer(device, [
             -s, 0, 0, 1, 0, 0,
@@ -28,6 +33,14 @@ export class AxisRenderer {
         ])
     }
     set(x: boolean, y: boolean, z: boolean) {
+        const m = this.modelView.modelViewMatrix
+        mat4.identity(m)
+        if (this.context.selection.active) {
+            const t = mat4.getTranslation(vec3.create(), this.context.selection.active.combined)
+            mat4.translate(m, m, t)
+        }
+        this.modelView.writeTo(this.context.device)
+
         this.x = x
         this.y = y
         this.z = z
@@ -47,7 +60,7 @@ export class AxisRenderer {
             this.active = selection.active as Mesh
         }
         pass.setPipeline(context.shader.p3c3_line.pipeline)
-        pass.setBindGroup(1, this.active.modelView.bindGroup)
+        pass.setBindGroup(1, this.modelView.bindGroup) // FIXME: THIS IS FOR OBJECT LOCAL AXES, PROVIDE A GLOBAL IDENTITY TRANSFORM FOR THIS
         pass.setVertexBuffer(0, this.points.buffer)
         if (this.x) {
             pass.draw(2, undefined, 0)

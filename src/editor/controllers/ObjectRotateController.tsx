@@ -92,35 +92,54 @@ export class ObjectRotateController extends Controller {
         if (!(node instanceof Mesh)) { return }
         const parent = (node.parent as XForm)
 
-        const angle = this.initialAngle - this.lineToPointer.angle
+        let angle = this.initialAngle - this.lineToPointer.angle
 
         // ROTATION AROUND THE OBJECT'S LOCAL Z-AXIS
         // * depending whether the axis points to or from the viewer, we need to use either angle or -angle
         //   so that the direction matches that of the pointer around the object's origin
         // parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, vec3.fromValues(0,0,1))
 
-        // ROTATION AROUND THE GLOBAL Z-AXIS
+        const axis = this.context.axisRenderer
+        let i = -1
+        let m: mat4
+        let p1: vec3
+        if (!axis.x && !axis.y && !axis.z) {
+            m = this.context.sceneUniforms.camera
+            p1 = vec3.fromValues(0, 0, 1)
+        } else if ((!axis.x && axis.y && axis.z) || (axis.x && !axis.y && !axis.z)) {
+            i = 0
+            m = this.initialTransform
+            p1 = vec3.fromValues(1, 0, 0)
+        } else if ((axis.x && !axis.y && axis.z) || (!axis.x && axis.y && !axis.z)) {
+            i = 1
+            m = this.initialTransform
+            p1 = vec3.fromValues(0, 1, 0)
+        } else if ((axis.x && axis.y && !axis.z) || (!axis.x && !axis.y && axis.z)) {
+            i = 2
+            m = this.initialTransform
+            p1 = vec3.fromValues(0, 0, 1)
+        } else {
+            throw Error(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED YET`)
+        }
+
         const p0 = vec3.fromValues(0, 0, 0)
-        const p1 = vec3.fromValues(0, 0, 1)
-        const m = mat4.clone(this.initialTransform)
-        mat4.invert(m,m)
+        m = mat4.clone(m)
+        mat4.invert(m, m)
         vec3.transformMat4(p0, p0, m)
         vec3.transformMat4(p1, p1, m)
-        vec3.sub(p1, p1, p0)
-        vec3.normalize(p1, p1)
-        parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, p1)
+        vec3.sub(p0, p1, p0)
+        vec3.normalize(p0, p0)
 
-        // ROTATION AROUND THE CAMERA'S Z-AXIS
-        // const p0 = vec3.fromValues(0, 0, 0)
-        // const p1 = vec3.fromValues(0, 0, 1)
-        // const m = mat4.clone(this.context.sceneUniforms.camera)
-        // mat4.mul(m,m,this.initialTransform)
-        // mat4.invert(m,m)
-        // vec3.transformMat4(p0, p0, m)
-        // vec3.transformMat4(p1, p1, m)
-        // vec3.sub(p1, p1, p0)
-        // vec3.normalize(p1, p1)
-        // parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, p1)
+        const camInv = mat4.clone(this.context.sceneUniforms.camera)
+        mat4.invert(camInv, camInv)
+        vec3.transformMat4(p1, p1, camInv)
+        if (i>=0) {
+            if (p1[i] < 0) {
+                angle = -angle
+            }
+        }
+        
+        parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, p0)
 
         parent.dirty = true
         this.context.selection.updateEditorModelFromActive()

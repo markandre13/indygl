@@ -3,7 +3,6 @@ import { Rot3Model } from "./Rot3Model"
 import { Scale3Model } from "./Scale3Model"
 import { Vec3Model } from "./Vec3Model"
 import { Signal } from "toad.js/reactive/Signal"
-import { deg2rad } from "src/gl/algorithms/deg2rad"
 import { bind } from "./details/decorators/bind"
 
 export class TransformModel {
@@ -24,16 +23,5 @@ export class TransformModel {
 
     @bind
     private emit() { this.signal.emit() }
-
-    get value(): mat4 {
-        mat4.identity(this.m)
-        mat4.translate(this.m, this.m, this.translation.value)
-        mat4.rotateX(this.m, this.m, deg2rad(this.rotation.x.value.toNumber()))
-        mat4.rotateY(this.m, this.m, deg2rad(this.rotation.y.value.toNumber()))
-        mat4.rotateZ(this.m, this.m, deg2rad(this.rotation.z.value.toNumber()))
-        mat4.scale(this.m, this.m, this.scale.value)
-        return this.m
-    }
-
 }
 
