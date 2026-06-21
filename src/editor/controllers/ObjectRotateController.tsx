@@ -7,6 +7,7 @@ import { Circle } from "../viewkit/svg/Circle"
 import { world2screen } from "src/gl/algorithms/coordinates"
 import { LineWithArrows } from "../viewkit/svg/LineWithArrows"
 import type { XForm } from "src/nodes/XForm"
+import { rad2deg } from "src/gl/algorithms/rad2deg"
 
 export class ObjectRotateController extends Controller {
     context: Context
@@ -107,19 +108,23 @@ export class ObjectRotateController extends Controller {
         let i = -1
         let m: mat4
         let p1: vec3, p0: vec3
+        let deg = rad2deg(angle)
+        if (deg < 0) { deg += 360 }
+        if (deg > 360) { deg -= 360 }
+        let degTxt = deg.toFixed(4) 
         if (!axis.x && !axis.y && !axis.z) {
             p1 = vec3.fromValues(0, 0, 1)
-            this.setInfo(`Rotation ${angle.toFixed(4)}`)
+            this.setInfo(`Rotation ${degTxt}`)
         } else if ((!axis.x && axis.y && axis.z) || (axis.x && !axis.y && !axis.z)) {
-            this.setInfo(`Rotation ${angle.toFixed(4)} along global X`)
+            this.setInfo(`Rotation ${degTxt} along global X`)
             i = 0
             p1 = vec3.fromValues(1, 0, 0)
         } else if ((axis.x && !axis.y && axis.z) || (!axis.x && axis.y && !axis.z)) {
-            this.setInfo(`Rotation ${angle.toFixed(4)} along global Y`)
+            this.setInfo(`Rotation ${degTxt} along global Y`)
             i = 1
             p1 = vec3.fromValues(0, 1, 0)
         } else if ((axis.x && axis.y && !axis.z) || (!axis.x && !axis.y && axis.z)) {
-            this.setInfo(`Rotation ${angle.toFixed(4)} along global Z`)
+            this.setInfo(`Rotation ${degTxt} along global Z`)
             i = 2
             p1 = vec3.fromValues(0, 0, 1)
         } else {
