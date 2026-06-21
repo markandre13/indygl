@@ -1,3 +1,5 @@
+import { vec2 } from "gl-matrix"
+import { deg2rad } from "src/gl/algorithms/deg2rad"
 import { rad2deg } from "src/gl/algorithms/rad2deg"
 import type { Point } from "src/gl/types/Point"
 
@@ -21,7 +23,7 @@ export class LineWithArrows {
         line.setAttribute("stroke", color)
         line.setAttribute("stroke-width", "1")
         line.setAttribute("stroke-dasharray", "4")
-  
+
         const arrow = <g fill="none">
             <path stroke="#000" stroke-width="3.5" d="
                 M 0 5 L 0 15
@@ -37,7 +39,7 @@ export class LineWithArrows {
             "/>
         </g> as SVGGElement
 
-        this._angle = angle
+        this._angle = deg2rad(angle)
         this.arrow = arrow
         this.lineShadow = lineShadow
         this.line = line
@@ -73,5 +75,10 @@ export class LineWithArrows {
     }
     get angle() {
         return Math.atan2(this.p1.y - this.p0.y, this.p1.x - this.p0.x)
+    }
+    get distance() {
+        const dx = this.p1.x - this.p0.x
+        const dy = this.p1.y - this.p0.y
+        return Math.sqrt(dx * dx + dy * dy)
     }
 }

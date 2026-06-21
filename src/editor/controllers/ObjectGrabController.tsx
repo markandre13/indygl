@@ -156,8 +156,19 @@ export class ObjectGrabController extends Controller {
 
         parent.dirty = true
         this.context.selection.updateEditorModelFromActive()
-
         this.context.invalidate()
+    }
+
+    override pointerdown(ev: PointerEvent): void {
+        ev.preventDefault()
+        switch (ev.button) {
+            case 0:
+                this.confirm()
+                break
+            case 2:
+                this.cancel()
+                break
+        }
     }
 
     private updateLabel() {
@@ -191,17 +202,6 @@ export class ObjectGrabController extends Controller {
         }
     }
 
-    override pointerdown(ev: PointerEvent): void {
-        ev.preventDefault()
-        switch (ev.button) {
-            case 0:
-                this.confirm()
-                break
-            case 2:
-                this.cancel()
-                break
-        }
-    }
     /**
      * quit fly mode and keep current position
      */

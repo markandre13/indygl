@@ -5,19 +5,39 @@ import { Controller } from "./Controller"
 import { mat4, vec3 } from "gl-matrix"
 import type { XForm } from "src/nodes/XForm"
 import type { Context } from "src/gl/Context"
-import type { Point } from "src/gl/types/Point"
+import { Circle } from "../viewkit/svg/Circle"
+import { LineWithArrows } from "../viewkit/svg/LineWithArrows"
+import { world2screen } from "src/gl/algorithms/coordinates"
 
 
 export class ObjectScaleController extends Controller {
     context: Context
-    root: IndyNode
-    scaling = false
-    initialMousePosition?: Point
-    initialParentTransform?: mat4
+
+    originMarker!: Circle
+    lineToPointer!: LineWithArrows
+
+    initialDistance: number
+
+    initialParentTransform: mat4
     constructor(context: Context, root: IndyNode) {
         super()
         this.context = context
-        this.root = root
+
+        const node = this.context.selection.active as Mesh
+        const parent = node.parent as XForm
+        const objectCenter = mat4.getTranslation(vec3.create(), node.combined)
+        const canvas = context.canvas
+        const screenCenter = world2screen(objectCenter, context.sceneUniforms.projectionMatrix, canvas)
+        canvas.style.cursor = "none"
+
+        const svgOverlay = document.getElementById('svg-overlay')!
+        this.originMarker = new Circle(svgOverlay, screenCenter, "#f80")
+        this.lineToPointer = new LineWithArrows(svgOverlay, screenCenter, this.context.lastPointerOffset, "#fff", 90)
+        this.initialDistance = this.lineToPointer.distance
+        this.initialParentTransform = parent.transform ? mat4.clone(parent.transform) : mat4.create()
+
+        // this.setInfo("Scale X: 0.0000 Scale Y: 0.0000 Scale Z: 0.0000")
+        this.updateLabel()
     }
     override keyboardInfo() {
         return <>
@@ -57,58 +77,47 @@ export class ObjectScaleController extends Controller {
             }
         }
         this.context.invalidate()
+        this.updateLabel()
     }
 
     override pointermove(ev: PointerEvent): void {
         ev.preventDefault()
 
-        const node = this.context.selection.active
-        if (!(node instanceof Mesh)) {
-            return
-        }
+        this.lineToPointer.setP1({ x: ev.offsetX, y: ev.offsetY })
 
+        const node = this.context.selection.active
+        if (!(node instanceof Mesh)) { return }
         const parent = (node.parent as XForm)
 
-        if (!this.scaling) {
-            this.scaling = true
-            this.initialParentTransform = parent.transform ? mat4.clone(parent.transform) : undefined
-            this.initialMousePosition = { x: ev.offsetX, y: ev.offsetY }
-        }
 
-        const dx = ev.offsetX - this.initialMousePosition!.x
-        const dy = ev.offsetY - this.initialMousePosition!.y
-        const axis = this.context.axisRenderer
-        const sensitivity = 0.01
+        let factor = this.lineToPointer.distance - this.initialDistance
+        factor *= 0.01
+        factor += 1
+        if (factor < 0) {
+            factor = -factor
+        }
 
         let sx = 1, sy = 1, sz = 1
 
+        const axis = this.context.axisRenderer
         if (!axis.x && !axis.y && !axis.z) {
-            const factor = 1 + dx * sensitivity
             sx = sy = sz = factor
         } else if (axis.x && !axis.y && !axis.z) {
-            sx = 1 + dx * sensitivity
+            sx = factor
         } else if (!axis.x && axis.y && !axis.z) {
-            sy = 1 + dy * sensitivity
+            sy = factor
         } else if (!axis.x && !axis.y && axis.z) {
-            sz = 1 + dx * sensitivity
+            sz = factor
         } else if (!axis.x && axis.y && axis.z) {
-            const factor = 1 + dy * sensitivity
             sy = sz = factor
         } else if (axis.x && !axis.y && axis.z) {
-            const factor = 1 + dy * sensitivity
             sx = sz = factor
         } else if (axis.x && axis.y && !axis.z) {
-            const factor = 1 + dy * sensitivity
             sx = sy = factor
         } else {
             console.log(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED`)
             return
         }
-
-        const minScale = 0.001
-        sx = Math.max(minScale, sx)
-        sy = Math.max(minScale, sy)
-        sz = Math.max(minScale, sz)
 
         if (this.initialParentTransform) {
             parent.transform = mat4.clone(this.initialParentTransform)
@@ -116,9 +125,10 @@ export class ObjectScaleController extends Controller {
             parent.transform = mat4.create()
         }
         mat4.scale(parent.transform, parent.transform, vec3.fromValues(sx, sy, sz))
+        this.updateLabel()
+
         parent.dirty = true
         this.context.selection.updateEditorModelFromActive()
-
         this.context.invalidate()
     }
 
@@ -134,9 +144,39 @@ export class ObjectScaleController extends Controller {
         }
     }
 
+    private updateLabel() {
+
+        const node = this.context.selection.active!
+        const parent = (node.parent as XForm)
+        const s = mat4.getScaling(vec3.create(), parent.transform!)
+
+        const sx = s[0].toFixed(4)
+        const sy = s[1].toFixed(4)
+        const sz = s[2].toFixed(4)
+
+        const axis = this.context.axisRenderer
+        if (!axis.x && !axis.y && !axis.z) {
+            this.setInfo(`Scale x: ${sx} y: ${sy} z: ${sz}`)
+        } else if (!axis.x && axis.y && axis.z) {
+            this.setInfo(`Scale ${sy} ${sz} locking global X`)
+        } else if (axis.x && !axis.y && axis.z) {
+            this.setInfo(`Scale ${sx} ${sz} locking global Y`)
+        } else if (axis.x && axis.y && !axis.z) {
+            this.setInfo(`Scale ${sx} ${sy} locking global Z`)
+        } else if (axis.x && !axis.y && !axis.z) {
+            this.setInfo(`Scale ${sx} along global X`)
+        } else if (!axis.x && axis.y && !axis.z) {
+            this.setInfo(`Scale ${sy} along global Y`)
+        } else if (!axis.x && !axis.y && axis.z) {
+            this.setInfo(`Scale ${sz} along global Z`)
+        }
+    }
+
     override destructor(): void {
-        this.scaling = false
-        this.context.axisRenderer.set(false, false, false)       
+        this.context.canvas.style.cursor = ""
+        this.originMarker.remove()
+        this.lineToPointer.remove()
+        this.context.axisRenderer.set(false, false, false)
     }
 
     confirm() {
