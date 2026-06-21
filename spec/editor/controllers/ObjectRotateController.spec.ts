@@ -1,0 +1,538 @@
+import { describe, expect, it, beforeEach, vi } from "vitest"
+import { mat4, vec3 } from "gl-matrix"
+import { ObjectRotateController } from "src/editor/controllers/ObjectRotateController"
+import { Root } from "src/nodes/Root"
+import { XForm } from "src/nodes/XForm"
+import { Mesh } from "src/nodes/Mesh"
+import { AxisRenderer } from "src/gl/AxisRenderer"
+
+function createMockAxisRenderer(): AxisRenderer {
+    const r = Object.create(AxisRenderer.prototype)
+    r.context = null
+    r.x = false
+    r.y = false
+    r.z = false
+    r.set = vi.fn(function (this: AxisRenderer, x: boolean, y: boolean, z: boolean) {
+        this.x = x
+        this.y = y
+        this.z = z
+    })
+    return r
+}
+
+beforeEach(() => {
+    document.getElementById("svg-overlay")?.remove()
+})
+
+function createEnvironment() {
+    const overlay = document.createElement("div")
+    overlay.id = "svg-overlay"
+    document.body.appendChild(overlay)
+
+    const canvas = document.createElement("canvas")
+    canvas.width = 640
+    canvas.height = 480
+    Object.defineProperty(canvas, "clientWidth", { value: 640, configurable: true })
+    Object.defineProperty(canvas, "clientHeight", { value: 480, configurable: true })
+
+    const axisRenderer = createMockAxisRenderer()
+
+    const context: any = {
+        selection: {
+            active: undefined as any,
+            updateEditorModelFromActive: vi.fn(),
+        },
+        axisRenderer,
+        sceneUniforms: {
+            projectionMatrix: mat4.perspectiveZO(mat4.create(), 0.785398, 640 / 480, 0.1, 100),
+            perspective: mat4.perspectiveZO(mat4.create(), 0.785398, 640 / 480, 0.1, 100),
+            camera: mat4.create(),
+        },
+        canvas,
+        lastPointerOffset: { x: 0, y: 0 },
+        invalidate: vi.fn(),
+        popController: vi.fn(),
+    }
+    return { context, overlay, canvas }
+}
+
+function createNodeTree(context: any) {
+    const root = new Root(context)
+    const parent = new XForm(root)
+    parent.transform = mat4.create()
+
+    const combined = mat4.fromTranslation(mat4.create(), [0, 0, -10])
+    const mesh = Object.create(Mesh.prototype, {
+        combined: { value: combined, writable: true },
+        parent: { value: parent },
+        context: { value: context },
+    }) as Mesh
+
+    return { root, parent, mesh }
+}
+
+describe("ObjectRotateController", () => {
+    it("constructor sets up SVG elements and stores initial state", () => {
+        const { context } = createEnvironment()
+        const { parent, mesh } = createNodeTree(context)
+        context.selection.active = mesh
+        parent.transform = mat4.fromTranslation(mat4.create(), [5, 10, 15])
+
+        const ctrl = new ObjectRotateController(context, context.selection.active)
+
+        expect(ctrl.originMarker).toBeDefined()
+        expect(ctrl.lineToPointer).toBeDefined()
+        expect(ctrl.initialTransform).toBeDefined()
+        expect(mat4.equals(ctrl.initialTransform, parent.transform!)).toBe(true)
+        expect(context.canvas.style.cursor).toBe("none")
+    })
+
+    it("cancel restores initial transform and pops controller", () => {
+        const { context } = createEnvironment()
+        const { parent, mesh } = createNodeTree(context)
+        context.selection.active = mesh
+        const initialTransform = mat4.fromTranslation(mat4.create(), [5, 10, 15])
+        parent.transform = mat4.clone(initialTransform)
+
+        const ctrl = new ObjectRotateController(context, context.selection.active)
+        mat4.translate(parent.transform!, parent.transform!, [1, 2, 3])
+        ctrl.cancel()
+
+        expect(mat4.equals(parent.transform!, initialTransform)).toBe(true)
+        expect(context.axisRenderer.x).toBe(false)
+        expect(context.axisRenderer.y).toBe(false)
+        expect(context.axisRenderer.z).toBe(false)
+        expect(context.popController).toHaveBeenCalled()
+    })
+
+    it("confirm resets axis and pops controller", () => {
+        const { context } = createEnvironment()
+        const { mesh } = createNodeTree(context)
+        context.selection.active = mesh
+
+        const ctrl = new ObjectRotateController(context, context.selection.active)
+        context.axisRenderer.set(true, false, false)
+        ctrl.confirm()
+
+        expect(context.axisRenderer.x).toBe(false)
+        expect(context.axisRenderer.y).toBe(false)
+        expect(context.axisRenderer.z).toBe(false)
+        expect(context.popController).toHaveBeenCalled()
+    })
+
+    it("destructor removes SVG elements and resets cursor", () => {
+        const { context, overlay } = createEnvironment()
+        const { mesh } = createNodeTree(context)
+        context.selection.active = mesh
+
+        const ctrl = new ObjectRotateController(context, context.selection.active)
+        expect(overlay.childElementCount).toBe(4)
+        ctrl.destructor()
+
+        expect(overlay.childElementCount).toBe(0)
+        expect(context.canvas.style.cursor).toBe("")
+    })
+
+    it("keydown sets single axis constraint", () => {
+        const { context } = createEnvironment()
+        const { mesh } = createNodeTree(context)
+        context.selection.active = mesh
+        const ctrl = new ObjectRotateController(context, context.selection.active)
+
+        ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyX" }))
+        expect(context.axisRenderer.x).toBe(true)
+        expect(context.axisRenderer.y).toBe(false)
+        expect(context.axisRenderer.z).toBe(false)
+
+        ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyY" }))
+        expect(context.axisRenderer.x).toBe(false)
+        expect(context.axisRenderer.y).toBe(true)
+        expect(context.axisRenderer.z).toBe(false)
+
+        ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyZ" }))
+        expect(context.axisRenderer.x).toBe(false)
+        expect(context.axisRenderer.y).toBe(false)
+        expect(context.axisRenderer.z).toBe(true)
+    })
+
+    it("keydown with shift sets plane constraint", () => {
+        const { context } = createEnvironment()
+        const { mesh } = createNodeTree(context)
+        context.selection.active = mesh
+        const ctrl = new ObjectRotateController(context, context.selection.active)
+
+        ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyX", shiftKey: true }))
+        expect(context.axisRenderer.x).toBe(false)
+        expect(context.axisRenderer.y).toBe(true)
+        expect(context.axisRenderer.z).toBe(true)
+
+        ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyY", shiftKey: true }))
+        expect(context.axisRenderer.x).toBe(true)
+        expect(context.axisRenderer.y).toBe(false)
+        expect(context.axisRenderer.z).toBe(true)
+
+        ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyZ", shiftKey: true }))
+        expect(context.axisRenderer.x).toBe(true)
+        expect(context.axisRenderer.y).toBe(true)
+        expect(context.axisRenderer.z).toBe(false)
+    })
+
+    it("pointerdown left button calls confirm", () => {
+        const { context } = createEnvironment()
+        const { mesh } = createNodeTree(context)
+        context.selection.active = mesh
+        const ctrl = new ObjectRotateController(context, context.selection.active)
+
+        const spy = vi.spyOn(ctrl, "confirm")
+        ctrl.pointerdown(new PointerEvent("pointerdown", { button: 0 }))
+        expect(spy).toHaveBeenCalled()
+    })
+
+    it("pointerdown right button calls cancel", () => {
+        const { context } = createEnvironment()
+        const { mesh } = createNodeTree(context)
+        context.selection.active = mesh
+        const ctrl = new ObjectRotateController(context, context.selection.active)
+
+        const spy = vi.spyOn(ctrl, "cancel")
+        ctrl.pointerdown(new PointerEvent("pointerdown", { button: 2 }))
+        expect(spy).toHaveBeenCalled()
+    })
+
+    it("pointermove rotates parent transform (free rotate)", () => {
+        const { context } = createEnvironment()
+        const { parent, mesh } = createNodeTree(context)
+        context.selection.active = mesh
+        parent.transform = mat4.create()
+
+        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const angle0 = ctrl.lineToPointer.angle
+        expect(Number.isNaN(angle0)).toBe(false)
+
+        const ev = new PointerEvent("pointermove")
+        Object.defineProperties(ev, { offsetX: { value: 100 }, offsetY: { value: 50 } })
+        ctrl.pointermove(ev)
+
+        expect(ctrl.lineToPointer.angle).not.toBe(angle0)
+        expect(parent.dirty).toBe(true)
+        expect(context.selection.updateEditorModelFromActive).toHaveBeenCalled()
+        expect(context.invalidate).toHaveBeenCalled()
+    })
+
+    it("pointermove with X axis constraint rotates around X", () => {
+        const { context } = createEnvironment()
+        const { parent, mesh } = createNodeTree(context)
+        context.selection.active = mesh
+        parent.transform = mat4.create()
+
+        const ctrl = new ObjectRotateController(context, context.selection.active)
+        context.axisRenderer.set(true, false, false)
+
+        const initial = mat4.clone(parent.transform!)
+        const ev = new PointerEvent("pointermove")
+        Object.defineProperties(ev, { offsetX: { value: 200 }, offsetY: { value: 100 } })
+        ctrl.pointermove(ev)
+
+        expect(parent.dirty).toBe(true)
+        expect(mat4.equals(parent.transform!, initial)).toBe(false)
+    })
+
+    describe("pointermove with camera transform", () => {
+        it("free rotate still works when camera is translated", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            parent.transform = mat4.create()
+
+            mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [2, 3, -24])
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 150 }, offsetY: { value: 75 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, mat4.create())).toBe(false)
+        })
+
+        it("free rotate still works when camera is rotated", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            parent.transform = mat4.create()
+
+            mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.3)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 150 }, offsetY: { value: 75 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, mat4.create())).toBe(false)
+        })
+
+        it("free rotate works with both camera translation and rotation", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            parent.transform = mat4.create()
+
+            mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [2, 3, -24])
+            mat4.rotateY(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.5)
+            mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.2)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 300 }, offsetY: { value: 200 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, mat4.create())).toBe(false)
+        })
+
+        it("X axis rotation works with translated camera", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            parent.transform = mat4.create()
+
+            mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [0, 0, -24])
+            context.axisRenderer.set(true, false, false)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, mat4.create())).toBe(false)
+        })
+
+        it("Y axis rotation works with rotated camera", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            parent.transform = mat4.create()
+
+            mat4.rotateY(context.sceneUniforms.camera, context.sceneUniforms.camera, -0.4)
+            context.axisRenderer.set(false, true, false)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 180 }, offsetY: { value: 90 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, mat4.create())).toBe(false)
+        })
+    })
+
+    describe("pointermove with parent transform", () => {
+        it("free rotate works when parent is translated", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.translate(parent.transform!, parent.transform!, [8, -3, 5])
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 120 }, offsetY: { value: 60 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, mat4.fromTranslation(mat4.create(), [8, -3, 5]))).toBe(false)
+        })
+
+        it("free rotate works when parent is rotated", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.rotateY(parent.transform!, parent.transform!, 0.8)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 140 }, offsetY: { value: 70 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            const expected = mat4.create()
+            mat4.rotateY(expected, expected, 0.8)
+            expect(mat4.equals(parent.transform!, expected)).toBe(false)
+        })
+
+        it("free rotate works when parent is scaled", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.scale(parent.transform!, parent.transform!, [2, 2, 2])
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 160 }, offsetY: { value: 80 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            const expected = mat4.create()
+            mat4.scale(expected, expected, [2, 2, 2])
+            expect(mat4.equals(parent.transform!, expected)).toBe(false)
+        })
+
+        it("free rotate works with combined parent transform (translate + rotate + scale)", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.translate(parent.transform!, parent.transform!, [3, -2, 7])
+            mat4.rotateZ(parent.transform!, parent.transform!, 0.6)
+            mat4.rotateY(parent.transform!, parent.transform!, 0.4)
+            mat4.scale(parent.transform!, parent.transform!, [1.5, 2, 0.5])
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 200 }, offsetY: { value: 100 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, parent.transform!)).toBe(true)
+        })
+
+        it("X axis rotation works with combined parent transform", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.translate(parent.transform!, parent.transform!, [10, -5, 3])
+            mat4.rotateY(parent.transform!, parent.transform!, 0.3)
+
+            context.axisRenderer.set(true, false, false)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 220 }, offsetY: { value: 110 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+        })
+    })
+
+    describe("pointermove with combined camera and parent transforms", () => {
+        it("free rotate with translated camera and translated parent", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.translate(parent.transform!, parent.transform!, [5, -5, 10])
+            mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [3, -2, -30])
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 200 }, offsetY: { value: 100 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, mat4.fromTranslation(mat4.create(), [5, -5, 10]))).toBe(false)
+        })
+
+        it("free rotate with rotated camera and rotated parent", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.rotateY(parent.transform!, parent.transform!, 0.5)
+            mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.3)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 180 }, offsetY: { value: 90 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+        })
+
+        it("free rotate with full camera and full parent transforms", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.translate(parent.transform!, parent.transform!, [2, -3, 8])
+            mat4.rotateZ(parent.transform!, parent.transform!, 0.7)
+            mat4.rotateY(parent.transform!, parent.transform!, 0.4)
+            mat4.scale(parent.transform!, parent.transform!, [1.2, 1.5, 0.8])
+
+            mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [0, 0, -20])
+            mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.2)
+            mat4.rotateY(context.sceneUniforms.camera, context.sceneUniforms.camera, -0.3)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const initial = mat4.clone(parent.transform!)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 300 }, offsetY: { value: 150 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, initial)).toBe(false)
+        })
+
+        it("X axis rotation with translated camera and rotated parent", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.translate(parent.transform!, parent.transform!, [0, 0, 5])
+            mat4.rotateY(parent.transform!, parent.transform!, 0.6)
+            mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [0, 0, -15])
+            mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.2)
+
+            context.axisRenderer.set(true, false, false)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const initial = mat4.clone(parent.transform!)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, initial)).toBe(false)
+        })
+
+        it("Y axis rotation with rotated camera and scaled parent", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.scale(parent.transform!, parent.transform!, [1.5, 2, 0.5])
+            mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [4, -2, -24])
+            mat4.rotateY(context.sceneUniforms.camera, context.sceneUniforms.camera, -0.5)
+
+            context.axisRenderer.set(false, true, false)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const initial = mat4.clone(parent.transform!)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 280 }, offsetY: { value: 140 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, initial)).toBe(false)
+        })
+
+        it("Z axis rotation with everything combined", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.translate(parent.transform!, parent.transform!, [7, -4, 12])
+            mat4.rotateX(parent.transform!, parent.transform!, 0.3)
+            mat4.rotateY(parent.transform!, parent.transform!, 0.5)
+            mat4.scale(parent.transform!, parent.transform!, [2, 1, 1.5])
+
+            mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [-3, 5, -30])
+            mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.4)
+            mat4.rotateZ(context.sceneUniforms.camera, context.sceneUniforms.camera, -0.2)
+
+            context.axisRenderer.set(false, false, true)
+
+            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const initial = mat4.clone(parent.transform!)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 350 }, offsetY: { value: 175 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, initial)).toBe(false)
+        })
+    })
+})
