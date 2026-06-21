@@ -421,6 +421,72 @@ describe("ObjectRotateController", () => {
         })
     })
 
+    describe("angle sign flipping on axis constraints", () => {
+        function runPointermove(context: any, axisX: boolean, axisY: boolean, axisZ: boolean, offsetX: number, offsetY: number): mat4 {
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            parent.transform = mat4.create()
+
+            const ctrl = new ObjectRotateController(context)
+            context.axisRenderer.set(axisX, axisY, axisZ)
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: offsetX }, offsetY: { value: offsetY } })
+            ctrl.pointermove(ev)
+
+            return parent.transform!
+        }
+
+        it("flips X rotation sign when camera looks from the opposite side", () => {
+            const { context } = createEnvironment()
+            const tf = runPointermove(context, true, false, false, 100, 50)
+            // X rotation: parent.transform[6] = -sin(angle)
+            const signForward = Math.sign(tf[6])
+
+            mat4.rotateY(context.sceneUniforms.camera, context.sceneUniforms.camera, Math.PI)
+            const tb = runPointermove(context, true, false, false, 100, 50)
+            const signBehind = Math.sign(tb[6])
+
+            expect(signBehind).toBe(-signForward)
+        })
+
+        it("flips Y rotation sign when camera looks from the opposite side", () => {
+            const { context } = createEnvironment()
+            const tf = runPointermove(context, false, true, false, 100, 50)
+            // Y rotation: parent.transform[2] = sin(angle), parent.transform[8] = -sin(angle)
+            const signForward = Math.sign(tf[8])
+
+            // Rotating 180° around Y doesn't affect the Y component of a vector
+            // (Y is the rotation axis). Use X rotation instead.
+            mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, Math.PI)
+            const tb = runPointermove(context, false, true, false, 100, 50)
+            const signBehind = Math.sign(tb[8])
+
+            expect(signBehind).toBe(-signForward)
+        })
+
+        it("flips Z rotation sign when camera looks from the opposite side", () => {
+            const { context } = createEnvironment()
+            const tf = runPointermove(context, false, false, true, 100, 50)
+            // Z rotation: parent.transform[4] = -sin(angle), parent.transform[1] = sin(angle)
+            const signForward = Math.sign(tf[4])
+
+            mat4.rotateY(context.sceneUniforms.camera, context.sceneUniforms.camera, Math.PI)
+            const tb = runPointermove(context, false, false, true, 100, 50)
+            const signBehind = Math.sign(tb[4])
+
+            expect(signBehind).toBe(-signForward)
+        })
+
+        it("free rotate path has no sign-flip logic (i==-1 code path)", () => {
+            // Verifying the free-rotate path exists and works (it uses a different
+            // code path without the `if (p1[i] < 0) { angle = -angle }` block)
+            const { context } = createEnvironment()
+            const tf = runPointermove(context, false, false, false, 100, 50)
+            expect(tf).not.toEqual(mat4.create())
+        })
+    })
+
     describe("pointermove with combined camera and parent transforms", () => {
         it("free rotate with translated camera and translated parent", () => {
             const { context } = createEnvironment()
