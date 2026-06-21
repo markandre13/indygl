@@ -2,7 +2,7 @@ import { IconMouseLeft, IconMouseRight, IconKey, IconShift } from "src/editor/vi
 import { Mesh } from "src/nodes/Mesh"
 import { type IndyNode } from "src/nodes/IndyNode"
 import { Controller } from "./Controller"
-import { mat4, vec3 } from "gl-matrix"
+import { mat4, quat, vec3 } from "gl-matrix"
 import type { XForm } from "src/nodes/XForm"
 import type { Context } from "src/gl/Context"
 import type { Point } from "src/gl/types/Point"
@@ -112,13 +112,23 @@ export class ObjectGrabController extends Controller {
         } else if (axis.x && axis.y && !axis.z) {
             pn = vec3.fromValues(0, 0, 1)
         } else if (axis.x && !axis.y && !axis.z) {
-            pointerPosition = pointerToObjectAxisInScreenSpace(ev, this.initialTransform!, vec3.fromValues(1, 0, 0), this.context)
+            const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
+            const center = mat4.create()
+            mat4.translate(center, center, t)
+            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, vec3.fromValues(1, 0, 0), this.context)
             pn = vec3.fromValues(0, 1, 0)
         } else if (!axis.x && axis.y && !axis.z) {
-            pointerPosition = pointerToObjectAxisInScreenSpace(ev, this.initialTransform!, vec3.fromValues(0, 1, 0), this.context)
+            const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
+            const center = mat4.create()
+            mat4.translate(center, center, t)
+            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, vec3.fromValues(0, 1, 0), this.context)
             pn = vec3.fromValues(1, 0, 0)
         } else if (!axis.x && !axis.y && axis.z) {
-            pointerPosition = pointerToObjectAxisInScreenSpace(ev, this.initialTransform!, vec3.fromValues(0, 0, 1), this.context)
+            const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
+            const center = mat4.create()
+            mat4.translate(center, center, t)
+
+            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, vec3.fromValues(0, 0, 1), this.context)
             pn = vec3.fromValues(1, 0, 0)
         } else {
             console.log(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED`)

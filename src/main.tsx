@@ -245,6 +245,11 @@ async function loadDemoScene(root: Root, context: Context) {
     const teapot = new XForm(root)
     const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
     teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
+        teapot.transform = mat4.create()
+    // mat4.translate(teapot.transform, teapot.transform, vec3.fromValues(3, 5, -7))
+    // mat4.rotateX(teapot.transform, teapot.transform, deg2rad(20))
+    mat4.rotateY(teapot.transform, teapot.transform, deg2rad(45))
+    // mat4.rotateZ(teapot.transform, teapot.transform, deg2rad(40))
 
     const dodecahedron = new XForm(root)
     dodecahedron.transform = mat4.create()
