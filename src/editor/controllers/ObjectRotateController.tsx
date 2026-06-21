@@ -11,29 +11,23 @@ import type { XForm } from "src/nodes/XForm"
 
 export class ObjectRotateController extends Controller {
     context: Context
-    // root: IndyNode
-    // rotating = false
-    // initialMousePosition?: Point
-    // initialParentTransform?: mat4
 
-    objectCenter?: vec3
     originMarker!: Circle
     lineToPointer!: LineWithArrows
 
     initialAngle!: number
     initialTransform!: mat4
     label?: HTMLElement
+
     constructor(context: Context, root: IndyNode) {
         super()
         this.context = context
-        // this.root = root
 
         const node = this.context.selection.active as Mesh
         const parent = node.parent as XForm
-        // console.log("active is Mesh")
-        this.objectCenter = mat4.getTranslation(vec3.create(), node.combined)
+        const objectCenter = mat4.getTranslation(vec3.create(), node.combined)
         const canvas = context.canvas
-        const screenCenter = world2screen(this.objectCenter, context.sceneUniforms.projectionMatrix, canvas)
+        const screenCenter = world2screen(objectCenter, context.sceneUniforms.projectionMatrix, canvas)
         canvas.style.cursor = "none"
 
         const overlay = document.getElementById('svg-overlay')!
@@ -177,15 +171,12 @@ export class ObjectRotateController extends Controller {
         this.context.canvas.style.cursor = ""
         this.originMarker.remove()
         this.lineToPointer.remove()
+        this.label?.remove()
+        this.context.axisRenderer.set(false, false, false)
     }
 
     confirm() {
-        this.context.axisRenderer.set(false, false, false)
         this.context.popController()
-        // if (this.label) {
-        //     this.label.remove()
-        //     this.label = undefined
-        // }
     }
 
     cancel() {
@@ -196,6 +187,6 @@ export class ObjectRotateController extends Controller {
         this.context.selection.updateEditorModelFromActive()
         this.context.invalidate()
 
-        this.confirm()
+        this.context.popController()
     }
 }

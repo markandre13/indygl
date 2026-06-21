@@ -105,32 +105,39 @@ describe("ObjectRotateController", () => {
         expect(context.popController).toHaveBeenCalled()
     })
 
-    it("confirm resets axis and pops controller", () => {
+    it("confirm keeps transform and pops controller", () => {
         const { context } = createEnvironment()
-        const { mesh } = createNodeTree(context)
+        const { parent, mesh } = createNodeTree(context)
         context.selection.active = mesh
+        const initialTransform = mat4.fromTranslation(mat4.create(), [5, 10, 15])
+        parent.transform = mat4.clone(initialTransform)
 
         const ctrl = new ObjectRotateController(context, context.selection.active)
-        context.axisRenderer.set(true, false, false)
+        mat4.translate(parent.transform!, parent.transform!, [1, 2, 3])
+        const modifiedTransform = mat4.clone(parent.transform)
+
         ctrl.confirm()
 
-        expect(context.axisRenderer.x).toBe(false)
-        expect(context.axisRenderer.y).toBe(false)
-        expect(context.axisRenderer.z).toBe(false)
+        expect(mat4.equals(parent.transform!, modifiedTransform)).toBe(true)
+
         expect(context.popController).toHaveBeenCalled()
     })
 
-    it("destructor removes SVG elements and resets cursor", () => {
+    it("destructor resets axis, removes SVG elements and resets cursor", () => {
         const { context, overlay } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
 
         const ctrl = new ObjectRotateController(context, context.selection.active)
         expect(overlay.childElementCount).toBe(4)
+        context.axisRenderer.set(true, false, false)
         ctrl.destructor()
 
         expect(overlay.childElementCount).toBe(0)
         expect(context.canvas.style.cursor).toBe("")
+        expect(context.axisRenderer.x).toBe(false)
+        expect(context.axisRenderer.y).toBe(false)
+        expect(context.axisRenderer.z).toBe(false)
     })
 
     it("keydown sets single axis constraint", () => {
