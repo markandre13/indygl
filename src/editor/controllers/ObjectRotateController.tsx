@@ -111,34 +111,21 @@ export class ObjectRotateController extends Controller {
         }
 
         if (i == -1) {
-            // move from local to world coordinates
-            m = this.initialTransform
-            m = mat4.clone(m)
-            mat4.invert(m, m)
-
-            // move from world to camera coordinates
-            const cam = this.context.sceneUniforms.camera
-            const invcam = mat4.clone(cam)
-            mat4.invert(invcam, invcam)
-            mat4.mul(m, m, invcam)
-
-            p0 = vec3.fromValues(0, 0, 0)
-            vec3.transformMat4(p0, p0, m)
-            vec3.transformMat4(p1, p1, m)
-            vec3.sub(p0, p1, p0)
-            vec3.normalize(p0, p0)
+            // move from local to camera coordinates
+            m = mat4.mul(mat4.create(), this.context.sceneUniforms.camera, this.initialTransform)
         } else {
-            // move p1 from local to world coordinates
-            m = this.initialTransform
-            m = mat4.clone(m)
-            mat4.invert(m, m)
+            // move from local to world coordinates
+            m = mat4.clone(this.initialTransform)
+        }
 
-            p0 = vec3.fromValues(0, 0, 0)
-            vec3.transformMat4(p0, p0, m)
-            vec3.transformMat4(p1, p1, m)
-            vec3.sub(p0, p1, p0)
-            vec3.normalize(p0, p0)
+        mat4.invert(m, m)
+        p0 = vec3.fromValues(0, 0, 0)
+        vec3.transformMat4(p0, p0, m)
+        vec3.transformMat4(p1, p1, m)
+        vec3.sub(p0, p1, p0)
+        vec3.normalize(p0, p0)
 
+        if (i !== -1) {
             // match object rotation to pointer rotation
             const camInv = mat4.clone(this.context.sceneUniforms.camera)
             mat4.invert(camInv, camInv)
@@ -147,6 +134,7 @@ export class ObjectRotateController extends Controller {
                 angle = -angle
             }
         }
+
 
         parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, p0)
 
