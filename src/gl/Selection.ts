@@ -98,12 +98,8 @@ export class Selection {
      */
     @bind
     updateActiveFromEditorModel() {
-        if (this.lock) {
-            return
-        }
-        if (!this.active) {
-            return
-        }
+        if (this.lock) { return }
+        if (!this.active) { return }
         this.lock = true
 
         const x = deg2rad(this.model.transform.rotation.x.value.toNumber())
@@ -116,6 +112,8 @@ export class Selection {
         let dy = y - this.lastEuler.y
         let dz = z - this.lastEuler.z
 
+        this.lastEuler = { x, y, z }
+
         const pi = Math.PI
         const pi2 = 2 * Math.PI
         if (dx > pi) dx -= pi2; else if (dx < -pi) dx += pi2
@@ -123,22 +121,17 @@ export class Selection {
         if (dz > pi) dz -= pi2; else if (dz < -pi) dz += pi2
 
         // Apply each delta as a local-axis rotation using axis-angle quaternions
-        const qx = quat.setAxisAngle(quat.create(), [1, 0, 0], dx)
-        const qy = quat.setAxisAngle(quat.create(), [0, 1, 0], dy)
-        const qz = quat.setAxisAngle(quat.create(), [0, 0, 1], dz)
-
-        quat.multiply(this.rotationQuat, this.rotationQuat, qx)
-        quat.multiply(this.rotationQuat, this.rotationQuat, qy)
-        quat.multiply(this.rotationQuat, this.rotationQuat, qz)
+        quat.rotateX(this.rotationQuat, this.rotationQuat, dx)
+        quat.rotateY(this.rotationQuat, this.rotationQuat, dy)
+        quat.rotateZ(this.rotationQuat, this.rotationQuat, dz)
         quat.normalize(this.rotationQuat, this.rotationQuat)
-
-        this.lastEuler = { x, y, z }
+        const rotation = mat4.fromQuat(mat4.create(), this.rotationQuat)
 
         // Build the TRS matrix from the accumulated quaternion
         const m = mat4.create()
         mat4.translate(m, m, this.model.transform.translation.value)
-        const rotMat = mat4.fromQuat(mat4.create(), this.rotationQuat)
-        mat4.mul(m, m, rotMat)
+        mat4.scale(m, m, this.model.transform.scale.value)
+        mat4.mul(m, m, rotation)
 
         const parent = this.active.parent as XForm
         parent.transform = m
