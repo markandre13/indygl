@@ -106,23 +106,26 @@ export class Selection {
         }
         this.lock = true
 
-        const x = this.model.transform.rotation.x.value.toNumber()
-        const y = this.model.transform.rotation.y.value.toNumber()
-        const z = this.model.transform.rotation.z.value.toNumber()
+        const x = deg2rad(this.model.transform.rotation.x.value.toNumber())
+        const y = deg2rad(this.model.transform.rotation.y.value.toNumber())
+        const z = deg2rad(this.model.transform.rotation.z.value.toNumber())
 
         // Compute deltas from last known Euler values, normalizing to [-180, 180]
         // to handle wrapping (e.g. 359 → 2 should be +3°, not -357°)
         let dx = x - this.lastEuler.x
         let dy = y - this.lastEuler.y
         let dz = z - this.lastEuler.z
-        if (dx > 180) dx -= 360; else if (dx < -180) dx += 360
-        if (dy > 180) dy -= 360; else if (dy < -180) dy += 360
-        if (dz > 180) dz -= 360; else if (dz < -180) dz += 360
+
+        const pi = Math.PI
+        const pi2 = 2 * Math.PI
+        if (dx > pi) dx -= pi2; else if (dx < -pi) dx += pi2
+        if (dy > pi) dy -= pi2; else if (dy < -pi) dy += pi2
+        if (dz > pi) dz -= pi2; else if (dz < -pi) dz += pi2
 
         // Apply each delta as a local-axis rotation using axis-angle quaternions
-        const qx = quat.setAxisAngle(quat.create(), [1, 0, 0], deg2rad(dx))
-        const qy = quat.setAxisAngle(quat.create(), [0, 1, 0], deg2rad(dy))
-        const qz = quat.setAxisAngle(quat.create(), [0, 0, 1], deg2rad(dz))
+        const qx = quat.setAxisAngle(quat.create(), [1, 0, 0], dx)
+        const qy = quat.setAxisAngle(quat.create(), [0, 1, 0], dy)
+        const qz = quat.setAxisAngle(quat.create(), [0, 0, 1], dz)
 
         quat.multiply(this.rotationQuat, this.rotationQuat, qx)
         quat.multiply(this.rotationQuat, this.rotationQuat, qy)
@@ -163,7 +166,7 @@ export class Selection {
         const scale = vec3.create()
         mat4.decompose(this.rotationQuat, pos, scale, parent.transform)
         const e = quat2euler(this.rotationQuat)
-        this.lastEuler = {x: rad2deg(e.x), y: rad2deg(e.y), z: rad2deg(e.z)}
+        this.lastEuler = e
 
         this.model.transform.translation.value = pos
         this.model.transform.rotation.x.value = rad2deg(e.x)

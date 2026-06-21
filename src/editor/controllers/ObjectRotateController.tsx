@@ -4,11 +4,9 @@ import { type IndyNode } from "src/nodes/IndyNode"
 import { Controller } from "./Controller"
 import { mat4, vec3 } from "gl-matrix"
 import type { Context } from "src/gl/Context"
-import type { Point } from "src/gl/types/Point"
 import { Circle } from "../viewkit/svg/Circle"
 import { world2screen } from "src/gl/algorithms/coordinates"
 import { LineWithArrows } from "../viewkit/svg/LineWithArrows"
-import { rad2deg } from "src/gl/algorithms/rad2deg"
 import type { XForm } from "src/nodes/XForm"
 
 export class ObjectRotateController extends Controller {
@@ -122,28 +120,29 @@ export class ObjectRotateController extends Controller {
             throw Error(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED YET`)
         }
 
-        const p0 = vec3.fromValues(0, 0, 0)
         m = mat4.clone(m)
         mat4.invert(m, m)
+
+        const p0 = vec3.fromValues(0, 0, 0)
         vec3.transformMat4(p0, p0, m)
         vec3.transformMat4(p1, p1, m)
         vec3.sub(p0, p1, p0)
         vec3.normalize(p0, p0)
 
+        // match object rotation to pointer rotation
         const camInv = mat4.clone(this.context.sceneUniforms.camera)
         mat4.invert(camInv, camInv)
         vec3.transformMat4(p1, p1, camInv)
-        if (i>=0) {
+        if (i >= 0) {
             if (p1[i] < 0) {
                 angle = -angle
             }
         }
-        
+
         parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, p0)
 
         parent.dirty = true
         this.context.selection.updateEditorModelFromActive()
-
         this.context.invalidate()
     }
 
@@ -179,6 +178,7 @@ export class ObjectRotateController extends Controller {
         const parent = node.parent as XForm
         parent.transform = this.initialTransform
         parent.dirty = true
+        this.context.selection.updateEditorModelFromActive()
         this.context.invalidate()
 
         this.confirm()
