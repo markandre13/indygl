@@ -264,6 +264,12 @@ async function loadDemoScene(root: Root, context: Context) {
     await bodyTexture.load(context, "img/young_caucasian_female_special_suit.jpg")
     humanMesh.material = new Material(context, bodyTexture)
 
+    human.transform = mat4.create()
+    mat4.translate(human.transform, human.transform, vec3.fromValues(3, 5, -7))
+    mat4.rotateX(human.transform, human.transform, deg2rad(20))
+    mat4.rotateY(human.transform, human.transform, deg2rad(30))
+    mat4.rotateZ(human.transform, human.transform, deg2rad(40))
+
     // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
 
     const teeth = new XForm(root)

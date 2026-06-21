@@ -1,6 +1,5 @@
 import { IconMouseLeft, IconMouseRight, IconKey, IconShift } from "src/editor/viewkit/InputIcons"
 import { Mesh } from "src/nodes/Mesh"
-import { type IndyNode } from "src/nodes/IndyNode"
 import { Controller } from "./Controller"
 import { mat4, vec3 } from "gl-matrix"
 import type { Context } from "src/gl/Context"
@@ -17,7 +16,11 @@ export class ObjectRotateController extends Controller {
 
     initialAngle!: number
     initialTransform!: mat4
-    label?: HTMLElement
+    label: HTMLElement
+
+    setInfo(text: string) {
+        (this.label.children[0] as HTMLElement).innerText = text
+    }
 
     constructor(context: Context) {
         super()
@@ -30,11 +33,20 @@ export class ObjectRotateController extends Controller {
         const screenCenter = world2screen(objectCenter, context.sceneUniforms.projectionMatrix, canvas)
         canvas.style.cursor = "none"
 
-        const overlay = document.getElementById('svg-overlay')!
-        this.originMarker = new Circle(overlay, screenCenter, "#f80")
-        this.lineToPointer = new LineWithArrows(overlay, screenCenter, this.context.lastPointerOffset, "#fff")
+        const overlay = document.getElementById('overlay')!
+        const info = <div class="op-info">
+            <div></div>
+        </div> as HTMLElement
+        this.label = info
+        overlay.appendChild(info)
+
+        const svgOverlay = document.getElementById('svg-overlay')!
+        this.originMarker = new Circle(svgOverlay, screenCenter, "#f80")
+        this.lineToPointer = new LineWithArrows(svgOverlay, screenCenter, this.context.lastPointerOffset, "#fff")
         this.initialAngle = this.lineToPointer.angle
         this.initialTransform = parent.transform ? mat4.clone(parent.transform) : mat4.create()
+
+        this.setInfo("Rotation 0.00 along global X")
     }
     override info() {
         return <>
@@ -97,13 +109,17 @@ export class ObjectRotateController extends Controller {
         let p1: vec3, p0: vec3
         if (!axis.x && !axis.y && !axis.z) {
             p1 = vec3.fromValues(0, 0, 1)
+            this.setInfo(`Rotation ${angle.toFixed(4)}`)
         } else if ((!axis.x && axis.y && axis.z) || (axis.x && !axis.y && !axis.z)) {
+            this.setInfo(`Rotation ${angle.toFixed(4)} along global X`)
             i = 0
             p1 = vec3.fromValues(1, 0, 0)
         } else if ((axis.x && !axis.y && axis.z) || (!axis.x && axis.y && !axis.z)) {
+            this.setInfo(`Rotation ${angle.toFixed(4)} along global Y`)
             i = 1
             p1 = vec3.fromValues(0, 1, 0)
         } else if ((axis.x && axis.y && !axis.z) || (!axis.x && !axis.y && axis.z)) {
+            this.setInfo(`Rotation ${angle.toFixed(4)} along global Z`)
             i = 2
             p1 = vec3.fromValues(0, 0, 1)
         } else {

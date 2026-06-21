@@ -37,8 +37,8 @@ export function MainScreen(props: { model: EditorModel }) {
             </div>
         </div>
         <canvas ref={canvas} class="canvas"></canvas>
-        <svg ref={svg} class="overlay" id="svg-overlay"></svg>
-        <div ref={overlay} class="overlay" id="overlay"></div>
+        <svg ref={svg} class="overlay" id="svg-overlay"/>
+        <div ref={overlay} class="overlay" id="overlay"/>
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />

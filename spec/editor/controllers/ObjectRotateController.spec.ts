@@ -21,13 +21,18 @@ function createMockAxisRenderer(): AxisRenderer {
 }
 
 beforeEach(() => {
+    document.getElementById("overlay")?.remove()
     document.getElementById("svg-overlay")?.remove()
 })
 
 function createEnvironment() {
-    const overlay = document.createElement("div")
-    overlay.id = "svg-overlay"
-    document.body.appendChild(overlay)
+    const infoOverlay = document.createElement("div")
+    infoOverlay.id = "overlay"
+    document.body.appendChild(infoOverlay)
+
+    const svgOverlay = document.createElement("div")
+    svgOverlay.id = "svg-overlay"
+    document.body.appendChild(svgOverlay)
 
     const canvas = document.createElement("canvas")
     canvas.width = 640
@@ -53,7 +58,7 @@ function createEnvironment() {
         invalidate: vi.fn(),
         popController: vi.fn(),
     }
-    return { context, overlay, canvas }
+    return { context, infoOverlay, svgOverlay, canvas }
 }
 
 function createNodeTree(context: any) {
@@ -72,8 +77,8 @@ function createNodeTree(context: any) {
 }
 
 describe("ObjectRotateController", () => {
-    it("constructor sets up SVG elements and stores initial state", () => {
-        const { context } = createEnvironment()
+    it("constructor sets up SVG elements, info label, and stores initial state", () => {
+        const { context, infoOverlay } = createEnvironment()
         const { parent, mesh } = createNodeTree(context)
         context.selection.active = mesh
         parent.transform = mat4.fromTranslation(mat4.create(), [5, 10, 15])
@@ -85,6 +90,9 @@ describe("ObjectRotateController", () => {
         expect(ctrl.initialTransform).toBeDefined()
         expect(mat4.equals(ctrl.initialTransform, parent.transform!)).toBe(true)
         expect(context.canvas.style.cursor).toBe("none")
+        expect(ctrl.label).toBeInstanceOf(HTMLElement)
+        expect(infoOverlay.childElementCount).toBe(1)
+        expect(ctrl.label.children[0].textContent).toBe("Rotation 0.00 along global X")
     })
 
     it("cancel restores initial transform and pops controller", () => {
@@ -124,16 +132,18 @@ describe("ObjectRotateController", () => {
     })
 
     it("destructor resets axis, removes SVG elements and resets cursor", () => {
-        const { context, overlay } = createEnvironment()
+        const { context, infoOverlay, svgOverlay } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
 
         const ctrl = new ObjectRotateController(context)
-        expect(overlay.childElementCount).toBe(4)
+        expect(svgOverlay.childElementCount).toBe(4)
+        expect(infoOverlay.childElementCount).toBe(1)
         context.axisRenderer.set(true, false, false)
         ctrl.destructor()
 
-        expect(overlay.childElementCount).toBe(0)
+        expect(svgOverlay.childElementCount).toBe(0)
+        expect(infoOverlay.childElementCount).toBe(0)
         expect(context.canvas.style.cursor).toBe("")
         expect(context.axisRenderer.x).toBe(false)
         expect(context.axisRenderer.y).toBe(false)

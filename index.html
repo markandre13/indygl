@@ -266,7 +266,8 @@
             overflow: hidden;
             pointer-events: none;
         }
-        .overlay > * {
+
+        .overlay>* {
             position: absolute;
         }
 
@@ -287,6 +288,19 @@
             line-height: normal;
             padding-left: 2px;
             padding-right: 2px;
+        }
+
+        .op-info {
+            display: block;
+            width: 100%;
+        }
+        .op-info>div {
+            border-radius: 4px;
+            margin: auto;
+            margin-top: 4px;
+            max-width: fit-content;
+            padding: 3px 6px 3px 6px;
+            background-color: rgba(40, 40, 40, 0.5);
         }
     </style>
 </head>
