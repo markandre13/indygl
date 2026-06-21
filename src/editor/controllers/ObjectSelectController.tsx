@@ -40,7 +40,7 @@ export class ObjectSelectController extends Controller {
                 this.context.pushController(new ObjectScaleController(this.context, this.root))
                 break
             case 'KeyR': // rotate
-                this.context.pushController(new ObjectRotateController(this.context, this.root))
+                this.context.pushController(new ObjectRotateController(this.context))
                 break
         }
     }

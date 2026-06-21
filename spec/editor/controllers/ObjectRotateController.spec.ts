@@ -78,7 +78,7 @@ describe("ObjectRotateController", () => {
         context.selection.active = mesh
         parent.transform = mat4.fromTranslation(mat4.create(), [5, 10, 15])
 
-        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const ctrl = new ObjectRotateController(context)
 
         expect(ctrl.originMarker).toBeDefined()
         expect(ctrl.lineToPointer).toBeDefined()
@@ -94,7 +94,7 @@ describe("ObjectRotateController", () => {
         const initialTransform = mat4.fromTranslation(mat4.create(), [5, 10, 15])
         parent.transform = mat4.clone(initialTransform)
 
-        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const ctrl = new ObjectRotateController(context)
         mat4.translate(parent.transform!, parent.transform!, [1, 2, 3])
         ctrl.cancel()
 
@@ -112,7 +112,7 @@ describe("ObjectRotateController", () => {
         const initialTransform = mat4.fromTranslation(mat4.create(), [5, 10, 15])
         parent.transform = mat4.clone(initialTransform)
 
-        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const ctrl = new ObjectRotateController(context)
         mat4.translate(parent.transform!, parent.transform!, [1, 2, 3])
         const modifiedTransform = mat4.clone(parent.transform)
 
@@ -128,7 +128,7 @@ describe("ObjectRotateController", () => {
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
 
-        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const ctrl = new ObjectRotateController(context)
         expect(overlay.childElementCount).toBe(4)
         context.axisRenderer.set(true, false, false)
         ctrl.destructor()
@@ -144,7 +144,7 @@ describe("ObjectRotateController", () => {
         const { context } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
-        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const ctrl = new ObjectRotateController(context)
 
         ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyX" }))
         expect(context.axisRenderer.x).toBe(true)
@@ -166,7 +166,7 @@ describe("ObjectRotateController", () => {
         const { context } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
-        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const ctrl = new ObjectRotateController(context)
 
         ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyX", shiftKey: true }))
         expect(context.axisRenderer.x).toBe(false)
@@ -188,7 +188,7 @@ describe("ObjectRotateController", () => {
         const { context } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
-        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const ctrl = new ObjectRotateController(context)
 
         const spy = vi.spyOn(ctrl, "confirm")
         ctrl.pointerdown(new PointerEvent("pointerdown", { button: 0 }))
@@ -199,7 +199,7 @@ describe("ObjectRotateController", () => {
         const { context } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
-        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const ctrl = new ObjectRotateController(context)
 
         const spy = vi.spyOn(ctrl, "cancel")
         ctrl.pointerdown(new PointerEvent("pointerdown", { button: 2 }))
@@ -212,7 +212,7 @@ describe("ObjectRotateController", () => {
         context.selection.active = mesh
         parent.transform = mat4.create()
 
-        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const ctrl = new ObjectRotateController(context)
         const angle0 = ctrl.lineToPointer.angle
         expect(Number.isNaN(angle0)).toBe(false)
 
@@ -232,7 +232,7 @@ describe("ObjectRotateController", () => {
         context.selection.active = mesh
         parent.transform = mat4.create()
 
-        const ctrl = new ObjectRotateController(context, context.selection.active)
+        const ctrl = new ObjectRotateController(context)
         context.axisRenderer.set(true, false, false)
 
         const initial = mat4.clone(parent.transform!)
@@ -253,7 +253,7 @@ describe("ObjectRotateController", () => {
 
             mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [2, 3, -24])
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 150 }, offsetY: { value: 75 } })
             ctrl.pointermove(ev)
@@ -270,7 +270,7 @@ describe("ObjectRotateController", () => {
 
             mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.3)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 150 }, offsetY: { value: 75 } })
             ctrl.pointermove(ev)
@@ -289,7 +289,7 @@ describe("ObjectRotateController", () => {
             mat4.rotateY(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.5)
             mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.2)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 300 }, offsetY: { value: 200 } })
             ctrl.pointermove(ev)
@@ -307,7 +307,7 @@ describe("ObjectRotateController", () => {
             mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [0, 0, -24])
             context.axisRenderer.set(true, false, false)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
             ctrl.pointermove(ev)
@@ -325,7 +325,7 @@ describe("ObjectRotateController", () => {
             mat4.rotateY(context.sceneUniforms.camera, context.sceneUniforms.camera, -0.4)
             context.axisRenderer.set(false, true, false)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 180 }, offsetY: { value: 90 } })
             ctrl.pointermove(ev)
@@ -342,7 +342,7 @@ describe("ObjectRotateController", () => {
             context.selection.active = mesh
             mat4.translate(parent.transform!, parent.transform!, [8, -3, 5])
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 120 }, offsetY: { value: 60 } })
             ctrl.pointermove(ev)
@@ -357,7 +357,7 @@ describe("ObjectRotateController", () => {
             context.selection.active = mesh
             mat4.rotateY(parent.transform!, parent.transform!, 0.8)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 140 }, offsetY: { value: 70 } })
             ctrl.pointermove(ev)
@@ -374,7 +374,7 @@ describe("ObjectRotateController", () => {
             context.selection.active = mesh
             mat4.scale(parent.transform!, parent.transform!, [2, 2, 2])
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 160 }, offsetY: { value: 80 } })
             ctrl.pointermove(ev)
@@ -394,7 +394,7 @@ describe("ObjectRotateController", () => {
             mat4.rotateY(parent.transform!, parent.transform!, 0.4)
             mat4.scale(parent.transform!, parent.transform!, [1.5, 2, 0.5])
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 200 }, offsetY: { value: 100 } })
             ctrl.pointermove(ev)
@@ -412,7 +412,7 @@ describe("ObjectRotateController", () => {
 
             context.axisRenderer.set(true, false, false)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 220 }, offsetY: { value: 110 } })
             ctrl.pointermove(ev)
@@ -429,7 +429,7 @@ describe("ObjectRotateController", () => {
             mat4.translate(parent.transform!, parent.transform!, [5, -5, 10])
             mat4.translate(context.sceneUniforms.camera, context.sceneUniforms.camera, [3, -2, -30])
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 200 }, offsetY: { value: 100 } })
             ctrl.pointermove(ev)
@@ -445,7 +445,7 @@ describe("ObjectRotateController", () => {
             mat4.rotateY(parent.transform!, parent.transform!, 0.5)
             mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.3)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 180 }, offsetY: { value: 90 } })
             ctrl.pointermove(ev)
@@ -466,7 +466,7 @@ describe("ObjectRotateController", () => {
             mat4.rotateX(context.sceneUniforms.camera, context.sceneUniforms.camera, 0.2)
             mat4.rotateY(context.sceneUniforms.camera, context.sceneUniforms.camera, -0.3)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const initial = mat4.clone(parent.transform!)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 300 }, offsetY: { value: 150 } })
@@ -487,7 +487,7 @@ describe("ObjectRotateController", () => {
 
             context.axisRenderer.set(true, false, false)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const initial = mat4.clone(parent.transform!)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
@@ -507,7 +507,7 @@ describe("ObjectRotateController", () => {
 
             context.axisRenderer.set(false, true, false)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const initial = mat4.clone(parent.transform!)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 280 }, offsetY: { value: 140 } })
@@ -532,7 +532,7 @@ describe("ObjectRotateController", () => {
 
             context.axisRenderer.set(false, false, true)
 
-            const ctrl = new ObjectRotateController(context, context.selection.active)
+            const ctrl = new ObjectRotateController(context)
             const initial = mat4.clone(parent.transform!)
             const ev = new PointerEvent("pointermove")
             Object.defineProperties(ev, { offsetX: { value: 350 }, offsetY: { value: 175 } })

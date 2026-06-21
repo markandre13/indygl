@@ -19,7 +19,7 @@ export class ObjectRotateController extends Controller {
     initialTransform!: mat4
     label?: HTMLElement
 
-    constructor(context: Context, root: IndyNode) {
+    constructor(context: Context) {
         super()
         this.context = context
 
