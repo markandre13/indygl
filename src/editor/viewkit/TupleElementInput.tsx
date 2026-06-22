@@ -107,18 +107,18 @@ export function TupleElementInput(props: TupleElementInputProps) {
                 pointerDownX = undefined
 
                 document.getElementById('cursor-style')?.remove()
-
             }}
         >
             <div class="label">{props.model.label}</div>
-            <div class="value">{() => `${props.model.value.toString()} ${props.model.symbol}`.trim()}</div>
+            <div class="value">{() => `${props.model.value.toFixed(4)} ${props.model.symbol}`.trim()}</div>
             <input
                 ref={input}
                 value={`${props.model.value} ${props.model.symbol}`.trim()}
                 onchange={() => {
                     // TODO: minimum decimal places when moving
                     props.model.value = input.value
-                }} />
+                }}
+            />
         </div>
         <button onclick={props.model.increment}><Chevron /></button>
     </div>
