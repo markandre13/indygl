@@ -3,6 +3,7 @@ import { VertexBuffer } from "./buffers/VertexBuffer"
 import type { Context } from "./Context"
 import { ModelUniform } from "./buffers/ModelUniform"
 import { mat4, vec3 } from "gl-matrix"
+import { TransformOrientation } from "src/editor/app/TransformOrientation"
 
 export class AxisRenderer {
     modelView: ModelUniform
@@ -34,10 +35,20 @@ export class AxisRenderer {
     }
     set(x: boolean, y: boolean, z: boolean) {
         const m = this.modelView.modelViewMatrix
-        mat4.identity(m)
         if (this.context.selection.active) {
-            const t = mat4.getTranslation(vec3.create(), this.context.selection.active.combined)
-            mat4.translate(m, m, t)
+            switch (this.context.editorModel.transformOrientation.value) {
+                case TransformOrientation.GLOBAL:
+                    mat4.identity(m)
+                    const t = mat4.getTranslation(vec3.create(), this.context.selection.active.combined)
+                    mat4.translate(m, m, t)
+                    break
+                case TransformOrientation.LOCAL:
+                    mat4.copy(m, this.context.selection.active.combined)
+                    break
+                default:
+                    mat4.identity(m)
+                    break
+            }
         }
         this.modelView.writeTo(this.context.device)
 

@@ -8,6 +8,7 @@ import type { Context } from "src/gl/Context"
 import type { Point } from "src/gl/types/Point"
 import { screen2pointInPlane, setMat4Translation, world2screen } from "src/gl/algorithms/coordinates"
 import { pointerToObjectAxisInScreenSpace } from "src/gl/algorithms/pointerToObjectAxisInScreenSpace"
+import { TransformOrientation } from "../app/TransformOrientation"
 
 
 export class ObjectGrabController extends Controller {
@@ -122,24 +123,49 @@ export class ObjectGrabController extends Controller {
             const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
             const center = mat4.create()
             mat4.translate(center, center, t)
-            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, vec3.fromValues(1, 0, 0), this.context)
+
+            const a = vec3.fromValues(1, 0, 0)
+            if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
+                const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
+                vec3.transformQuat(a, a, rotation)
+            }
+
+            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, a, this.context)
             pn = vec3.fromValues(0, 1, 0)
         } else if (!axis.x && axis.y && !axis.z) {
             const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
             const center = mat4.create()
             mat4.translate(center, center, t)
-            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, vec3.fromValues(0, 1, 0), this.context)
+
+            const a = vec3.fromValues(0, 1, 0)
+            if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
+                const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
+                vec3.transformQuat(a, a, rotation)
+            }
+
+            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, a, this.context)
             pn = vec3.fromValues(1, 0, 0)
         } else if (!axis.x && !axis.y && axis.z) {
             const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
             const center = mat4.create()
             mat4.translate(center, center, t)
 
-            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, vec3.fromValues(0, 0, 1), this.context)
+            const a = vec3.fromValues(0, 0, 1)
+            if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
+                const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
+                vec3.transformQuat(a, a, rotation)
+            }
+
+            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, a, this.context)
             pn = vec3.fromValues(1, 0, 0)
         } else {
             console.log(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED`)
             return
+        }
+
+        if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
+            const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
+            vec3.transformQuat(pn, pn, rotation)
         }
 
         const pt = screen2pointInPlane(

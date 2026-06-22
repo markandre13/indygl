@@ -18,5 +18,5 @@ export enum ViewportShading {
     /**
      * textures
      */
-    TEXTURED = "textured"
+    MATERIAL_PREVIEW = "textured"
 }

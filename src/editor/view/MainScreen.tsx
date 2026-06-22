@@ -5,12 +5,14 @@ import { IconRadioButton } from "../viewkit/IconRadioButton"
 import { ViewportShading } from "../app/ViewportShading"
 import { TripleInput } from "../viewkit/TripleInput"
 import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from "../viewkit/InputIcons"
+import { TransformOrientation } from "../app/TransformOrientation"
 
 export function MainScreen(props: { model: EditorModel }) {
     let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement,
         overlay!: HTMLElement, svg!: SVGElement
     const selectionMode = props.model.selectionMode
     const viewportShading = props.model.viewportShading
+    const transformOrientation = props.model.transformOrientation
     const transform = props.model.transform
 
     const root = <div style={{ width: "100vw", height: "100vh" }}>
@@ -29,16 +31,34 @@ export function MainScreen(props: { model: EditorModel }) {
                 <IconRadioButton model={selectionMode} value={SelectionMode.FACE} title="Face Selection Mode" svgHref="icons.svg#icon-select-face" />
             </div>
             <div>
-                <IconRadioButton model={viewportShading} value={ViewportShading.WIREFRAME_XRAY} title="Viewport Shading Wireframe X-Ray" svgHref="icons.svg#icon-shading-wireframe-xray" />
-                <IconRadioButton model={viewportShading} value={ViewportShading.WIREFRAME} title="Viewport Shading Wireframe" svgHref="icons.svg#icon-shading-wireframe" />
-                <IconRadioButton model={viewportShading} value={ViewportShading.SOLID_XRAY} title="Viewport Shading Solid X-Ray" svgHref="icons.svg#icon-shading-solid-xray" />
-                <IconRadioButton model={viewportShading} value={ViewportShading.SOLID} title="Viewport Shading Solid" svgHref="icons.svg#icon-shading-solid" />
-                <IconRadioButton model={viewportShading} value={ViewportShading.TEXTURED} title="Viewport Shading Textured" svgHref="icons.svg#icon-shading-textured" />
+                <IconRadioButton model={viewportShading} value={ViewportShading.WIREFRAME_XRAY}
+                    title="Viewport Shading: Wireframe X-Ray&#013;Display only edges of geometry without surface shading.&#013;Transparent scene display to allow selecting through items."
+                    svgHref="icons.svg#icon-shading-wireframe-xray" />
+                <IconRadioButton model={viewportShading} value={ViewportShading.WIREFRAME}
+                    title="Viewport Shading: Wireframe&#013;Display only edges of geometry without surface shading."
+                    svgHref="icons.svg#icon-shading-wireframe" />
+                <IconRadioButton model={viewportShading} value={ViewportShading.SOLID_XRAY}
+                    title="Viewport Shading: Solid X-Ray&#013;Display objects with flat lightning and basic surface shading.&#013;Transparent scene display to allow selecting through items."
+                    svgHref="icons.svg#icon-shading-solid-xray" />
+                <IconRadioButton model={viewportShading} value={ViewportShading.SOLID}
+                    title="Viewport Shading: Solid&#013;Display objects with flat lightning and basic surface shading."
+                    svgHref="icons.svg#icon-shading-solid" />
+                <IconRadioButton model={viewportShading} value={ViewportShading.MATERIAL_PREVIEW}
+                    title="Viewport Shading: Material Preview&#013;Preview materials using predefined environment lights."
+                    svgHref="icons.svg#icon-shading-textured" />
+            </div>
+            <div>
+                <IconRadioButton model={transformOrientation} value={TransformOrientation.GLOBAL}
+                    title="Transformation Orientation: Global&#013;Align the transformation axes to the world space."
+                    svgHref="icons.svg#icon-transform-orientation-global" />
+                <IconRadioButton model={transformOrientation} value={TransformOrientation.LOCAL}
+                    title="Transformation Orientation: Local&#013;Align the transformation axes to the selected object's local space."
+                    svgHref="icons.svg#icon-transform-orientation-local" />
             </div>
         </div>
         <canvas ref={canvas} class="canvas" tabIndex={0}></canvas>
-        <svg ref={svg} class="overlay" id="svg-overlay"/>
-        <div ref={overlay} class="overlay" id="overlay"/>
+        <svg ref={svg} class="overlay" id="svg-overlay" />
+        <div ref={overlay} class="overlay" id="overlay" />
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />

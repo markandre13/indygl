@@ -79,5 +79,32 @@
             <path stroke="none" fill="#ff0000" d="M 11 17.5 L 19 21 L 19 32 L 11 29" />
             <path stroke="none" fill="#ff0000" d="M 19 31 L 29.5 35 L 29.5 46.5 L 19 41.5" />
         </symbol>
+         <symbol id="icon-transform-orientation-global" viewBox="0 0 52 52">
+            <path stroke-linecap="round" stroke="#a9a9a9" stroke-width="2.5" fill="none" d="
+                M 20 34 L 33 20
+                M 26 20 L 33 20 L 33 27
+            "/>
+            <circle cx="16" cy="38" r="3.5" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+            <path stroke-linecap="round" stroke="#ffffff" stroke-width="2.5" fill="none" d="
+                M 16 33 L 16 12
+                M 10 18 L 16 12 L 22 18
+                M 21 38 L 42 38
+                M 36 32 L 42 38 L 36 44
+            "/>
+        </symbol>
+        <symbol id="icon-transform-orientation-local" viewBox="0 0 52 52">
+            <path stroke-linecap="round" stroke="#a9a9a9" stroke-width="2.5" fill="none" d="
+                M 31 29 L 42 42
+                M 35 42 L 42 42 L 42 35
+            "/>
+            <circle cx="28" cy="26" r="3.5" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+            <path stroke-linecap="round" stroke="#ffffff" stroke-width="2.5" fill="none" d="
+                M 24 26 L 12 26
+                M 18 20 L 12 26 L 18 32
+                M 31 23 L 42 12
+                M 35 12 L 42 12 L 42 19
+            "/>
+            <!-- <rect x="10" y="10" width="34" height="34" fill="none" stroke="#ffffff" /> -->
+        </symbol>
     </defs>
 </svg>
