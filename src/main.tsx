@@ -1,4 +1,4 @@
-import { mat4, vec3 } from 'gl-matrix'
+import { mat4, quat, vec3 } from 'gl-matrix'
 import { Context } from './gl/Context'
 import { Device } from './gl/Device'
 import { WavefrontObj } from './gl/file/WavefrontObj'
@@ -69,17 +69,19 @@ function prepareNode(
         }
 
         if (node instanceof Mesh) {
+            // copy object transformation to webgpu uniform
             mat4.copy(node.modelView.modelViewMatrix, node.combined)
-            const v0 = vec3.fromValues(0, 0, 0)
-            const v1 = vec3.fromValues(1, 0, 0)
-            vec3.transformMat4(v0, v0, node.combined)
-            vec3.transformMat4(v1, v1, node.combined)
-            vec3.sub(v1, v1, v0)
-            const l = 1 / vec3.length(v1)
-            mat4.scale(node.modelView.normalMatrix, node.combined, vec3.fromValues(l, l, l))
-            node.modelView.normalMatrix[12] = node.modelView.normalMatrix[13] = node.modelView.normalMatrix[14] = 0
+  
+            // set object normal matrix to webgpu uniform
+            mat4.getRotation(quat.create(), node.combined)
+            mat4.fromQuat(
+                node.modelView.normalMatrix,
+                mat4.getRotation(quat.create(), node.combined)
+            )
             mat4.invert(node.modelView.normalMatrix, node.modelView.normalMatrix)
             mat4.transpose(node.modelView.normalMatrix, node.modelView.normalMatrix)
+
+            // send to GPU
             node.modelView.writeTo(device)
         }
     }
