@@ -139,6 +139,7 @@ function renderLines(
 }
 
 function renderRGBFaces(
+    outline: boolean,
     pass: GPURenderPassEncoder,
     nodes: Mesh[],
     selectedNodes: Mesh[],
@@ -146,79 +147,76 @@ function renderRGBFaces(
     editorModel: EditorModel,
     background: Material
 ) {
-    for (const outline of [true, false]) {
-        const list = outline ? selectedNodes : nodes
-        if (list.length === 0) continue
+    const list = outline ? selectedNodes : nodes
+    if (list.length === 0) return
 
-        if (editorModel.viewportShading.value === ViewportShading.WIREFRAME) {
-            pass.setBindGroup(2, background.bindGroup)
-            pass.setPipeline(context.shader.p3_idx.pipeline)
+    if (editorModel.viewportShading.value === ViewportShading.WIREFRAME) {
+        pass.setBindGroup(2, background.bindGroup)
+        pass.setPipeline(context.shader.p3_idx.pipeline)
+    } else {
+        if (outline) {
+            pass.setPipeline(context.shader.p3_n3_idx.pipelineOutline)
         } else {
-            if (outline) {
-                pass.setPipeline(context.shader.p3_n3_idx.pipelineOutline)
-            } else {
-                pass.setStencilReference(0)
-                pass.setPipeline(context.shader.p3_n3_idx.pipeline)
-            }
+            pass.setStencilReference(0)
+            pass.setPipeline(context.shader.p3_n3_idx.pipeline)
         }
+    }
 
-        for (const node of list) {
-            if (outline) {
-                pass.setStencilReference(context.selection.active === node ? 1 + 4 : 2 + 4)
-            }
-            pass.setBindGroup(1, node.modelView.bindGroup)
-            if (editorModel.viewportShading.value !== ViewportShading.WIREFRAME) {
-                pass.setBindGroup(2, node.material!.bindGroup)
-            }
-            pass.setVertexBuffer(0, node.points.buffer)
-            pass.setVertexBuffer(1, node.normals.buffer)
-            pass.setIndexBuffer(node.indices.buffer, 'uint32')
-            if (node.groupSubset?.has("body")) {
-                const group = node.group("body")!
-                pass.drawIndexed(group.length, 1, group.start)
-            } else {
-                pass.drawIndexed(node.indices.length)
-            }
+    for (const node of list) {
+        if (outline) {
+            pass.setStencilReference(context.selection.active === node ? 1 + 4 : 2 + 4)
+        }
+        pass.setBindGroup(1, node.modelView.bindGroup)
+        if (editorModel.viewportShading.value !== ViewportShading.WIREFRAME) {
+            pass.setBindGroup(2, node.material!.bindGroup)
+        }
+        pass.setVertexBuffer(0, node.points.buffer)
+        pass.setVertexBuffer(1, node.normals.buffer)
+        pass.setIndexBuffer(node.indices.buffer, 'uint32')
+        if (node.groupSubset?.has("body")) {
+            const group = node.group("body")!
+            pass.drawIndexed(group.length, 1, group.start)
+        } else {
+            pass.drawIndexed(node.indices.length)
         }
     }
 }
 
 function renderTexFaces(
+    outline: boolean,
     pass: GPURenderPassEncoder,
     nodes: Mesh[],
     selectedNodes: Mesh[],
     context: Context,
 ) {
-    for (const outline of [true, false]) {
-        const list = outline ? selectedNodes : nodes
-        if (list.length === 0) continue
+    const list = outline ? selectedNodes : nodes
+    if (list.length === 0) return
 
-        // pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+    // pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+    if (outline) {
+        pass.setPipeline(context.shader.p3_n3_t2_idx.pipelineOutline)
+    } else {
+        pass.setStencilReference(0)
+        pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+    }
+
+    for (const node of list) {
         if (outline) {
-            pass.setPipeline(context.shader.p3_n3_t2_idx.pipelineOutline)
-        } else {
-            pass.setStencilReference(0)
-            pass.setPipeline(context.shader.p3_n3_t2_idx.pipeline)
+            pass.setStencilReference(context.selection.active === node ? 1 + 4 : 2 + 4)
         }
+        pass.setBindGroup(1, node.modelView.bindGroup)
 
-        for (const node of list) {
-            if (outline) {
-                pass.setStencilReference(context.selection.active === node ? 1 + 4 : 2 + 4)
-            }
-            pass.setBindGroup(1, node.modelView.bindGroup)
+        pass.setBindGroup(2, node.material!.bindGroup)
+        pass.setVertexBuffer(0, node.points.buffer)
+        pass.setVertexBuffer(1, node.normals.buffer)
+        pass.setVertexBuffer(2, node.texcoords.buffer)
 
-            pass.setBindGroup(2, node.material!.bindGroup)
-            pass.setVertexBuffer(0, node.points.buffer)
-            pass.setVertexBuffer(1, node.normals.buffer)
-            pass.setVertexBuffer(2, node.texcoords.buffer)
-
-            pass.setIndexBuffer(node.indices.buffer, 'uint32')
-            if (node.groupSubset?.has("body")) {
-                const group = node.group("body")!
-                pass.drawIndexed(group.length, 1, group.start)
-            } else {
-                pass.drawIndexed(node.indices.length)
-            }
+        pass.setIndexBuffer(node.indices.buffer, 'uint32')
+        if (node.groupSubset?.has("body")) {
+            const group = node.group("body")!
+            pass.drawIndexed(group.length, 1, group.start)
+        } else {
+            pass.drawIndexed(node.indices.length)
         }
     }
 }
@@ -245,7 +243,7 @@ async function loadDemoScene(root: Root, context: Context) {
     const teapot = new XForm(root)
     const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
     teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
-        teapot.transform = mat4.create()
+    teapot.transform = mat4.create()
     // mat4.translate(teapot.transform, teapot.transform, vec3.fromValues(3, 5, -7))
     // mat4.rotateX(teapot.transform, teapot.transform, deg2rad(20))
     mat4.rotateY(teapot.transform, teapot.transform, deg2rad(45))
@@ -334,8 +332,10 @@ export async function main() {
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
 
         renderLines(pass, buckets.lineNodes, context, materials)
-        renderRGBFaces(pass, buckets.rgbNodes, buckets.rgbNodesSelected, context, editorModel, background)
-        renderTexFaces(pass, buckets.texNodes, buckets.texNodesSelected, context)
+        for (let outline of [true, false]) {
+            renderRGBFaces(outline, pass, buckets.rgbNodes, buckets.rgbNodesSelected, context, editorModel, background)
+            renderTexFaces(outline, pass, buckets.texNodes, buckets.texNodesSelected, context)
+        }
         renderFloorAndAxis(pass, context)
 
         pass.end()

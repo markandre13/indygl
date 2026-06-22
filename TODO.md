@@ -1,7 +1,8 @@
 ### for IndyGL
 
-[ ] outline of textured mesh rendered wrong
+[X] outline of textured mesh rendered wrong
     because: all selected meshes must be rendered first
+[ ] use mat.getRotation() to calculate the normlas
 [ ] scaling is currently done in local coordinates
 [ ] support global and local transformations
 [ ] use axis constraint keys to cycle through
