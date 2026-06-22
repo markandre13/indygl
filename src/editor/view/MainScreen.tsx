@@ -36,7 +36,7 @@ export function MainScreen(props: { model: EditorModel }) {
                 <IconRadioButton model={viewportShading} value={ViewportShading.TEXTURED} title="Viewport Shading Textured" svgHref="icons.svg#icon-shading-textured" />
             </div>
         </div>
-        <canvas ref={canvas} class="canvas"></canvas>
+        <canvas ref={canvas} class="canvas" tabIndex={0}></canvas>
         <svg ref={svg} class="overlay" id="svg-overlay"/>
         <div ref={overlay} class="overlay" id="overlay"/>
         <div ref={panel} class="panel">

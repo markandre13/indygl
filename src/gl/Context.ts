@@ -312,6 +312,7 @@ export class Context {
             ev.preventDefault()
         }
         canvas.onpointerdown = (ev: PointerEvent) => {
+            canvas.focus()
             this.lastPointerOffset.x = ev.offsetX
             this.lastPointerOffset.y = ev.offsetY
 
