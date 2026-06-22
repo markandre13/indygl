@@ -15,6 +15,8 @@ import { deg2rad } from './gl/algorithms/deg2rad'
 import { Texture } from './gl/buffers/Texture'
 import { BasicMode } from './editor/controllers/BasicController'
 import { ObjectSelectController } from './editor/controllers/ObjectSelectController'
+import { MorphTarget } from './MorphTarget'
+import { VertexBuffer } from './gl/buffers/VertexBuffer'
 
 export async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
@@ -71,7 +73,7 @@ function prepareNode(
         if (node instanceof Mesh) {
             // copy object transformation to webgpu uniform
             mat4.copy(node.modelView.modelViewMatrix, node.combined)
-  
+
             // set object normal matrix to webgpu uniform
             mat4.getRotation(quat.create(), node.combined)
             mat4.fromQuat(
@@ -286,6 +288,52 @@ async function loadDemoScene(root: Root, context: Context) {
     // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
 }
 
+let sourceBuffer: VertexBuffer | undefined
+let destinationBuffer: VertexBuffer | undefined
+let copyBuffer = false
+
+async function loadBlendshapes(root: Root, context: Context) {
+    const human = new XForm(root)
+    const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    const bodyTexture = new Texture()
+    await bodyTexture.load(context, "img/young_caucasian_female_special_suit.jpg")
+    humanMesh.material = new Material(context, bodyTexture)
+    // humanMesh.material = new Material(context, [0, 0.5, 1, 1])
+
+
+    const neutral = new XForm(root)
+    const neutralMesh = await loadMesh(neutral, "obj/arkit/Neutral.obj")
+    neutralMesh.material = new Material(context, [1, 0.5, 0, 1])
+    neutral.transform = mat4.create()
+    mat4.scale(neutral.transform, neutral.transform, vec3.fromValues(30, 30, 30))
+    neutral.dirty = true
+
+    const browInnerUp = new XForm(root)
+    const browInnerUpMesh = await loadMesh(browInnerUp, "obj/arkit/browInnerUp.obj")
+    browInnerUpMesh.material = new Material(context, [0.5, 1, 0, 1])
+    browInnerUp.transform = mat4.create()
+    mat4.scale(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(30, 30, 30))
+    browInnerUp.dirty = true
+
+    const morph = new MorphTarget()
+    morph.diff(neutralMesh.xyz!, browInnerUpMesh.xyz!)
+
+    destinationBuffer = neutralMesh.points
+
+    const data = new Float32Array(neutralMesh.xyz!)
+    sourceBuffer = new VertexBuffer(context.device, data, GPUBufferUsage.COPY_SRC | GPUBufferUsage.MAP_WRITE)
+
+    context.editorModel.morph.signal.add(async () => {
+        // NOTE: we should also update the normals!!!
+        const v = context.editorModel.morph.value
+        data.set(neutralMesh.xyz!)
+        morph.apply(data, v)
+        await sourceBuffer!.update(data)
+        copyBuffer = true
+        context.invalidate()
+    })
+}
+
 export async function main() {
 
     const editorModel = new EditorModel()
@@ -309,7 +357,8 @@ export async function main() {
     context.pushController(new BasicMode(context))
     context.pushController(new ObjectSelectController(context, root))
 
-    await loadDemoScene(root, context)
+    // await loadDemoScene(root, context)
+    await loadBlendshapes(root, context)
 
     const matWire = new Material(context, [0, 0, 0, 1])
     const matObjectSelected = new Material(context, [0.929, 0.341, 0, 1])
@@ -329,6 +378,11 @@ export async function main() {
         prepareNode(root, editorModel, context, device, buckets)
 
         const commandEncoder = device.device!.createCommandEncoder({ label: 'main' })
+
+        if (copyBuffer) {
+            copyBuffer = false
+            commandEncoder.copyBufferToBuffer(sourceBuffer!.buffer, destinationBuffer!.buffer)
+        }
 
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor())
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)

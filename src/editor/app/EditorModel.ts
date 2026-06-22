@@ -3,6 +3,7 @@ import { SelectionMode } from "./SelectionMode"
 import { ViewportShading } from "./ViewportShading"
 import { TransformModel } from "../appkit/TransformModel"
 import { TransformOrientation } from "./TransformOrientation"
+import { NumberModel } from "toad.js/appkit/NumberModel"
 
 export class EditorModel {
     readonly selectionMode = new OptionModel(
@@ -29,4 +30,6 @@ export class EditorModel {
     ], { local: "transform-orientation" })
 
     readonly transform = new TransformModel()
+
+    readonly morph = new NumberModel(0, {min: 0, max: 1, step: 0.01})
 }

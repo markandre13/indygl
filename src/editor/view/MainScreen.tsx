@@ -6,6 +6,8 @@ import { ViewportShading } from "../app/ViewportShading"
 import { TripleInput } from "../viewkit/TripleInput"
 import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from "../viewkit/InputIcons"
 import { TransformOrientation } from "../app/TransformOrientation"
+import { Slider } from "toad.js/viewkit/Slider"
+import { NumberModel } from "toad.js/appkit/NumberModel"
 
 export function MainScreen(props: { model: EditorModel }) {
     let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement,
@@ -70,6 +72,10 @@ export function MainScreen(props: { model: EditorModel }) {
             <TripleInput model={transform.scale} />
             Dimensions<br />
             <TripleInput model={transform.dimensions} />
+
+            Morph<br />
+            <Slider model={props.model.morph}/>
+
         </div>
         <div ref={status} class="status" id="status">
             <IconMouseLeft /><span>Select</span>
