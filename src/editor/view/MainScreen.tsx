@@ -7,11 +7,13 @@ import { TripleInput } from "../viewkit/TripleInput"
 import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from "../viewkit/InputIcons"
 import { TransformOrientation } from "../app/TransformOrientation"
 import { Slider } from "toad.js/viewkit/Slider"
-import { NumberModel } from "toad.js/appkit/NumberModel"
+import { Outliner } from "./Outliner"
 
 export function MainScreen(props: { model: EditorModel }) {
-    let menubar!: HTMLElement, toolbar!: HTMLElement, canvas!: HTMLElement, panel!: HTMLElement, status!: HTMLElement,
-        overlay!: HTMLElement, svg!: SVGElement
+    let menubar!: HTMLElement, toolbar!: HTMLElement,
+        overlay!: HTMLElement, svg!: SVGElement, canvas!: HTMLElement,
+        outliner!: HTMLElement, panel!: HTMLElement,
+        status!: HTMLElement
     const selectionMode = props.model.selectionMode
     const viewportShading = props.model.viewportShading
     const transformOrientation = props.model.transformOrientation
@@ -61,6 +63,7 @@ export function MainScreen(props: { model: EditorModel }) {
         <canvas ref={canvas} class="canvas" tabIndex={0}></canvas>
         <svg ref={svg} class="overlay" id="svg-overlay" />
         <div ref={overlay} class="overlay" id="overlay" />
+        <Outliner ref={outliner} model={props.model} />
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />
@@ -70,11 +73,11 @@ export function MainScreen(props: { model: EditorModel }) {
             XZY Euler<br />
             Scale<br />
             <TripleInput model={transform.scale} />
-            Dimensions<br />
-            <TripleInput model={transform.dimensions} />
+            {/* Dimensions<br />
+            <TripleInput model={transform.dimensions} /> */}
 
             Morph<br />
-            <Slider model={props.model.morph}/>
+            <Slider model={props.model.morph} />
 
         </div>
         <div ref={status} class="status" id="status">
@@ -96,7 +99,8 @@ export function MainScreen(props: { model: EditorModel }) {
         .element(canvas).top(toolbar).left().bottom(status).right(panel)
         .element(overlay).top(toolbar).left().bottom(status).right(panel)
         .element(svg).top(toolbar).left().bottom(status).right(panel)
-        .element(panel).top(toolbar).right().bottom(status)
+        .element(outliner).top(toolbar).bottom(panel).right()
+        .element(panel).right().bottom(status)
         .element(status).bottom().left().right()
         .build()
     return root

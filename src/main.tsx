@@ -305,14 +305,16 @@ async function loadBlendshapes(root: Root, context: Context) {
     const neutralMesh = await loadMesh(neutral, "obj/arkit/Neutral.obj")
     neutralMesh.material = new Material(context, [1, 0.5, 0, 1])
     neutral.transform = mat4.create()
-    mat4.scale(neutral.transform, neutral.transform, vec3.fromValues(30, 30, 30))
+    const s = 10.257156372070312
+    mat4.translate(neutral.transform, neutral.transform, vec3.fromValues(0,7.0285,0.9557))
+    mat4.scale(neutral.transform, neutral.transform, vec3.fromValues(s,s, s))
     neutral.dirty = true
 
     const browInnerUp = new XForm(root)
     const browInnerUpMesh = await loadMesh(browInnerUp, "obj/arkit/browInnerUp.obj")
     browInnerUpMesh.material = new Material(context, [0.5, 1, 0, 1])
     browInnerUp.transform = mat4.create()
-    mat4.scale(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(30, 30, 30))
+    mat4.scale(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(s, s, s))
     browInnerUp.dirty = true
 
     const morph = new MorphTarget()
