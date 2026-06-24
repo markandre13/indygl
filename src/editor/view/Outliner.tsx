@@ -101,8 +101,13 @@ function node2html(node: IndyNode | undefined, map: Map<IndyNode, HTMLElement>, 
  */
 export function Outliner(props: OutlinerProps) {
 
-    // encodeURI("")
-    // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect x="0" y="0" width="40" height="20" fill="#282828" stroke="none" /><rect x="0" y="20" width="40" height="20" fill="#2b2b2b" stroke="none" /></svg>
+    // FIXME: seting the background via style={{backgroundImage: encodeURIComponent(backgroundImage)}} ain't working
+    const outliner = <div class="outliner" ref={props.ref} /> as HTMLElement
+    let backgroundImage = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">`
+        + `<rect x="0" y="0" width="40" height="20" fill="#282828" stroke="none" />`
+        + `<rect x="0" y="20" width="40" height="20" fill="#2b2b2b" stroke="none" />`
+        + `</svg>`
+    outliner.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(backgroundImage)}")`
 
     let map: Map<IndyNode, HTMLElement>
 
@@ -121,24 +126,20 @@ export function Outliner(props: OutlinerProps) {
         }
     }
 
-    props.model.signal.add(() => {
+    const updateFromModel = () => {
         // console.log(`Outliner: node tree changed`)
         map = new Map()
         const children = node2html(props.model.root, map)
         // console.log(children)
         replaceChildren(outliner, children)
         updateFromSelection()
-    })
+    }
+
+    props.model.signal.add(updateFromModel)
     props.selection.signal.add(updateFromSelection)
 
-    let backgroundImage = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">`
-        + `<rect x="0" y="0" width="40" height="20" fill="#282828" stroke="none" />`
-        + `<rect x="0" y="20" width="40" height="20" fill="#2b2b2b" stroke="none" />`
-        + `</svg>`
-
-    // FIXME: seting the background via style={{backgroundImage: encodeURIComponent(backgroundImage)}} ain't working
-    const outliner = <div class="outliner" ref={props.ref} /> as HTMLElement
-    outliner.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(backgroundImage)}")`
+    updateFromModel()
+    updateFromSelection()
 
     return outliner
 }
