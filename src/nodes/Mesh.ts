@@ -14,6 +14,8 @@ import type { XForm } from "./XForm"
 import { vec3 } from "gl-matrix"
 
 export class Mesh extends IndyNode implements MeshData {
+    dataName?: string
+
     modelView: ModelUniform
 
     vcount?: ArrayLike<number>

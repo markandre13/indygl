@@ -295,15 +295,18 @@ let copyBuffer = false
 
 async function loadBlendshapes(root: Root, context: Context) {
     const human = new XForm(root)
+    human.objectName = "Human"
     const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    humanMesh.dataName = "Human"
     const bodyTexture = new Texture()
     await bodyTexture.load(context, "img/young_caucasian_female_special_suit.jpg")
     humanMesh.material = new Material(context, bodyTexture)
     // humanMesh.material = new Material(context, [0, 0.5, 1, 1])
 
-
     const neutral = new XForm(root)
+    neutral.objectName = "Neutral"
     const neutralMesh = await loadMesh(neutral, "obj/arkit/Neutral.obj")
+    neutralMesh.dataName = "Neutral"
     neutralMesh.material = new Material(context, [1, 0.5, 0, 1])
     neutral.transform = mat4.create()
     const s = 10.257156372070312
@@ -312,7 +315,9 @@ async function loadBlendshapes(root: Root, context: Context) {
     neutral.dirty = true
 
     const browInnerUp = new XForm(root)
+    browInnerUp.objectName = "browInnerUp"
     const browInnerUpMesh = await loadMesh(browInnerUp, "obj/arkit/browInnerUp.obj")
+    browInnerUpMesh.dataName = "browInnerUp"
     browInnerUpMesh.material = new Material(context, [0.5, 1, 0, 1])
     browInnerUp.transform = mat4.create()
     mat4.scale(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(s, s, s))
