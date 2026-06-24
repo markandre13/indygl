@@ -1,24 +1,146 @@
 import { EditorModel } from "src/editor/app/EditorModel"
-import { OutlineChevron, Outliner } from "src/editor/view/Outliner"
-import type { Context } from "src/gl/Context"
+import { Outliner } from "src/editor/view/Outliner"
 import { Selection } from "src/gl/Selection"
 import { Root } from "src/nodes/Root"
 import { XForm } from "src/nodes/XForm"
 import { NodeTree } from "src/NodeTree"
 import { replaceChildren } from "toad.jsx/jsx-runtime"
-import { describe, it } from "vitest"
+import { describe, expect, it } from "vitest"
+import { page } from "vitest/browser"
+
+interface OutlinerDSL {
+    clickItem(name: string): Promise<void>
+    expectItem(name: string): Promise<void>
+    expectItemCount(count: number): Promise<void>
+    expectItemHasChevron(name: string): Promise<void>
+    expectItemHasNoChevron(name: string): Promise<void>
+    expectItemIsActive(name: string): Promise<void>
+    expectItemIsNotActive(name: string): Promise<void>
+}
+
+class OutlinerWebDriver implements OutlinerDSL {
+    private findItem(name: string) {
+        const items = document.querySelectorAll<HTMLElement>(".outliner .item")
+        return Array.from(items).find(el => el.textContent?.trim().includes(name)) ?? null
+    }
+
+    async clickItem(name: string) {
+        const el = this.findItem(name)
+        await page.elementLocator(el!).click()
+    }
+
+    async expectItem(name: string) {
+        await expect.poll(() => this.findItem(name)).toBeTruthy()
+    }
+
+    async expectItemCount(count: number) {
+        await expect.poll(() => document.querySelectorAll(".outliner .item").length).toBe(count)
+    }
+
+    async expectItemHasChevron(name: string) {
+        const el = this.findItem(name)
+        await expect.poll(() => el!.querySelector('svg path[d="M 5 3 l 5 5 l -5 5"]')).toBeTruthy()
+    }
+
+    async expectItemHasNoChevron(name: string) {
+        const el = this.findItem(name)
+        expect(el!.querySelector('svg path[d="M 5 3 l 5 5 l -5 5"]')).toBeNull()
+    }
+
+    async expectItemIsActive(name: string) {
+        const el = this.findItem(name)
+        await expect.poll(() => el!.classList.contains("active")).toBe(true)
+    }
+
+    async expectItemIsNotActive(name: string) {
+        const el = this.findItem(name)
+        await expect.poll(() => el!.classList.contains("active")).toBe(false)
+    }
+}
+
+function setupScene() {
+    const editorModel = new EditorModel()
+    const selection = new Selection(editorModel)
+    const nodeTree = new NodeTree()
+    const context = { selection, invalidate: () => {} } as any
+    nodeTree.root = new Root(context)
+    return { selection, nodeTree }
+}
 
 describe("Outliner", () => {
-    it("lives again", () => {
-        const editorModel = new EditorModel()
-        const selection = new Selection(editorModel)
-        const nodeTree = new NodeTree()
-        const context = {} as Context
-        nodeTree.root = new Root(context)
-        const xform0 = new XForm(nodeTree.root)
+    const outliner = new OutlinerWebDriver()
 
+    it("renders the scene root as 'Crate'", async () => {
+        const { selection, nodeTree } = setupScene()
+        new XForm(nodeTree.root)
         replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+        await outliner.expectItem("Crate")
+    })
 
-        console.log(document.body)
+    it("displays XForm nodes with their constructor name when unnamed", async () => {
+        const { selection, nodeTree } = setupScene()
+        new XForm(nodeTree.root)
+        replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+        await outliner.expectItem("XForm")
+    })
+
+    it("shows an XForm's objectName when set", async () => {
+        const { selection, nodeTree } = setupScene()
+        const xform = new XForm(nodeTree.root)
+        xform.objectName = "Cube"
+        replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+        await outliner.expectItem("Cube")
+    })
+
+    it("renders nested parent-child-grandchild hierarchy", async () => {
+        const { selection, nodeTree } = setupScene()
+        const parent = new XForm(nodeTree.root)
+        parent.objectName = "Parent"
+        const child = new XForm(parent)
+        child.objectName = "Child"
+        const grandchild = new XForm(child)
+        grandchild.objectName = "Grandchild"
+        replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+        await outliner.expectItem("Grandchild")
+        await outliner.expectItemCount(4)
+    })
+
+    it("shows a chevron next to nodes that have children", async () => {
+        const { selection, nodeTree } = setupScene()
+        const parent = new XForm(nodeTree.root)
+        parent.objectName = "Parent"
+        new XForm(parent)
+        replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+        await outliner.expectItemHasChevron("Parent")
+    })
+
+    it("does not show a chevron for leaf nodes", async () => {
+        const { selection, nodeTree } = setupScene()
+        const leaf = new XForm(nodeTree.root)
+        leaf.objectName = "Leaf"
+        replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+        await outliner.expectItemHasNoChevron("Leaf")
+    })
+
+    it("selects a node when clicked, marking it active", async () => {
+        const { selection, nodeTree } = setupScene()
+        const xform = new XForm(nodeTree.root)
+        xform.objectName = "Cube"
+        replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+        await outliner.clickItem("Cube")
+        await outliner.expectItemIsActive("Cube")
+    })
+
+    it("moves the active highlight when clicking a different node", async () => {
+        const { selection, nodeTree } = setupScene()
+        const a = new XForm(nodeTree.root)
+        a.objectName = "A"
+        const b = new XForm(nodeTree.root)
+        b.objectName = "B"
+        replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+        await outliner.clickItem("A")
+        await outliner.clickItem("B")
+        await outliner.expectItemIsActive("B")
+        await outliner.expectItemIsNotActive("A")
     })
 })
