@@ -233,6 +233,7 @@
         }
 
         .outliner {
+            color: #aaa;
             background-repeat: repeat;
             background-size: 40px;
             background-position-y: 8px;
@@ -245,26 +246,29 @@
         }
 
         .outliner .item {
-            /* background-color: #f80; */
+            border-radius: 4px;
             cursor: default;
             display: flex;
-            color: #aaa;
             box-sizing: border-box;
             padding-top: 2px;
             height: 20px;
             vertical-align: middle;
         }
 
-        .outliner .indent {
-            /* background-color: #08f; */
-            padding: 0;
-            margin: 0;
-            padding-left: 20px;
+        .outliner .item.selected {
+            color: #e96a00;
+            background-color: #1d314d;
         }
 
-        /* .outliner>div:nth-child(odd) {
-            background-color: #282828;
-        } */
+        .outliner .item.active {
+            color: #ffaf29;
+            background-color: #334d80;
+        }
+
+        .outliner .indent {
+            padding: 0;
+            margin: 0;
+        }
 
         .outliner .item:hover {
             background-color: #3e3e3e;

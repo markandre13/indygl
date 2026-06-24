@@ -18,6 +18,7 @@ import { ObjectSelectController } from './editor/controllers/ObjectSelectControl
 import { MorphTarget } from './MorphTarget'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { NodeTree } from './NodeTree'
+import { Selection } from './gl/Selection'
 
 export async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
@@ -247,6 +248,7 @@ function renderOutlinePass(commandEncoder: GPUCommandEncoder, context: Context) 
 async function loadDemoScene(root: Root, context: Context) {
     const teapot = new XForm(root)
     const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
+    teapot.objectName = teapotMesh.dataName = "Utah Teapot"
     teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
     teapot.transform = mat4.create()
     // mat4.translate(teapot.transform, teapot.transform, vec3.fromValues(3, 5, -7))
@@ -255,38 +257,41 @@ async function loadDemoScene(root: Root, context: Context) {
     // mat4.rotateZ(teapot.transform, teapot.transform, deg2rad(40))
 
     const dodecahedron = new XForm(root)
+    const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj")
+    dodecahedron.objectName = dodecahedronMesh.dataName = "Dodecahedron"
+    dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
     dodecahedron.transform = mat4.create()
     mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15, 3.4, 0))
-    const mesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj")
-    mesh.material = new Material(context, [0, 1, 0, 1])
 
     const cube = new XForm(root)
+    const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
+    cube.objectName = cubeMesh.dataName = "Cube"
+    cubeMesh.material = new Material(context, [0, 0.2, 1, 1])
     cube.transform = mat4.create()
     mat4.translate(cube.transform, cube.transform, vec3.fromValues(2, 1, 4))
-    const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
-    cubeMesh.material = new Material(context, [0, 0.2, 1, 1])
 
     const human = new XForm(root)
     const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    human.objectName = humanMesh.dataName = "Human"
     const bodyTexture = new Texture()
     await bodyTexture.load(context, "img/young_caucasian_female_special_suit.jpg")
     humanMesh.material = new Material(context, bodyTexture)
 
     human.transform = mat4.create()
-    mat4.translate(human.transform, human.transform, vec3.fromValues(3, 5, -7))
-    mat4.rotateX(human.transform, human.transform, deg2rad(20))
-    mat4.rotateY(human.transform, human.transform, deg2rad(30))
-    mat4.rotateZ(human.transform, human.transform, deg2rad(40))
+    mat4.translate(human.transform, human.transform, vec3.fromValues(3, 8.05, -7))
+    // mat4.rotateX(human.transform, human.transform, deg2rad(20))
+    // mat4.rotateY(human.transform, human.transform, deg2rad(30))
+    // mat4.rotateZ(human.transform, human.transform, deg2rad(40))
 
     // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
 
-    const teeth = new XForm(root)
-    const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
-    teethMesh.material = new Material(context, [1, 1, 1, 1])
-    // this wrecks the shading, guess through the normal matrix being messed up
-    teeth.transform = mat4.create()
-    mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
-    // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
+    // const teeth = new XForm(root)
+    // const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
+    // teethMesh.material = new Material(context, [1, 1, 1, 1])
+    // // this wrecks the shading, guess through the normal matrix being messed up
+    // teeth.transform = mat4.create()
+    // mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
+    // // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
 }
 
 let sourceBuffer: VertexBuffer | undefined
@@ -347,7 +352,8 @@ async function loadBlendshapes(root: Root, context: Context) {
 export async function main() {
     const nodeTree = new NodeTree()
     const editorModel = new EditorModel()
-    replaceChildren(document.body, <MainScreen model={editorModel} nodeTree={nodeTree}/>)
+    const selection = new Selection(editorModel)
+    replaceChildren(document.body, <MainScreen model={editorModel} selection={selection} nodeTree={nodeTree}/>)
 
     const canvas = document.querySelector<HTMLCanvasElement>('canvas')
     if (canvas === null) {
@@ -357,7 +363,7 @@ export async function main() {
     const device = new Device()
     await device.init()
     
-    const context = new Context(device, canvas, editorModel, nodeTree)
+    const context = new Context(device, canvas, editorModel, selection, nodeTree)
     const root = context.nodeTree.root = new Root(context)
 
     editorModel.transform.signal.add(context.invalidate)
@@ -367,8 +373,8 @@ export async function main() {
     context.pushController(new BasicMode(context))
     context.pushController(new ObjectSelectController(context, root))
 
-    // await loadDemoScene(root, context)
-    await loadBlendshapes(root, context)
+    await loadDemoScene(root, context)
+    // await loadBlendshapes(root, context)
 
     context.nodeTree.signal.emit()
 

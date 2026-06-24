@@ -38,12 +38,12 @@ export class Context {
 
     // renderPassDescriptor: GPURenderPassDescriptor
 
-    constructor(device: Device, canvas: HTMLCanvasElement, editorModel: EditorModel, nodeTree: NodeTree) {
+    constructor(device: Device, canvas: HTMLCanvasElement, editorModel: EditorModel, selection: Selection, nodeTree: NodeTree) {
         this.device = device
         this.canvas = canvas
 
         this.editorModel = editorModel
-        this.selection = new Selection(this.editorModel)
+        this.selection = selection
         this.nodeTree = nodeTree
 
         this.bindGroupLayout = new BindGroupLayoutCollection(device)

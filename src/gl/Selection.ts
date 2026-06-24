@@ -5,6 +5,7 @@ import type { IndyNode } from 'src/nodes/IndyNode'
 import type { XForm } from 'src/nodes/XForm'
 import { deg2rad } from './algorithms/deg2rad'
 import { rad2deg } from './algorithms/rad2deg'
+import { Signal } from 'toad.js/reactive/Signal'
 
 /**
  * Convert a quaternion to Euler angles in XYZ order (matching "sxyz").
@@ -27,6 +28,7 @@ function quat2euler(q: quat): { x: number, y: number, z: number } {
 }
 
 export class Selection {
+    signal = new Signal()
     model: EditorModel
     active?: IndyNode
     selected = new Set<IndyNode>();
@@ -48,12 +50,16 @@ export class Selection {
         model.transform.signal.add(this.updateActiveFromEditorModel)
     }
 
+    isActive(node: IndyNode) { return this.active === node }
+    isSelected(node: IndyNode) { return this.selected.has(node) }
+
     /**
      * clear selection
      */
     clear() {
         this.active = undefined
         this.selected.clear()
+        this.signal.emit()
     }
 
     /**
@@ -84,8 +90,9 @@ export class Selection {
             quat.identity(this.rotationQuat)
             this.lastEuler = { x: 0, y: 0, z: 0 }
         }
-
         this.updateEditorModelFromActive()
+
+        this.signal.emit()
     }
 
     /**
