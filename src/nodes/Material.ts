@@ -6,6 +6,7 @@ import type { Mesh } from "./Mesh"
 
 export class Material {
     bindGroup: GPUBindGroup
+    dataName?: string
 
     constructor(context: Context, rgba: number[])
     constructor(context: Context, texture: Texture)

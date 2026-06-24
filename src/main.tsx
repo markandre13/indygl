@@ -17,6 +17,7 @@ import { BasicMode } from './editor/controllers/BasicController'
 import { ObjectSelectController } from './editor/controllers/ObjectSelectController'
 import { MorphTarget } from './MorphTarget'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
+import { NodeTree } from './NodeTree'
 
 export async function loadMesh(parent: XForm, filename: string) {
     const r = await fetch(filename)
@@ -336,10 +337,12 @@ async function loadBlendshapes(root: Root, context: Context) {
     })
 }
 
-export async function main() {
+// MainScreen provides the canvas needed by Context (formerly CanvasContext)
 
+export async function main() {
+    const nodeTree = new NodeTree()
     const editorModel = new EditorModel()
-    replaceChildren(document.body, <MainScreen model={editorModel} />)
+    replaceChildren(document.body, <MainScreen model={editorModel} nodeTree={nodeTree}/>)
 
     const canvas = document.querySelector<HTMLCanvasElement>('canvas')
     if (canvas === null) {
@@ -348,9 +351,9 @@ export async function main() {
 
     const device = new Device()
     await device.init()
-    const context = new Context(device, canvas, editorModel)
-
-    const root = new Root(context)
+    
+    const context = new Context(device, canvas, editorModel, nodeTree)
+    const root = context.nodeTree.root = new Root(context)
 
     editorModel.transform.signal.add(context.invalidate)
     editorModel.selectionMode.signal.add(context.invalidate)
@@ -361,6 +364,8 @@ export async function main() {
 
     // await loadDemoScene(root, context)
     await loadBlendshapes(root, context)
+
+    context.nodeTree.signal.emit()
 
     const matWire = new Material(context, [0, 0, 0, 1])
     const matObjectSelected = new Material(context, [0.929, 0.341, 0, 1])

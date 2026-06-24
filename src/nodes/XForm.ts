@@ -3,6 +3,7 @@ import { IndyNode } from "./IndyNode"
 
 export class XForm extends IndyNode {
     transform?: mat4
+    objectName?: string
 
     override get origin(): vec3 | undefined {
         const origin = vec3.create()

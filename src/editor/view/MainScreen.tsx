@@ -8,8 +8,15 @@ import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, Ic
 import { TransformOrientation } from "../app/TransformOrientation"
 import { Slider } from "toad.js/viewkit/Slider"
 import { Outliner } from "./Outliner"
+import type { HTMLElementProps } from "toad.jsx/jsx-runtime"
+import type { NodeTree } from "src/NodeTree"
 
-export function MainScreen(props: { model: EditorModel }) {
+interface MainScreenProps extends HTMLElementProps {
+    model: EditorModel
+    nodeTree: NodeTree
+}
+
+export function MainScreen(props: MainScreenProps) {
     let menubar!: HTMLElement, toolbar!: HTMLElement,
         overlay!: HTMLElement, svg!: SVGElement, canvas!: HTMLElement,
         outliner!: HTMLElement, panel!: HTMLElement,
@@ -63,7 +70,7 @@ export function MainScreen(props: { model: EditorModel }) {
         <canvas ref={canvas} class="canvas" tabIndex={0}></canvas>
         <svg ref={svg} class="overlay" id="svg-overlay" />
         <div ref={overlay} class="overlay" id="overlay" />
-        <Outliner ref={outliner} model={props.model} />
+        <Outliner ref={outliner} model={props.nodeTree} />
         <div ref={panel} class="panel">
             Transform<br />
             Location:<br />

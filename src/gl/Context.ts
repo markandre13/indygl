@@ -12,6 +12,7 @@ import type { Controller } from 'src/editor/controllers/Controller'
 import { EditorModel } from 'src/editor/app/EditorModel'
 import { Selection } from './Selection'
 import type { Point } from './types/Point'
+import { NodeTree } from 'src/NodeTree'
 
 export enum Projection {
     ORTHOGONAL,
@@ -26,6 +27,7 @@ export class Context {
 
     editorModel: EditorModel
     readonly selection: Selection
+    nodeTree: NodeTree
 
     bindGroupLayout: BindGroupLayoutCollection
     shader: ShaderCollection
@@ -36,46 +38,13 @@ export class Context {
 
     // renderPassDescriptor: GPURenderPassDescriptor
 
-    private _controllerStack: Controller[] = []
-
-    pushController(controller: Controller) {
-        const currentController = this._controllerStack[this._controllerStack.length - 1]
-        currentController?.hideInfo()
-        this._controllerStack.push(controller)
-        this.invalidate()
-        const status = document.getElementById("status")
-        if (status) {
-            const info = controller.keyboardInfo()
-            if (info) {
-                replaceChildren(status, info)
-            }
-        }
-    }
-    popController() {
-        const previousController = this._controllerStack.pop()
-        if (previousController) {
-            previousController.setInfo(undefined)
-            previousController.destructor()
-        }
-
-        const currentController = this._controllerStack[this._controllerStack.length - 1]
-        currentController.showInfo()
-        const status = document.getElementById("status")
-        if (status) {
-            const info = currentController.keyboardInfo()
-            if (info) {
-                replaceChildren(status, info)
-            }
-        }
-        this.invalidate()
-    }
-
-    constructor(device: Device, canvas: HTMLCanvasElement, editorModel: EditorModel) {
+    constructor(device: Device, canvas: HTMLCanvasElement, editorModel: EditorModel, nodeTree: NodeTree) {
         this.device = device
         this.canvas = canvas
 
         this.editorModel = editorModel
         this.selection = new Selection(this.editorModel)
+        this.nodeTree = nodeTree
 
         this.bindGroupLayout = new BindGroupLayoutCollection(device)
 
@@ -174,6 +143,43 @@ export class Context {
         return this.context!
             .getCurrentTexture() // get canvas as texture
             .createView() // map it into WebGPU
+    }
+
+    //
+    // controller stack
+    //
+    private _controllerStack: Controller[] = []
+
+    pushController(controller: Controller) {
+        const currentController = this._controllerStack[this._controllerStack.length - 1]
+        currentController?.hideInfo()
+        this._controllerStack.push(controller)
+        this.invalidate()
+        const status = document.getElementById("status")
+        if (status) {
+            const info = controller.keyboardInfo()
+            if (info) {
+                replaceChildren(status, info)
+            }
+        }
+    }
+    popController() {
+        const previousController = this._controllerStack.pop()
+        if (previousController) {
+            previousController.setInfo(undefined)
+            previousController.destructor()
+        }
+
+        const currentController = this._controllerStack[this._controllerStack.length - 1]
+        currentController.showInfo()
+        const status = document.getElementById("status")
+        if (status) {
+            const info = currentController.keyboardInfo()
+            if (info) {
+                replaceChildren(status, info)
+            }
+        }
+        this.invalidate()
     }
 
     //
