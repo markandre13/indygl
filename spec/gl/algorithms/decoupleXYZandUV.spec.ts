@@ -93,7 +93,7 @@ describe("decoupleXYZandUV()", function () {
         // expect(result.xyz).to.deep.equal(xyz)
         // expect(result.uv).to.deep.equal(uv)
     })
-    fit("regression", async () => {
+    it("regression", async () => {
         const filename = "obj/dodecahedron.obj"
         const r = await fetch(filename)
         if (!r.ok) {

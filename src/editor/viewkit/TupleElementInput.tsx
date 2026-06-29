@@ -73,6 +73,7 @@ export function TupleElementInput(props: TupleElementInputProps) {
                 e.preventDefault()
                 if (!moved) {
                     input.focus()
+                    input.select()
                 }
             }}
             onpointermove={(e: PointerEvent) => {

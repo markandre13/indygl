@@ -6,27 +6,29 @@ import { XForm } from "src/nodes/XForm"
 import { NodeTree } from "src/NodeTree"
 import { replaceChildren } from "toad.jsx/jsx-runtime"
 import { describe, expect, it } from "vitest"
-import { page } from "vitest/browser"
-import { fit } from "../../spec"
+import { BrowserUser } from "../../browseruser/BrowserUser"
 
+// TODO
+// [ ] open/close subtree by click on chevron
+// [ ] select object instead of mesh, mesh also selects object
+
+// LATER
+// * SHIFT is used to select a range
+// * keyboard up/down
+// * keyboard left/right to open/close
+
+// https://docs.blender.org/manual/en/2.81/editors/outliner.html
+// https://docs.blender.org/manual/en/latest/editors/outliner/introduction.html
 describe("Outliner", () => {
-    const outliner = new OutlinerWebDriver()
+    const user = new OutlinerUser()
 
-    describe("HUMAN generated tests", () => {
-        fit("renders all items of the node tree, indented by depth", async () => {
-            const { selection, nodeTree } = setupScene()
-            const xform0 = new XForm(nodeTree.root)
-            xform0.objectName = "xform0"
-            const xform1 = new XForm(xform0)
-            xform1.objectName = "xform1"
-            const xform2 = new XForm(nodeTree.root)
-            xform2.objectName = "xform2"
-            const xform3 = new XForm(xform2)
-            xform3.objectName = "xform3"
+    describe("look", () => {
+        it("renders all items of the node tree, indented by depth", async () => {
+            const { selection, nodeTree } = setupScene1()
 
             replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
 
-            await outliner.expectToHaveItemsInOrder([
+            user.expectToHaveItemsInOrder([
                 [0, "Crate"],
                 [1, "xform0"],
                 [2, "xform1"],
@@ -35,122 +37,70 @@ describe("Outliner", () => {
             ])
         })
 
-        // marks selected and active items in selection
-        // changes selection on click
-        // * while it's SHIFT in the 3D view to add to the selection,
-        //   it is CTRL in the outliner
-        // * selecting a Mesh (data in blender terminology), selects the next XForm parent (object in blender terminology)
+        it("selection's active and selected nodes are shown in outliner", async () => {
+            const { selection, nodeTree } = setupScene1()
 
-        // LATER
-        // * SHIFT is used to select a range
-        // * keyboard up/down
-        // * keyboard left/right to open/close
+            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+
+            selection.add(nodeTree.root.children[0].children[0])
+            user.expectItemIsNotActiveOrSelected("Crate")
+            user.expectItemIsNotActiveOrSelected("xform0")
+            user.expectItemIsActive("xform1")
+            user.expectItemIsNotActiveOrSelected("xform2")
+            user.expectItemIsNotActiveOrSelected("xform3")
+
+            selection.add(nodeTree.root.children[1].children[0])
+            user.expectItemIsNotActiveOrSelected("Crate")
+            user.expectItemIsNotActiveOrSelected("xform0")
+            user.expectItemIsSelected("xform1")
+            user.expectItemIsNotActiveOrSelected("xform2")
+            user.expectItemIsActive("xform3")
+        })
     })
-
-    describe("LLM generated tests", () => {
-
-        it("renders the scene root as 'Crate'", async () => {
-            const { selection, nodeTree } = setupScene()
-            new XForm(nodeTree.root)
+    describe("behaviour", () => {
+        it("LMB sets item as selected while removing others from selection", async () => {
+            const { selection, nodeTree, xform1 } = setupScene1()
             replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
-            await outliner.expectItem("Crate")
+
+            user.moveToItem("xform1")
+            user.click()
+
+            expect(selection.active).to.equal(xform1)
+            expect(selection.selected).to.contain(xform1)
         })
-
-        it("displays XForm nodes with their constructor name when unnamed", async () => {
-            const { selection, nodeTree } = setupScene()
-            new XForm(nodeTree.root)
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
-            await outliner.expectItem("XForm")
-        })
-
-        it("shows an XForm's objectName when set", async () => {
-            const { selection, nodeTree } = setupScene()
-            const xform = new XForm(nodeTree.root)
-            xform.objectName = "Cube"
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
-            await outliner.expectItem("Cube")
-        })
-
-        it("renders nested parent-child-grandchild hierarchy", async () => {
-            const { selection, nodeTree } = setupScene()
-            const parent = new XForm(nodeTree.root)
-            parent.objectName = "Parent"
-            const child = new XForm(parent)
-            child.objectName = "Child"
-            const grandchild = new XForm(child)
-            grandchild.objectName = "Grandchild"
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
-            await outliner.expectItem("Grandchild")
-            await outliner.expectItemCount(4)
-        })
-
-        it("shows a chevron next to nodes that have children", async () => {
-            const { selection, nodeTree } = setupScene()
-            const parent = new XForm(nodeTree.root)
-            parent.objectName = "Parent"
-            new XForm(parent)
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
-            await outliner.expectItemHasChevron("Parent")
-        })
-
-        it("does not show a chevron for leaf nodes", async () => {
-            const { selection, nodeTree } = setupScene()
-            const leaf = new XForm(nodeTree.root)
-            leaf.objectName = "Leaf"
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
-            await outliner.expectItemHasNoChevron("Leaf")
-        })
-
-        it("selects a node when clicked, marking it active", async () => {
-            const { selection, nodeTree } = setupScene()
-            const xform = new XForm(nodeTree.root)
-            xform.objectName = "Cube"
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
-            await outliner.clickItem("Cube")
-            await outliner.expectItemIsActive("Cube")
-        })
-
-        it("moves the active highlight when clicking a different node", async () => {
-            const { selection, nodeTree } = setupScene()
-            const a = new XForm(nodeTree.root)
-            a.objectName = "A"
-            const b = new XForm(nodeTree.root)
-            b.objectName = "B"
-
+        it("Ctrl+LMB adds item to selection", async () => {
+            const { selection, nodeTree, xform1, xform3 } = setupScene1()
             replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
 
-            await outliner.clickItem("A")
-            await outliner.clickItem("B")
-            await outliner.expectItemIsActive("B")
-            await outliner.expectItemIsNotActive("A")
+            user.moveToItem("xform1")
+            user.click()
+            user.moveToItem("xform3")
+            user.ctrlClick()
+
+            expect(selection.active).to.equal(xform3)
+            expect(selection.selected).to.contain(xform1)
+            expect(selection.selected).to.contain(xform3)
         })
     })
 })
 
-interface OutlinerDSL {
-    clickItem(name: string): Promise<void>
-    expectItem(name: string): Promise<void>
-    expectItemCount(count: number): Promise<void>
-    expectItemHasChevron(name: string): Promise<void>
-    expectItemHasNoChevron(name: string): Promise<void>
-    expectItemIsActive(name: string): Promise<void>
-    expectItemIsNotActive(name: string): Promise<void>
-}
-
-class OutlinerWebDriver implements OutlinerDSL {
-    private findItem(name: string) {
-        const items = document.querySelectorAll<HTMLElement>(".outliner .item")
+class OutlinerUser extends BrowserUser {
+    findItem(name: string) {
+        const items = document.querySelectorAll<HTMLElement>(".item")
         return Array.from(items).find(el => el.textContent?.trim().includes(name)) ?? null
     }
 
-    async clickItem(name: string) {
-        const el = this.findItem(name)
-        await page.elementLocator(el!).click()
+    moveToItem(name: string) {
+        const item = this.findItem(name)
+        if (item === null) {
+            throw Error("item not found")
+        }
+        this.move(item!)
     }
 
-    async expectItem(name: string) {
-        await expect.poll(() => this.findItem(name)).toBeTruthy()
-    }
+    //
+    // verify look
+    //
 
     expectToHaveItemsInOrder(indentAndName: [number, string][]) {
         const items = document.querySelectorAll<HTMLElement>(".item")
@@ -163,28 +113,24 @@ class OutlinerWebDriver implements OutlinerDSL {
         }
     }
 
-    async expectItemCount(count: number) {
-        await expect.poll(() => document.querySelectorAll(".outliner .item").length).toBe(count)
+    expectItemIsActive(name: string) {
+        const el = this.findItem(name)
+        expect(el!.classList.contains("active")).toBe(true)
     }
 
-    async expectItemHasChevron(name: string) {
+    expectItemIsNotActive(name: string) {
         const el = this.findItem(name)
-        await expect.poll(() => el!.querySelector('svg path[d="M 5 3 l 5 5 l -5 5"]')).toBeTruthy()
+        expect(el!.classList.contains("active")).toBe(false)
     }
 
-    async expectItemHasNoChevron(name: string) {
+    expectItemIsSelected(name: string) {
         const el = this.findItem(name)
-        expect(el!.querySelector('svg path[d="M 5 3 l 5 5 l -5 5"]')).toBeNull()
+        expect(el!.classList.contains("selected")).toBe(true)
     }
 
-    async expectItemIsActive(name: string) {
+    expectItemIsNotActiveOrSelected(name: string) {
         const el = this.findItem(name)
-        await expect.poll(() => el!.classList.contains("active")).toBe(true)
-    }
-
-    async expectItemIsNotActive(name: string) {
-        const el = this.findItem(name)
-        await expect.poll(() => el!.classList.contains("active")).toBe(false)
+        expect(el!.classList.contains("active") || el!.classList.contains("selected")).toBe(false)
     }
 }
 
@@ -195,4 +141,27 @@ function setupScene() {
     const context = { selection, invalidate: () => { } } as any
     nodeTree.root = new Root(context)
     return { selection, nodeTree }
+}
+
+/**
+ * provides the following node tree
+ * ```
+ * Root
+ *   xform0
+ *     xform1
+ *   xform2
+ *     xform3
+ * ```
+ */
+function setupScene1() {
+    const { selection, nodeTree } = setupScene()
+    const xform0 = new XForm(nodeTree.root)
+    xform0.objectName = "xform0"
+    const xform1 = new XForm(xform0)
+    xform1.objectName = "xform1"
+    const xform2 = new XForm(nodeTree.root)
+    xform2.objectName = "xform2"
+    const xform3 = new XForm(xform2)
+    xform3.objectName = "xform3"
+    return { selection, nodeTree, xform0, xform1, xform2, xform3 }
 }

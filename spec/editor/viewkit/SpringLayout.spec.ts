@@ -261,7 +261,7 @@ describe("SpringLayout", () => {
                 "height": "60px",
             })
         })
-        fit("attach to parent and two children", () => {
+        it("attach to parent and two children", () => {
             const parent = makeElement(null, 10, 20, 1920, 1080)
             const child0 = makeElement(parent, 31, 41, 51, 11)
             const child1 = makeElement(parent, 32, 43, 52, 12)

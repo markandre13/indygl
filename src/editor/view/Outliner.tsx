@@ -5,7 +5,7 @@ import { Material } from "src/nodes/Material"
 import { Mesh } from "src/nodes/Mesh"
 import { Root } from "src/nodes/Root"
 import { XForm } from "src/nodes/XForm"
-import { jsx, replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
+import { replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
 
 export interface OutlinerProps extends HTMLElementProps {
     model: NodeTree
@@ -87,11 +87,30 @@ function node2html(node: IndyNode | undefined, map: Map<IndyNode, HTMLElement>, 
         result = <div ref={item} class="item" style={{ "padding-left": `${depth * 20 + 12}px` }}>{icon}{name}</div>
     }
     map.set(node, item)
-    item.onclick = (ev: PointerEvent) => {
-        // const element = ev.target as HTMLElement
-        node.context.selection.clear()
-        node.context.selection.add(node)
-        node.context.invalidate()
+    // let inside = false
+    // item.onpointerleave = () => { inside = false }
+    // item.onpointerenter = () => { inside = true }
+
+    let down: EventTarget | null = null
+
+    // prevent context menu so we can use ctrl + pointer button
+    item.oncontextmenu = (ev: PointerEvent) => {
+        ev.preventDefault()
+    }
+    item.onpointerdown = (ev: PointerEvent) => {
+        ev.preventDefault()
+        down = ev.target
+    }
+    item.onpointerup = (ev: PointerEvent) => {
+        ev.preventDefault()
+        if (down === ev.target) {
+            if (!ev.ctrlKey) {
+                node.context.selection.clear()
+            }
+            node.context.selection.add(node)
+            node.context.invalidate()
+        }
+        down = null
     }
     return result
 }
