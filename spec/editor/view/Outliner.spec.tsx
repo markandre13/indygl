@@ -7,6 +7,7 @@ import { NodeTree } from "src/NodeTree"
 import { replaceChildren } from "toad.jsx/jsx-runtime"
 import { describe, expect, it } from "vitest"
 import { BrowserUser } from "../../browseruser/BrowserUser"
+import { fit } from "../../spec"
 
 // TODO
 // [ ] open/close subtree by click on chevron
@@ -56,6 +57,29 @@ describe("Outliner", () => {
             user.expectItemIsNotActiveOrSelected("xform2")
             user.expectItemIsActive("xform3")
         })
+
+        // TODO: move more code into OutlinerUser
+        // TODO: implement rxcore.ts: untrack()
+        // https://docs.solidjs.com/reference/reactive-utilities/untrack
+        // untrack executes a function without collecting dependencies from the current reactive scope.
+        it("clicking on the chevron rotates it and hides/shows the item's children", () => {
+            const { selection, nodeTree } = setupScene1()
+            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+
+            const chevron = user.findChevron("xform0")!
+            const children = user.findIndent("xform")!
+
+            user.move(chevron as any)
+            user.click()
+
+            expect(children.style.display).to.equal("none")
+            expect(chevron.style.transform).to.equal("")
+
+            user.click()
+
+            expect(children.style.display).to.equal("")
+            expect(chevron.style.transform).to.equal("rotate(90deg)")
+        })
     })
     describe("behaviour", () => {
         it("LMB sets item as selected while removing others from selection", async () => {
@@ -88,6 +112,20 @@ class OutlinerUser extends BrowserUser {
     findItem(name: string) {
         const items = document.querySelectorAll<HTMLElement>(".item")
         return Array.from(items).find(el => el.textContent?.trim().includes(name)) ?? null
+    }
+    findChevron(name: string) {
+        const item = this.findItem(name)
+        if (item === null) {
+            return null
+        }
+        return item.querySelector("svg")
+    }
+    findIndent(name: string) {
+        const item = this.findItem(name)
+        if (item === null) {
+            return null
+        }
+        return item.nextElementSibling as HTMLElement
     }
 
     moveToItem(name: string) {

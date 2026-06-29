@@ -28,14 +28,35 @@ export interface OutlinerProps extends HTMLElementProps {
 // * The rows of selected data-blocks are highlighted blue, with 
 // * the active data-block highlighted in a lighter blue.
 
-export function OutlineChevron(props?: { rotate?: number }) {
+export function OutlineChevron(props?: {
+    rotate?: number,
+    onpointerdown?: (ev: PointerEvent) => void,
+    onpointerup?: (ev: PointerEvent) => void,
+    onclick?: (ev: PointerEvent) => void,
+    ref?: unknown | ((e: unknown) => void) | undefined
+}) {
+    // TODO: need to extend toad.jsx to handle this as tag
+    const svgNS = "http://www.w3.org/2000/svg"
+    const rect = document.createElementNS(svgNS, "rect")
+    rect.setAttribute("x", "0")
+    rect.setAttribute("y", "0")
+    rect.setAttribute("width", "16")
+    rect.setAttribute("height", "16")
+    rect.style.fillOpacity = "0"
+    rect.style.strokeOpacity = "0"
+    rect.onpointerdown = props?.onpointerdown ?? null
+    rect.onpointerup = props?.onpointerup ?? null
+    rect.onclick = props?.onclick ?? null
+
     return (
-        <svg style={{
-            width: 16,
-            height: 16,
-            transform: props?.rotate ? `rotate(${props.rotate}deg)` : undefined
-        }}>
+        <svg ref={props?.ref}
+            style={{
+                width: 16,
+                height: 16,
+                transform: props?.rotate ? `rotate(${props.rotate}deg)` : undefined
+            }}>
             <path stroke="currentcolor" stroke-width={1} fill="none" d="M 5 3 l 5 5 l -5 5" />
+            {rect}
             {/* <rect x="0" y="0" width="16" height="16" stroke="currentcolor" fill="none"/> */}
         </svg>
     )
@@ -77,11 +98,27 @@ function node2html(node: IndyNode | undefined, map: Map<IndyNode, HTMLElement>, 
         }
     }
 
-    let result: JSX.Element, item!: HTMLElement
+    let result: JSX.Element, item!: HTMLElement, indent!: HTMLElement, chevron!: SVGElement
     if (children.length) {
         result = <>
-            <div ref={item} class="item" style={{ "padding-left": `${depth * 20}px` }}><OutlineChevron rotate={90} />{icon}{name}</div>
-            <div class="indent">{...children}</div>
+            <div ref={item} class="item" style={{ "padding-left": `${depth * 20}px` }}>
+                <OutlineChevron ref={chevron} rotate={90}
+                    onpointerdown={(ev) => ev.stopPropagation()}
+                    onpointerup={(ev) => ev.stopPropagation()}
+                    onclick={(ev) => {
+                        // TODO: persist state in the node
+                        if (chevron.style.transform !== "") {
+                            chevron.style.transform = ""
+                            indent.style.display = "none"
+                        } else {
+                            chevron.style.transform = "rotate(90deg)"
+                            indent.style.display = ""
+                        }
+                        ev.stopPropagation()
+                    }} />
+                {icon}{name}
+            </div>
+            <div ref={indent} class="indent">{...children}</div>
         </>
     } else {
         result = <div ref={item} class="item" style={{ "padding-left": `${depth * 20 + 12}px` }}>{icon}{name}</div>
