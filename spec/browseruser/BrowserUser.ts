@@ -6,18 +6,37 @@ import { BrowserEvent } from "./BrowserEvents"
 export class BrowserUser {
     private browser = new BrowserEvent();
 
-    // todo: enter, leave, over, ...
     /**
      * move pointer to the center of the given element
+     * 
+     * generates leave, enter and move events
      */
     move(element: HTMLElement) {
         const r = element.getBoundingClientRect()
+        const x = r.left + r.width / 2
+        const y = r.top + r.height / 2
+        const target = document.elementFromPoint(x, y)
+        if (this.browser.target !== target) {
+            if (this.browser.target) {
+                this.browser.pointerLeave(x, y, target)
+            }
+            this.browser.pointerEnter(x, y, this.browser.target)
+        }
         this.browser.pointerMove(r.left + r.width / 2, r.top + r.height / 2)
     }
 
-    // todo: focus, blur, mouse*
+    /**
+     * left mouse button down and up
+     * 
+     * generates down, blur, focus, up and click events
+     */
     click() {
         this.browser.pointerDown(0)
+        if (this.browser.target instanceof HTMLElement) {
+            if (this.browser.target.tabIndex !== -1) {
+                this.browser.target.focus() // check: does this generate a focus event???
+            }
+        }
         this.browser.pointerUp()
         this.browser.click()
     }

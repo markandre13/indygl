@@ -29,8 +29,17 @@ export interface Point {
     y: number
 }
 
+// User / Browser: API to restrict EventGenerator to 
+// EventGenerator: API to reduce dispatchEvent() to browser like events
+
+// BrowserUser  : user interactions with browser
+// BrowserEvents: create browser like events via dispatchEvent()
+
 /**
- * dispatch single events similar to those caused by user interaction
+ * class to emulate a user interacting with the browser
+ *
+ * * methods are designed to resemble user perspective
+ * * keeps track of state between events, e.g. shift key, pointer position, ...
  */
 export class BrowserEvent {
     /**
@@ -46,7 +55,7 @@ export class BrowserEvent {
     /**
      * current element at pointer position
      */
-    private target: EventTarget | null = null
+    target: EventTarget | null = null
 
     // toggled by keyup and down
     protected shift = false
@@ -85,10 +94,6 @@ export class BrowserEvent {
         }
         this.dispatchPointerEvent("pointerup", { button: this.button, detail })
         this.button = null
-        // successive events to be done in wrapper class:
-        // if (this.downIn === this.target) {
-        //     this.dispatchPointerEvent("click")
-        // }
     }
 
     // when a button is already pressed and another button is pressed, this won't create another
@@ -107,21 +112,25 @@ export class BrowserEvent {
     }
     // enter comes before move, hence the coordinates
     // buttons may have changed state while outside the window
-    pointerEnter(x: number, y: number, buttons?: number) {
+    // relatedTarget is the window we are leaving
+    pointerEnter(x: number, y: number, relatedTarget: EventTarget | null, buttons?: number) {
         this.pos.x = x
         this.pos.y = y
         if (buttons !== undefined) {
             this.buttons = buttons
         }
         this.dispatchPointerEvent("pointerenter", {
+            relatedTarget,
             bubbles: false, cancelable: false, composed: false
         })
     }
     // leave comes after pointer has left the window, so there's no move to provide the coordinates
-    pointerLeave(x: number, y: number) {
+    // relatedTarget is the window we are entering
+    pointerLeave(x: number, y: number, relatedTarget: EventTarget | null) {
         this.pos.x = x
         this.pos.y = y
         this.dispatchPointerEvent("pointerleave", {
+            relatedTarget,
             pressure: this.buttons ? 0.5 : 0,
             bubbles: false, cancelable: false, composed: false
         })
@@ -177,10 +186,10 @@ export class BrowserEvent {
     keyUp(code: KeyCode, opt?: KeyOptions): void { this.keyUpOrDown("keyup", code, opt) }
     keyDown(code: KeyCode, opt?: KeyOptions): void { this.keyUpOrDown("keydown", code, opt) }
 
-    focus() {
+    focus(relatedTarget: EventTarget | null) {
         if (!this.target) { throw Error("NO TARGET ") }
         this.target.dispatchEvent(new FocusEvent("focus", {
-            relatedTarget: null,
+            relatedTarget,
 
             view: window,
             bubbles: false,
@@ -188,10 +197,10 @@ export class BrowserEvent {
             composed: true
         }))
     }
-    blur() {
+    blur(relatedTarget: EventTarget | null) {
         if (!this.target) { throw Error("NO TARGET ") }
         this.target.dispatchEvent(new FocusEvent("blur", {
-            relatedTarget: null,
+            relatedTarget,
 
             view: window,
             bubbles: false,
@@ -275,6 +284,8 @@ export class BrowserEvent {
         pressure?: number,
         detail?: number,
 
+        relatedTarget?: EventTarget | null,
+
         // motion
         movementX?: number
         movementY?: number
@@ -332,7 +343,7 @@ export class BrowserEvent {
             button: opt?.button ?? -1,
             buttons: this.buttons,
 
-            // relatedTarget: null,
+            relatedTarget: opt?.relatedTarget ?? null,
             movementX: opt?.movementX ?? 0,
             movementY: opt?.movementY ?? 0,
             view: window,
@@ -348,7 +359,7 @@ export class BrowserEvent {
 }
 
 
-function getActiveElement(): Element | null {
+export function getActiveElement(): Element | null {
     let active = document.activeElement
     while (active?.shadowRoot?.activeElement) {
         active = active.shadowRoot.activeElement
