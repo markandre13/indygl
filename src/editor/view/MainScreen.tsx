@@ -28,7 +28,7 @@ export function MainScreen(props: MainScreenProps) {
     const transformOrientation = props.model.transformOrientation
     const transform = props.model.transform
 
-    const root = <div style={{ width: "100vw", height: "100vh" }}>
+    const root = <div class="main">
         <div ref={menubar} class="menubar">
             <div>File</div>
             <div>Edit</div>
@@ -72,23 +72,39 @@ export function MainScreen(props: MainScreenProps) {
         <canvas ref={canvas} class="canvas" tabIndex={0}></canvas>
         <svg ref={svg} class="overlay" id="svg-overlay" />
         <div ref={overlay} class="overlay" id="overlay" />
-        <Outliner ref={outliner} model={props.nodeTree} selection={props.selection}/>
+        <Outliner ref={outliner} model={props.nodeTree} selection={props.selection} />
+
         <div ref={panel} class="panel">
-            Transform<br />
-            Location:<br />
-            <TripleInput model={transform.translation} />
-            Rotation<br />
-            <TripleInput model={transform.rotation} />
-            XZY Euler<br />
-            Scale<br />
-            <TripleInput model={transform.scale} />
-            {/* Dimensions<br />
+            <div class="panel-tabs">
+                <div>
+                    <svg width="16" height="16" style={{ color: "#bd7f4d" }}><use href="icons.svg#blender-outliner-obj-data" /></svg>
+                </div>
+                <div class="active">
+                    <svg width="16" height="16" style={{ color: "#00c090" }}><use href="icons.svg#blender-outliner-data-mesh" /></svg>
+                </div>
+                <div>
+                    <svg width="16" height="16" style={{ color: "#ab5a61" }}><use href="icons.svg#blender-material-data" /></svg>
+                </div>
+            </div>
+            <div class="panel-data">
+                <div class="panel-edit">
+                    Transform<br />
+                    Location:<br />
+                    <TripleInput model={transform.translation} />
+                    Rotation<br />
+                    <TripleInput model={transform.rotation} />
+                    XZY Euler<br />
+                    Scale<br />
+                    <TripleInput model={transform.scale} />
+                    {/* Dimensions<br />
             <TripleInput model={transform.dimensions} /> */}
 
-            {/* Morph<br />
+                    {/* Morph<br />
             <Slider model={props.model.morph} /> */}
-
+                </div>
+            </div>
         </div>
+
         <div ref={status} class="status" id="status">
             <IconMouseLeft /><span>Select</span>
             <IconMouseMiddle /><span>Rotate View</span>
@@ -108,8 +124,8 @@ export function MainScreen(props: MainScreenProps) {
         .element(canvas).top(toolbar).left().bottom(status).right(panel)
         .element(overlay).top(toolbar).left().bottom(status).right(panel)
         .element(svg).top(toolbar).left().bottom(status).right(panel)
-        .element(outliner).top(toolbar).bottom(panel).right()
-        .element(panel).right().bottom(status)
+        .element(outliner).top(toolbar).right()
+        .element(panel).right().top(outliner).bottom(status)
         .element(status).bottom().left().right()
         .build()
     return root

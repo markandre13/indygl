@@ -46,6 +46,7 @@ describe("BrowserUser", () => {
     })
 
     // pointerdown -> mousedown -> blur (relatedTarget) -> focus -> pointerup -> mouseup -> click
+    // TODO: what about disabled elements?
     it("down, blur, focus, up, click", () => {
         const { div1, div2 } = makeScene()
         const user = new BrowserUser()

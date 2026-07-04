@@ -33,8 +33,8 @@ export class BrowserUser {
     click() {
         this.browser.pointerDown(0)
         if (this.browser.target instanceof HTMLElement) {
-            if (this.browser.target.tabIndex !== -1) {
-                this.browser.target.focus() // check: does this generate a focus event???
+            if (this.browser.target.tabIndex >= 0) {
+                this.browser.target.focus()
             }
         }
         this.browser.pointerUp()

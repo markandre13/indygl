@@ -12,6 +12,25 @@ export interface OutlinerProps extends HTMLElementProps {
     selection: Selection
 }
 
+// [ ] grab with constraint to line ain't right (unstable as algorithm projects to plane, not line)
+// [ ] also show in outliner
+//   [ ] Material
+//   [ ] Vertex Groups
+// [ ] Select the XForm
+// [ ] keyboard navigation
+// [ ] space bar to select (different from blender)
+// ...
+// WAIT! I AM LOOSING TRACK OF THE BLENDSHAPE EDITOR
+// => add the show/hide buttons
+//    (that's why i started this)
+// => change Selection to use Xform instead of Mesh
+//    (just so that i have to change fewer code in the future)
+// => how are blendshapes shown in blender?
+// => come up with a design suitable for the blendshape editor
+// => implement it
+// => continue with the editor
+//   => save ()
+
 // Exclude from View Layer (checkbox shown for collections)
 // Hide in Viewport (the open/closed eye)
 //   for collections:
