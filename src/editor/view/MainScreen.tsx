@@ -2,6 +2,7 @@ import { SpringLayout } from "../viewkit/SpringLayout"
 import type { EditorModel } from "../app/EditorModel"
 import { SelectionMode } from "../app/SelectionMode"
 import { IconRadioButton } from "../viewkit/IconRadioButton"
+import { PropertyTabButton } from "../viewkit/PropertyTabButton"
 import { ViewportShading } from "../app/ViewportShading"
 import { TripleInput } from "../viewkit/TripleInput"
 import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from "../viewkit/InputIcons"
@@ -11,6 +12,7 @@ import { Outliner } from "./Outliner"
 import type { HTMLElementProps } from "toad.jsx/jsx-runtime"
 import type { NodeTree } from "src/NodeTree"
 import type { Selection } from "src/gl/Selection"
+import { PropertyTab } from "../app/PropertyTab"
 
 interface MainScreenProps extends HTMLElementProps {
     model: EditorModel
@@ -23,9 +25,14 @@ export function MainScreen(props: MainScreenProps) {
         overlay!: HTMLElement, svg!: SVGElement, canvas!: HTMLElement,
         outliner!: HTMLElement, panel!: HTMLElement,
         status!: HTMLElement
+
+    // for the controls in the toolbar
     const selectionMode = props.model.selectionMode
     const viewportShading = props.model.viewportShading
     const transformOrientation = props.model.transformOrientation
+
+    // for the controls in the property panel
+    const propertyTab = props.model.propertyTab
     const transform = props.model.transform
 
     const root = <div class="main">
@@ -76,15 +83,31 @@ export function MainScreen(props: MainScreenProps) {
 
         <div ref={panel} class="panel">
             <div class="panel-tabs">
-                <div>
-                    <svg width="16" height="16" style={{ color: "#bd7f4d" }}><use href="icons.svg#blender-outliner-obj-data" /></svg>
-                </div>
-                <div class="active">
-                    <svg width="16" height="16" style={{ color: "#00c090" }}><use href="icons.svg#blender-outliner-data-mesh" /></svg>
-                </div>
-                <div>
-                    <svg width="16" height="16" style={{ color: "#ab5a61" }}><use href="icons.svg#blender-material-data" /></svg>
-                </div>
+                <PropertyTabButton model={propertyTab} value={PropertyTab.OBJECT}
+                    title="Object&#013;Object Properties"
+                    color="#bd7f4d"
+                    svgHref="icons.svg#blender-outliner-obj-data"
+                />
+                <PropertyTabButton model={propertyTab} value={PropertyTab.DATA}
+                    title="Data&#013;Object Data Properties"
+                    color="#00c090"
+                    svgHref="icons.svg#blender-outliner-data-mesh"
+                />
+                <PropertyTabButton model={propertyTab} value={PropertyTab.VERTEX_GROUPS}
+                    title="Vertex Group&#013;Object Data Vertex Group Properties"
+                    color="#6387d2"
+                    svgHref="icons.svg#blender-group-vertex"
+                />
+                <PropertyTabButton model={propertyTab} value={PropertyTab.SHAPE_KEY}
+                    title="Shape Key&#013;Object Data Shape Key Properties"
+                    color="#6387d2"
+                    svgHref="icons.svg#blender-shapekey-data"
+                />
+                <PropertyTabButton model={propertyTab} value={PropertyTab.MATERIAL}
+                    title="Material&#013;Material Properties"
+                    color="#ab5a61"
+                    svgHref="icons.svg#blender-material-data"
+                />
             </div>
             <div class="panel-data">
                 <div class="panel-edit">

@@ -4,8 +4,12 @@ import { ViewportShading } from "./ViewportShading"
 import { TransformModel } from "../appkit/TransformModel"
 import { TransformOrientation } from "./TransformOrientation"
 import { NumberModel } from "toad.js/appkit/NumberModel"
+import { PropertyTab } from "./PropertyTab"
 
 export class EditorModel {
+    //
+    // for the controls in the toolbar
+    //
     readonly selectionMode = new OptionModel(
         SelectionMode.POINT, [
         [SelectionMode.OBJECT, 1],
@@ -29,7 +33,22 @@ export class EditorModel {
         [TransformOrientation.LOCAL, 1],
     ], { local: "transform-orientation" })
 
+    //
+    // for the controls in the property panel
+    //
+    readonly propertyTab = new OptionModel(
+        PropertyTab.OBJECT, [
+        [PropertyTab.OBJECT, 0],
+        [PropertyTab.DATA, 1],
+        [PropertyTab.VERTEX_GROUPS, 2],
+        [PropertyTab.SHAPE_KEY, 3],
+        [PropertyTab.MATERIAL, 4],
+    ], { local: "transform-orientation" })
+
     readonly transform = new TransformModel()
 
-    readonly morph = new NumberModel(0, {min: 0, max: 1, step: 0.01})
+    //
+    // experimental stuff
+    //
+    readonly morph = new NumberModel(0, { min: 0, max: 1, step: 0.01 })
 }
