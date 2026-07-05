@@ -12,8 +12,10 @@ import { edges } from "src/gl/algorithms/edges"
 import { IndyNode } from "./IndyNode"
 import type { XForm } from "./XForm"
 import { vec3 } from "gl-matrix"
+import { WavefrontObj } from "src/gl/file/WavefrontObj"
 
 export class Mesh extends IndyNode implements MeshData {
+    filename?: string
     dataName?: string
 
     modelView: ModelUniform
@@ -32,20 +34,47 @@ export class Mesh extends IndyNode implements MeshData {
     // sharp edges
     // ...
 
-    constructor(parent: XForm, opt?: MeshData) {
+    constructor(parent: XForm, opt?: MeshData)
+    constructor(parent: XForm, filename?: string)
+    constructor(parent: XForm, optOrFilename?: MeshData | string) {
         super(parent)
 
         this.modelView = new ModelUniform(this.context)
+        if (typeof optOrFilename === "string") {
+            const filename = this.filename = optOrFilename
+            fetch(filename).then(response => {
+                response.text().then(body => {
+                    if (!response.ok) {
+                        throw Error(`failed to load '${filename}': ${response.status} ${response.statusText}: ${body}`)
+                    }
+                    const obj = new WavefrontObj(filename, body)
+                    this.init(obj)
+                    this.dirty = true
+                    this.context.invalidate()
+                }).catch(e => {
+                    console.error(e)
+                })
+            }).catch(e => {
+                console.error(e)
+            })
+        } else {
+            this.init(optOrFilename)
+        }
+    }
 
-        this.xyz = opt?.xyz
-        this.fxyz = opt?.fxyz
-        this.uv = opt?.uv
-        this.fuv = opt?.fuv
-        this.vcount = opt?.vcount
-        this.normal = opt?.normal
-        this.fnormal = opt?.fnormal
-        this.groupSubset = opt?.groupSubset
-        this.materialSubset = opt?.materialSubset
+    protected init(obj?: MeshData) {
+        if (obj === undefined) {
+            return
+        }
+        this.xyz = obj.xyz
+        this.fxyz = obj.fxyz
+        this.uv = obj.uv && obj.uv.length > 0 ? obj.uv : undefined
+        this.fuv = obj.fuv && obj.fuv.length > 0 ? obj.fuv : undefined
+        this.normal = obj.normal && obj.normal.length > 0 ? obj.normal : undefined
+        this.fnormal = obj.fnormal && obj.fnormal.length > 0 ? obj.fnormal : undefined
+        this.vcount = obj.vcount
+        this.groupSubset = obj?.groupSubset
+        this.materialSubset = obj?.materialSubset
     }
 
     protected _triangles?: MeshData

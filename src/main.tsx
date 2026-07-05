@@ -1,7 +1,6 @@
 import { mat4, quat, vec3 } from 'gl-matrix'
 import { Context } from './gl/Context'
 import { Device } from './gl/Device'
-import { WavefrontObj } from './gl/file/WavefrontObj'
 import { replaceChildren } from 'toad.jsx'
 import { EditorModel } from './editor/app/EditorModel'
 import { MainScreen } from './editor/view/MainScreen'
@@ -21,23 +20,7 @@ import { NodeTree } from './NodeTree'
 import { Selection } from './gl/Selection'
 
 export async function loadMesh(parent: XForm, filename: string) {
-    const r = await fetch(filename)
-    if (!r.ok) {
-        throw Error(`failed to load '${filename}': ${r.status} ${r.statusText}: ${await r.text()}`)
-    }
-    const obj = new WavefrontObj(filename, await r.text())
-    const mesh = new Mesh(parent, {
-        xyz: obj.xyz,
-        fxyz: obj.fxyz,
-        uv: obj.uv.length > 0 ? obj.uv : undefined,
-        fuv: obj.fuv.length > 0 ? obj.fuv : undefined,
-        normal: obj.normal.length > 0 ? obj.normal : undefined,
-        fnormal: obj.fnormal.length > 0 ? obj.fnormal : undefined,
-        vcount: obj.vcount,
-        groupSubset: obj.groupSubset,
-        materialSubset: obj.materialSubset
-    })
-    return mesh
+    return new Mesh(parent, filename)
 }
 
 function prepareNode(
@@ -90,7 +73,7 @@ function prepareNode(
         }
     }
 
-    if (node instanceof Mesh) {
+    if (node instanceof Mesh && node.xyz) {
         switch (editorModel.viewportShading.value) {
             case ViewportShading.WIREFRAME_XRAY:
                 buckets.lineNodes.push(node)
@@ -328,23 +311,23 @@ async function loadBlendshapes(root: Root, context: Context) {
     mat4.scale(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(s, s, s))
     browInnerUp.dirty = true
 
-    const morph = new MorphTarget()
-    morph.diff(neutralMesh.xyz!, browInnerUpMesh.xyz!)
+    // const morph = new MorphTarget()
+    // morph.diff(neutralMesh.xyz!, browInnerUpMesh.xyz!)
 
-    destinationBuffer = neutralMesh.points
+    // destinationBuffer = neutralMesh.points
 
-    const data = new Float32Array(neutralMesh.xyz!)
-    sourceBuffer = new VertexBuffer(context.device, data, GPUBufferUsage.COPY_SRC | GPUBufferUsage.MAP_WRITE)
+    // const data = new Float32Array(neutralMesh.xyz!)
+    // sourceBuffer = new VertexBuffer(context.device, data, GPUBufferUsage.COPY_SRC | GPUBufferUsage.MAP_WRITE)
 
-    context.editorModel.morph.signal.add(async () => {
-        // NOTE: we should also update the normals!!!
-        const v = context.editorModel.morph.value
-        data.set(neutralMesh.xyz!)
-        morph.apply(data, v)
-        await sourceBuffer!.update(data)
-        copyBuffer = true
-        context.invalidate()
-    })
+    // context.editorModel.morph.signal.add(async () => {
+    //     // NOTE: we should also update the normals!!!
+    //     const v = context.editorModel.morph.value
+    //     data.set(neutralMesh.xyz!)
+    //     morph.apply(data, v)
+    //     await sourceBuffer!.update(data)
+    //     copyBuffer = true
+    //     context.invalidate()
+    // })
 }
 
 // MainScreen provides the canvas needed by Context (formerly CanvasContext)
