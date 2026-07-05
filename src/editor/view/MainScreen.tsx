@@ -13,6 +13,7 @@ import type { HTMLElementProps } from "toad.jsx/jsx-runtime"
 import type { NodeTree } from "src/NodeTree"
 import type { Selection } from "src/gl/Selection"
 import { PropertyTab } from "../app/PropertyTab"
+import { If } from "toad.js/viewkit/If"
 
 interface MainScreenProps extends HTMLElementProps {
     model: EditorModel
@@ -110,21 +111,41 @@ export function MainScreen(props: MainScreenProps) {
                 />
             </div>
             <div class="panel-data">
-                <div class="panel-edit">
-                    Transform<br />
-                    Location:<br />
-                    <TripleInput model={transform.translation} />
-                    Rotation<br />
-                    <TripleInput model={transform.rotation} />
-                    XZY Euler<br />
-                    Scale<br />
-                    <TripleInput model={transform.scale} />
-                    {/* Dimensions<br />
-            <TripleInput model={transform.dimensions} /> */}
-
-                    {/* Morph<br />
-            <Slider model={props.model.morph} /> */}
-                </div>
+                <If model={propertyTab} isEqual={PropertyTab.OBJECT}>
+                    <div class="panel-edit">
+                        Transform<br />
+                        Location:<br />
+                        <TripleInput model={transform.translation} />
+                        Rotation<br />
+                        <TripleInput model={transform.rotation} />
+                        XZY Euler<br />
+                        Scale<br />
+                        <TripleInput model={transform.scale} />
+                        {/* Dimensions<br />
+                    <TripleInput model={transform.dimensions} /> */}
+                        {/* Morph<br />
+                    <Slider model={props.model.morph} /> */}
+                    </div>
+                </If>
+                <If model={propertyTab} isEqual={PropertyTab.SHAPE_KEY}>
+                    <div class="listbox">
+                        <div class="list">
+                            <div>Basis</div>
+                            <div class="tx-active">Key_1 0.000</div>
+                            <div>Key_2 0.000</div>
+                        </div>
+                        <div class="list-buttons">
+                            <div>+</div>
+                            <div>-</div>
+                        </div>
+                    </div>
+                    <div class="panel-edit">
+                        File
+                    </div>
+                    <div class="panel-edit">
+                        Mapping
+                    </div>
+                </If>
             </div>
         </div>
 
@@ -140,6 +161,7 @@ export function MainScreen(props: MainScreenProps) {
             <IconOption />
         </div>
     </div>
+
 
     SpringLayout.create()
         .element(menubar).top().left().right()

@@ -338,6 +338,42 @@
             padding: 8px;
         }
 
+        .listbox {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .listbox>.list {
+            flex-grow: 1;
+            background-color: #262626;
+            border-radius: 4px;
+            padding: 5px;
+        }
+        .listbox>.list>div {
+            height: 18px;
+            border-radius: 4px;
+            padding-left: 6px;
+            padding-right: 6px;
+        }
+        .listbox>.list>div.tx-active {
+            background-color: #4771b2;
+        }
+
+        .listbox>.list-buttons {
+            display: inline-flex;
+            flex-direction: column;
+            margin-left: 10px;
+        }
+
+        .listbox>.list-buttons>div {
+            background-color: #545454;
+            border-radius: 4px;
+            width: 18px;
+            height: 18px;
+            text-align: center;
+            margin-bottom: 1px;
+        }
+
 
         .X,
         .Y,
