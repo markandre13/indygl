@@ -23,6 +23,11 @@
   [ ] select points
 
 ### for makehuman.js
-
+[ ] persist node tree and transforms
+    (using the filename in Mesh)
+[ ] add BlendShape to node tree (see TODO in loadBlendshapes() for details)
+[ ] switch Selection to XForm and add utility methods to IndyNode
+    this means that i'll have to touch all grab/rotate/scale controllers
+[ ] select XForm when XForm child is selected and open appropiate property editor
 [ ] blendshape editor
   [ ] render a single blendshape
