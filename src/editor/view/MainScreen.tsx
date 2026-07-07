@@ -14,6 +14,7 @@ import type { NodeTree } from "src/NodeTree"
 import type { Selection } from "src/gl/Selection"
 import { PropertyTab } from "../app/PropertyTab"
 import { If } from "toad.js/viewkit/If"
+import { ListBox } from "./ListBox"
 
 interface MainScreenProps extends HTMLElementProps {
     model: EditorModel
@@ -128,17 +129,7 @@ export function MainScreen(props: MainScreenProps) {
                     </div>
                 </If>
                 <If model={propertyTab} isEqual={PropertyTab.SHAPE_KEY}>
-                    <div class="listbox">
-                        <div class="list">
-                            <div>Basis</div>
-                            <div class="tx-active">Key_1 0.000</div>
-                            <div>Key_2 0.000</div>
-                        </div>
-                        <div class="list-buttons">
-                            <div>+</div>
-                            <div>-</div>
-                        </div>
-                    </div>
+                    <ListBox />
                     <div class="panel-edit">
                         File
                     </div>

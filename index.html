@@ -348,15 +348,37 @@
             background-color: #262626;
             border-radius: 4px;
             padding: 5px;
+            height: 150px;
+            outline: none;
         }
+
         .listbox>.list>div {
             height: 18px;
             border-radius: 4px;
             padding-left: 6px;
             padding-right: 6px;
+            cursor: default;
+            border: 1px solid rgba(0, 0, 0, 0);
         }
+
+        .listbox>.list>div:hover {
+            background-color: #3e3e3e;
+        }
+
         .listbox>.list>div.tx-active {
             background-color: #4771b2;
+        }
+
+        .listbox>.list>div.tx-active:hover {
+            background-color: #6b8dc2;
+        }
+
+        .listbox>.list:focus>div.tx-active {
+            border-color: #6b8dc2;
+        }
+
+        .listbox>.list:focus>div.tx-active:hover {
+            border-color: #7d9dce;
         }
 
         .listbox>.list-buttons {
@@ -365,15 +387,15 @@
             margin-left: 10px;
         }
 
-        .listbox>.list-buttons>div {
+        .listbox>.list-buttons>button {
             background-color: #545454;
             border-radius: 4px;
+            border: none;
             width: 18px;
             height: 18px;
             text-align: center;
             margin-bottom: 1px;
         }
-
 
         .X,
         .Y,

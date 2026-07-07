@@ -291,6 +291,14 @@ async function loadBlendshapes(root: Root, context: Context) {
     humanMesh.material = new Material(context, bodyTexture)
     // humanMesh.material = new Material(context, [0, 0.5, 1, 1])
 
+    // TODO: the stuff below is going to move into shape key nodes
+    // e.g.
+    // new Blendshape(humanMesh, "Neutral", "obj/arkit/Neutral.obj")
+    // new Blendshape(humanMesh, "browInnerUp", "obj/arkit/browInnerUp.obj")
+    // but we would actually need an Xform and Mesh below each one to be compatible
+    // with the rest of the code to render and transform it
+    // so... keep the code below but give each one a Blendshape parent...
+
     const neutral = new XForm(root)
     neutral.objectName = "Neutral"
     const neutralMesh = await loadMesh(neutral, "obj/arkit/Neutral.obj")
@@ -298,8 +306,8 @@ async function loadBlendshapes(root: Root, context: Context) {
     neutralMesh.material = new Material(context, [1, 0.5, 0, 1])
     neutral.transform = mat4.create()
     const s = 10.257156372070312
-    mat4.translate(neutral.transform, neutral.transform, vec3.fromValues(0,7.0285,0.9557))
-    mat4.scale(neutral.transform, neutral.transform, vec3.fromValues(s,s, s))
+    mat4.translate(neutral.transform, neutral.transform, vec3.fromValues(0, 7.0285, 0.9557))
+    mat4.scale(neutral.transform, neutral.transform, vec3.fromValues(s, s, s))
     neutral.dirty = true
 
     const browInnerUp = new XForm(root)
@@ -308,6 +316,7 @@ async function loadBlendshapes(root: Root, context: Context) {
     browInnerUpMesh.dataName = "browInnerUp"
     browInnerUpMesh.material = new Material(context, [0.5, 1, 0, 1])
     browInnerUp.transform = mat4.create()
+    mat4.translate(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(0, 7.0285, 0.9557))
     mat4.scale(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(s, s, s))
     browInnerUp.dirty = true
 
@@ -336,7 +345,7 @@ export async function main() {
     const nodeTree = new NodeTree()
     const editorModel = new EditorModel()
     const selection = new Selection(editorModel)
-    replaceChildren(document.body, <MainScreen model={editorModel} selection={selection} nodeTree={nodeTree}/>)
+    replaceChildren(document.body, <MainScreen model={editorModel} selection={selection} nodeTree={nodeTree} />)
 
     const canvas = document.querySelector<HTMLCanvasElement>('canvas')
     if (canvas === null) {
@@ -345,7 +354,7 @@ export async function main() {
 
     const device = new Device()
     await device.init()
-    
+
     const context = new Context(device, canvas, editorModel, selection, nodeTree)
     const root = context.nodeTree.root = new Root(context)
 
@@ -356,8 +365,8 @@ export async function main() {
     context.pushController(new BasicMode(context))
     context.pushController(new ObjectSelectController(context, root))
 
-    await loadDemoScene(root, context)
-    // await loadBlendshapes(root, context)
+    // await loadDemoScene(root, context)
+    await loadBlendshapes(root, context)
 
     context.nodeTree.signal.emit()
 
