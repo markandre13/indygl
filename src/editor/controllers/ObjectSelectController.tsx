@@ -2,7 +2,7 @@ import { Mesh } from "src/nodes/Mesh"
 import { IndyNode } from "src/nodes/IndyNode"
 import { Controller } from "./Controller"
 import { MouseButton } from "./details/MouseButton"
-import { IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption } from "src/editor/viewkit/InputIcons"
+import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption } from "src/editor/viewkit/InputIcons"
 import { ObjectGrabController } from "./ObjectGrabController"
 import type { Context } from "src/gl/Context"
 import { Texture } from "src/gl/buffers/Texture"
@@ -26,7 +26,9 @@ export class ObjectSelectController extends Controller {
         return <>
             <IconMouseLeft /><span>Select</span>
             <IconMouseMiddle /><span>Rotate View</span>
-            <IconMouseRight /><span>Options</span>
+            <IconKey key="G" /><span>Grab</span>
+            <IconKey key="R" /><span>Rotate</span>
+            <IconKey key="S" /><span>Scale</span>
         </>
     }
 
@@ -151,17 +153,19 @@ export class ObjectSelectController extends Controller {
         //
         // add to selection
         //
-
-        // TODO: move the logic below into Selection
-        if (!ev.shiftKey) {
-            this.context.selection.clear()
-        }
         if (index >= 0) {
-            if (this.context.selection.active === allObjects[index]) {
-                this.context.selection.active = undefined
-                this.context.selection.selected.delete(allObjects[index])
+            if (this.context.selection.isActive(allObjects[index])) {
+                this.context.selection.remove(allObjects[index])
             } else {
-                this.context.selection.add(allObjects[index])
+                if (!ev.shiftKey) {
+                    this.context.selection.set(allObjects[index])
+                } else {
+                    this.context.selection.add(allObjects[index])
+                }
+            }
+        } else {
+            if (!ev.shiftKey) {
+                this.context.selection.clear()
             }
         }
         this.context.invalidate()

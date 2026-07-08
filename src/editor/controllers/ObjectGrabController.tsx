@@ -23,16 +23,20 @@ export class ObjectGrabController extends Controller {
         this.context = context
         this.root = root
 
-        const node = this.context.selection.active
-        if (node instanceof Mesh) {
-            this.initialCenter = mat4.getTranslation(vec3.create(), node.combined)
-            this.initialTransform = mat4.clone(node.combined)
+        // const node = this.context.selection.active
+        const node = this.context.selection.getActive()!.getXForm()!
+        // if (node) {
+        if (node.transform === undefined) {
+            node.transform = mat4.create()
         }
+
+        this.initialCenter = mat4.getTranslation(vec3.create(), node.combined)
+        this.initialTransform = mat4.clone(node.combined)
+        // }
         this.updateLabel()
     }
     override keyboardInfo() {
         return <>
-            <span>GRAB:</span>
             <IconMouseLeft /><span>Confirm</span>
             <IconMouseRight /><span>Cancel</span>
             <IconKey key='X' /><IconKey key='Y' /><IconKey key='Z' /><span>Axis</span>
@@ -67,8 +71,9 @@ export class ObjectGrabController extends Controller {
                     break
             }
         }
-        const node = this.context.selection.active
-        if (node instanceof Mesh) {
+        // const node = this.context.selection.active
+        const node = this.context.selection.getActive()!.getXForm()!
+        if (node) {
             this.initialCenter = mat4.getTranslation(vec3.create(), node.combined)
             this.initialTransform = mat4.clone(node.combined)
         }
@@ -81,10 +86,11 @@ export class ObjectGrabController extends Controller {
 
         // this.context.canvas.setPointerCapture(ev.pointerId)
 
-        const node = this.context.selection.active
-        if (!(node instanceof Mesh)) {
-            return
-        }
+        // const node = this.context.selection.active
+        const node = this.context.selection.getActive()!.getXForm()!
+        // if (!node) {
+        //     return
+        // }
 
         if (!this.grabbing) {
             this.grabbing = true
@@ -98,10 +104,10 @@ export class ObjectGrabController extends Controller {
             this.delta = screen
         }
 
-        const parent = (node.parent as XForm)
-        if (parent.transform === undefined) {
-            parent.transform = mat4.create()
-        }
+        // const parent = (node.parent as XForm)
+        // if (parent.transform === undefined) {
+        //     parent.transform = mat4.create()
+        // }
 
         let pn: vec3 | undefined
         const axis = this.context.axisRenderer
@@ -177,10 +183,10 @@ export class ObjectGrabController extends Controller {
             this.context.canvas
         )
 
-        setMat4Translation(parent.transform, pt)
+        setMat4Translation(node.transform!, pt)
         this.updateLabel()
 
-        parent.dirty = true
+        node.dirty = true
         this.context.selection.updateEditorModelFromActive()
         this.context.invalidate()
     }
@@ -200,8 +206,9 @@ export class ObjectGrabController extends Controller {
     private updateLabel() {
         const p0 = this.initialCenter!
 
-        const node = this.context.selection.active!
-        const parent = (node.parent as XForm)
+        // const node = this.context.selection.active!
+        // const parent = (node.parent as XForm)
+        const parent = this.context.selection.getActive()!.getXForm()!
         const p1 = mat4.getTranslation(vec3.create(), parent.transform!)
 
         vec3.sub(p1, p1, p0)
@@ -240,8 +247,9 @@ export class ObjectGrabController extends Controller {
      * quit grab
      */
     cancel() {
-        const node = this.context.selection.active!
-        const parent = (node.parent as XForm)
+        // const node = this.context.selection.active!
+        // const parent = (node.parent as XForm)
+        const parent = this.context.selection.getActive()!.getXForm()!
         setMat4Translation(parent.transform!, this.initialCenter!)
 
         parent.dirty = true

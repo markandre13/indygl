@@ -23,9 +23,10 @@ export class ObjectScaleController extends Controller {
         super()
         this.context = context
 
-        const node = this.context.selection.active as Mesh
-        const parent = node.parent as XForm
-        const objectCenter = mat4.getTranslation(vec3.create(), node.combined)
+        // const node = this.context.selection.active as Mesh
+        // const parent = node.parent as XForm
+        const parent = this.context.selection.getActive()!.getXForm()!
+        const objectCenter = mat4.getTranslation(vec3.create(), parent.combined)
         const canvas = context.canvas
         const screenCenter = world2screen(objectCenter, context.sceneUniforms.projectionMatrix, canvas)
         canvas.style.cursor = "none"
@@ -85,9 +86,10 @@ export class ObjectScaleController extends Controller {
 
         this.lineToPointer.setP1({ x: ev.offsetX, y: ev.offsetY })
 
-        const node = this.context.selection.active
-        if (!(node instanceof Mesh)) { return }
-        const parent = (node.parent as XForm)
+        // const node = this.context.selection.active
+        // if (!(node instanceof Mesh)) { return }
+        // const parent = (node.parent as XForm)
+        const parent = this.context.selection.getActive()!.getXForm()!
 
 
         let factor = this.lineToPointer.distance - this.initialDistance
@@ -146,8 +148,9 @@ export class ObjectScaleController extends Controller {
 
     private updateLabel() {
 
-        const node = this.context.selection.active!
-        const parent = (node.parent as XForm)
+        // const node = this.context.selection.active!
+        // const parent = (node.parent as XForm)
+        const parent = this.context.selection.getActive()!.getXForm()!
         const s = mat4.getScaling(vec3.create(), parent.transform!)
 
         const sx = s[0].toFixed(4)
@@ -184,8 +187,9 @@ export class ObjectScaleController extends Controller {
     }
 
     cancel() {
-        const node = this.context.selection.active!
-        const parent = (node.parent as XForm)
+        // const node = this.context.selection.active!
+        // const parent = (node.parent as XForm)
+         const parent = this.context.selection.getActive()!.getXForm()!
         if (this.initialParentTransform) {
             parent.transform = mat4.clone(this.initialParentTransform)
         } else {

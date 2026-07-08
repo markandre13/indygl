@@ -2,7 +2,7 @@ import { mat4, quat, vec3 } from 'gl-matrix'
 import type { EditorModel } from 'src/editor/app/EditorModel'
 import { bind } from 'src/editor/appkit/details/decorators/bind'
 import type { IndyNode } from 'src/nodes/IndyNode'
-import type { XForm } from 'src/nodes/XForm'
+import { XForm } from 'src/nodes/XForm'
 import { deg2rad } from './algorithms/deg2rad'
 import { rad2deg } from './algorithms/rad2deg'
 import { Signal } from 'toad.js/reactive/Signal'
@@ -30,7 +30,7 @@ function quat2euler(q: quat): { x: number, y: number, z: number } {
 export class Selection {
     signal = new Signal()
     model: EditorModel
-    active?: IndyNode
+    private active?: IndyNode
     selected = new Set<IndyNode>();
     private rotationQuat = quat.create()
     private lastEuler = { x: 0, y: 0, z: 0 }
@@ -50,7 +50,18 @@ export class Selection {
         model.transform.signal.add(this.updateActiveFromEditorModel)
     }
 
-    isActive(node: IndyNode) { return this.active === node }
+    isActive(node: IndyNode | undefined) { 
+        if (node === undefined) {
+            return false
+        }
+        if (this.active === node) {
+            return true
+        }
+        if (!(node instanceof XForm)) {
+            
+        }
+    }
+    getActive() { return this.active }
     isSelected(node: IndyNode) { return this.selected.has(node) }
 
     /**
@@ -72,8 +83,12 @@ export class Selection {
         // HOW : make 'active' private, then everybody has to operate through the selection
         //       which keeps everything updated. the way the IndyNode does not have to become
         //       a 
+        node = node.getXForm()!
+
         this.active = node
         this.selected.add(node)
+
+        console.log(`Selection.add(${node.constructor.name})`)
 
         // Initialize rotation state for the new active object so that
         // transformActive sees correct deltas if signals fire during update()
@@ -92,6 +107,20 @@ export class Selection {
         }
         this.updateEditorModelFromActive()
 
+        this.signal.emit()
+    }
+
+    set(node: IndyNode) {
+        this.active = undefined
+        this.selected.clear()
+        this.add(node)
+    }
+
+    remove(node: IndyNode) {
+        if (this.isActive(node)) {
+            this.active = undefined
+        }
+        this.selected.delete(node)
         this.signal.emit()
     }
 

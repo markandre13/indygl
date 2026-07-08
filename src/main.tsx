@@ -74,6 +74,7 @@ function prepareNode(
     }
 
     if (node instanceof Mesh && node.xyz) {
+        const xform = node.getXForm()!
         switch (editorModel.viewportShading.value) {
             case ViewportShading.WIREFRAME_XRAY:
                 buckets.lineNodes.push(node)
@@ -84,13 +85,13 @@ function prepareNode(
                 break
             default:
                 if (node.material?.texture !== undefined) {
-                    if (context.selection.selected.has(node)) {
+                    if (context.selection.selected.has(xform)) {
                         buckets.texNodesSelected.push(node)
                     } else {
                         buckets.texNodes.push(node)
                     }
                 } else {
-                    if (context.selection.selected.has(node)) {
+                    if (context.selection.selected.has(xform)) {
                         buckets.rgbNodesSelected.push(node)
                     } else {
                         buckets.rgbNodes.push(node)
@@ -114,7 +115,7 @@ function renderLines(
     pass.setPipeline(context.shader.p3_idx_line.pipeline)
     for (const node of nodes) {
         pass.setBindGroup(1, node.modelView.bindGroup)
-        if (context.selection.active === node) {
+        if (context.selection.isActive(node)) {
             pass.setBindGroup(2, materials.active.bindGroup)
         } else if (context.selection.selected.has(node)) {
             pass.setBindGroup(2, materials.selected.bindGroup)
@@ -153,7 +154,9 @@ function renderRGBFaces(
 
     for (const node of list) {
         if (outline) {
-            pass.setStencilReference(context.selection.active === node ? 1 + 4 : 2 + 4)
+            // TODO: handle isActive(node.getXForm()!) via one call
+            const xform = node.getXForm()!
+            pass.setStencilReference(context.selection.isActive(xform) ? 1 + 4 : 2 + 4)
         }
         pass.setBindGroup(1, node.modelView.bindGroup)
         if (editorModel.viewportShading.value !== ViewportShading.WIREFRAME) {
@@ -191,7 +194,9 @@ function renderTexFaces(
 
     for (const node of list) {
         if (outline) {
-            pass.setStencilReference(context.selection.active === node ? 1 + 4 : 2 + 4)
+            // TODO: handle isActive(node.getXForm()!) via one call
+            const xform = node.getXForm()!
+            pass.setStencilReference(context.selection.isActive(xform) ? 1 + 4 : 2 + 4)
         }
         pass.setBindGroup(1, node.modelView.bindGroup)
 

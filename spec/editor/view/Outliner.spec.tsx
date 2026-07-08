@@ -6,7 +6,7 @@ import { XForm } from "src/nodes/XForm"
 import { NodeTree } from "src/NodeTree"
 import { replaceChildren } from "toad.jsx/jsx-runtime"
 import { describe, expect, it } from "vitest"
-import { BrowserUser } from "../../browseruser/BrowserUser"
+import { BrowserUser } from "clickclick.js"
 import { fit } from "../../spec"
 
 // TODO
@@ -89,7 +89,7 @@ describe("Outliner", () => {
             user.moveToItem("xform1")
             user.click()
 
-            expect(selection.active).to.equal(xform1)
+            expect(selection.getActive()).to.equal(xform1)
             expect(selection.selected).to.contain(xform1)
         })
         it("Ctrl+LMB adds item to selection", async () => {
@@ -101,7 +101,7 @@ describe("Outliner", () => {
             user.moveToItem("xform3")
             user.ctrlClick()
 
-            expect(selection.active).to.equal(xform3)
+            expect(selection.getActive()).to.equal(xform3)
             expect(selection.selected).to.contain(xform1)
             expect(selection.selected).to.contain(xform3)
         })

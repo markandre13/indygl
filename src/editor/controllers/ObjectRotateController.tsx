@@ -22,9 +22,10 @@ export class ObjectRotateController extends Controller {
         super()
         this.context = context
 
-        const node = this.context.selection.active as Mesh
-        const parent = node.parent as XForm
-        const objectCenter = mat4.getTranslation(vec3.create(), node.combined)
+        // const node = this.context.selection.active as Mesh
+        // const parent = node.parent as XForm
+        const parent = this.context.selection.getActive()!.getXForm()!
+        const objectCenter = mat4.getTranslation(vec3.create(), parent.combined)
         const canvas = context.canvas
         const screenCenter = world2screen(objectCenter, context.sceneUniforms.projectionMatrix, canvas)
         canvas.style.cursor = "none"
@@ -81,9 +82,10 @@ export class ObjectRotateController extends Controller {
         ev.preventDefault()
 
         this.lineToPointer.setP1({ x: ev.offsetX, y: ev.offsetY })
-        const node = this.context.selection.active
-        if (!(node instanceof Mesh)) { return }
-        const parent = (node.parent as XForm)
+        // const node = this.context.selection.active
+        // if (!(node instanceof Mesh)) { return }
+        // const parent = (node.parent as XForm)
+        const parent = this.context.selection.getActive()!.getXForm()!
 
         let angle = this.initialAngle - this.lineToPointer.angle
 
@@ -176,8 +178,9 @@ export class ObjectRotateController extends Controller {
     }
 
     cancel() {
-        const node = this.context.selection.active!
-        const parent = node.parent as XForm
+        // const node = this.context.selection.getActive()
+        // const parent = node.parent as XForm
+        const parent = this.context.selection.getActive()!.getXForm()!
         parent.transform = this.initialTransform
         parent.dirty = true
         this.context.selection.updateEditorModelFromActive()

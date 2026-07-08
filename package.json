@@ -29,6 +29,7 @@
         "@vitest/browser-playwright": "^4.1.9",
         "@webgpu/types": "^0.1.71",
         "chai-almost": "^1.0.1",
+        "clickclick.js": "^0.0.1",
         "concurrently": "^10.0.3",
         "jsdom": "^29.1.1",
         "vite": "^8.1.3",

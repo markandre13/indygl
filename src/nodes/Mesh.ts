@@ -10,7 +10,7 @@ import type { MeshData } from "../gl/algorithms/MeshData"
 import type { MeshSubset } from "src/gl/algorithms/MeshSubset"
 import { edges } from "src/gl/algorithms/edges"
 import { IndyNode } from "./IndyNode"
-import type { XForm } from "./XForm"
+import { XForm } from "./XForm"
 import { vec3 } from "gl-matrix"
 import { WavefrontObj } from "src/gl/file/WavefrontObj"
 

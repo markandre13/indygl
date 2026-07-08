@@ -1,5 +1,6 @@
 import { mat4, vec3 } from "gl-matrix"
 import { IndyNode } from "./IndyNode"
+import { Mesh } from "./Mesh"
 
 export class XForm extends IndyNode {
     transform?: mat4
