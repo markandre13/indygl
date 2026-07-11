@@ -18,6 +18,7 @@ import { MorphTarget } from './MorphTarget'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { NodeTree } from './NodeTree'
 import { Selection } from './gl/Selection'
+import { initTheme } from './theme'
 
 export async function loadMesh(parent: XForm, filename: string) {
     return new Mesh(parent, filename)
@@ -347,6 +348,8 @@ async function loadBlendshapes(root: Root, context: Context) {
 // MainScreen provides the canvas needed by Context (formerly CanvasContext)
 
 export async function main() {
+    initTheme()
+
     const nodeTree = new NodeTree()
     const editorModel = new EditorModel()
     const selection = new Selection(editorModel)

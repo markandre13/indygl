@@ -147,26 +147,21 @@ function node2html(node: IndyNode | undefined, map: Map<IndyNode, HTMLElement>, 
     // item.onpointerleave = () => { inside = false }
     // item.onpointerenter = () => { inside = true }
 
-    let down: EventTarget | null = null
-
     // prevent context menu so we can use ctrl + pointer button
     item.oncontextmenu = (ev: PointerEvent) => {
         ev.preventDefault()
     }
     item.onpointerdown = (ev: PointerEvent) => {
         ev.preventDefault()
-        down = ev.target
     }
-    item.onpointerup = (ev: PointerEvent) => {
+    item.onclick = (ev: PointerEvent) => {
         ev.preventDefault()
-        if (down === ev.target) {
-            if (!ev.ctrlKey) {
-                node.context.selection.clear()
-            }
+        if (ev.shiftKey) { // this is Ctrl in blender
             node.context.selection.add(node)
-            node.context.invalidate()
+        } else {
+            node.context.selection.set(node)
         }
-        down = null
+        node.context.invalidate()
     }
     return result
 }
