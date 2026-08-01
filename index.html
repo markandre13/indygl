@@ -238,52 +238,6 @@
             display: none;
         }
 
-        .outliner {
-            box-sizing: border-box;
-            color: #aaa;
-            background-repeat: repeat;
-            background-size: 40px;
-            background-position-y: 8px;
-            border: #4a4a4a solid 1px;
-            border-radius: 4px;
-            width: 250px;
-            height: 200px;
-            padding: 8px;
-            overflow: auto;
-            /* margin: 4px; */
-            /* fixme: form-layout can't handle this */
-        }
-
-        .outliner .item {
-            border-radius: 4px;
-            cursor: default;
-            display: flex;
-            box-sizing: border-box;
-            padding-top: 2px;
-            height: 20px;
-            vertical-align: middle;
-        }
-
-        .outliner .item.selected {
-            color: #e96a00;
-            background-color: #1d314d;
-        }
-
-        .outliner .item.active {
-            color: #ffaf29;
-            /* background-color: #334d80; */
-            background-color: var(--tx-ui-list-background-selected);
-        }
-
-        .outliner .indent {
-            padding: 0;
-            margin: 0;
-        }
-
-        .outliner .item:hover {
-            background-color: #3e3e3e;
-        }
-
         .panel {
             box-sizing: border-box;
             display: flex;
@@ -339,14 +293,19 @@
             padding: 8px;
         }
 
+        /*
+         * L I S T B O X
+         */
+
         .listbox {
             display: flex;
+            
             flex-direction: row;
         }
 
         .listbox>.list {
             flex-grow: 1;
-            background-color: #262626;
+            background-color: var(--tx-ui-list-background);
             border-radius: 4px;
             padding: 5px;
             height: 150px;
@@ -360,27 +319,29 @@
             padding-left: 6px;
             padding-right: 6px;
             cursor: default;
+            background-color: var(--tx-ui-list-item-background);
             border: 1px solid rgba(0, 0, 0, 0);
         }
 
         .listbox>.list>div:hover {
-            background-color: #3e3e3e;
+            background-color: var(--tx-ui-list-item-background-hover);
+            /* background-color: #f00; */
         }
 
         .listbox>.list>div.tx-active {
-            background-color: #4771b2;
+            background-color: var(--tx-ui-list-item-background-active);
         }
 
         .listbox>.list>div.tx-active:hover {
-            background-color: #6b8dc2;
+            background-color: var(--tx-ui-list-item-background-active-hover);
         }
 
         .listbox>.list:focus>div.tx-active {
-            border-color: #6b8dc2;
+            border-color: var(--tx-ui-list-item-outline-active);
         }
 
         .listbox>.list:focus>div.tx-active:hover {
-            border-color: #7d9dce;
+            border-color: var(--tx-ui-list-item-outline-active-hover);
         }
 
         .listbox>.list-buttons {
@@ -397,6 +358,55 @@
             height: 18px;
             text-align: center;
             margin-bottom: 1px;
+        }
+
+        /*
+         * O U T L I N E R
+         */
+        .outliner {
+            box-sizing: border-box;
+            color: #aaa;
+            background-repeat: repeat;
+            background-size: 40px;
+            background-position-y: 8px;
+            border: #4a4a4a solid 1px;
+            border-radius: 4px;
+            width: 250px;
+            height: 200px;
+            padding: 8px;
+            overflow: auto;
+            /* margin: 4px; */
+            /* fixme: form-layout can't handle this */
+        }
+
+        .outliner .item {
+            border-radius: 4px;
+            cursor: default;
+            display: flex;
+            box-sizing: border-box;
+            padding-top: 2px;
+            height: 20px;
+            vertical-align: middle;
+        }
+
+        .outliner .item.selected {
+            color: #e96a00;
+            background-color: #1d314d;
+        }
+
+        .outliner .item.active {
+            color: #ffaf29;
+            /* background-color: #334d80; */
+            background-color: var(--tx-ui-list-background-selected);
+        }
+
+        .outliner .indent {
+            padding: 0;
+            margin: 0;
+        }
+
+        .outliner .item:hover {
+            background-color: #3e3e3e;
         }
 
         .X,

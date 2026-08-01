@@ -23,6 +23,7 @@
   [ ] select points
 
 ### for makehuman.js
+
 [ ] persist node tree and transforms
     (using the filename in Mesh)
 [ ] add BlendShape to node tree (see TODO in loadBlendshapes() for details)
@@ -31,3 +32,9 @@
 [ ] select XForm when XForm child is selected and open appropiate property editor
 [ ] blendshape editor
   [ ] render a single blendshape
+
+### next steps
+change to the outliner (as with the new xform selected it feels weird)
+ [ ] use the dark blue for both active and selected
+ [ ] use the light blue for the clicked item (state tracked inside outliner)
+     for now have only one selected item

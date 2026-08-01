@@ -1,5 +1,5 @@
 import { ValueModel } from "toad.js/appkit/ValueModel"
-import { effect, replaceChildren, type HTMLElementProps } from "toad.jsx/jsx-runtime"
+import { effect, replaceChildren } from "toad.jsx/jsx-runtime"
 
 // for now I'll ignore toad.js' ArrayTableModel and SelectionModel in the hope
 // to come up with some easier to use APIs
