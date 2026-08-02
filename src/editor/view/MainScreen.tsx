@@ -7,7 +7,6 @@ import { ViewportShading } from "../app/ViewportShading"
 import { TripleInput } from "../viewkit/TripleInput"
 import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from "../viewkit/InputIcons"
 import { TransformOrientation } from "../app/TransformOrientation"
-import { Slider } from "toad.js/viewkit/Slider"
 import { Outliner } from "./Outliner"
 import type { HTMLElementProps } from "toad.jsx/jsx-runtime"
 import type { NodeTree } from "src/NodeTree"
@@ -81,7 +80,7 @@ export function MainScreen(props: MainScreenProps) {
         <canvas ref={canvas} class="canvas" tabIndex={0}></canvas>
         <svg ref={svg} class="overlay" id="svg-overlay" />
         <div ref={overlay} class="overlay" id="overlay" />
-        <Outliner ref={outliner} model={props.nodeTree} objectSelection={props.selection} />
+        <Outliner ref={outliner} nodeTree={props.nodeTree} objectSelection={props.selection} propertyTab={propertyTab}/>
 
         <div ref={panel} class="panel">
             <div class="panel-tabs">

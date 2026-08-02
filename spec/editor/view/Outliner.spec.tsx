@@ -25,9 +25,9 @@ describe("Outliner", () => {
 
     describe("look", () => {
         it("renders all items of the node tree, indented by depth", async () => {
-            const { selection, nodeTree } = setupScene1()
+            const { selection, nodeTree, propertyTab } = setupScene1()
 
-            replaceChildren(document.body, <Outliner model={nodeTree} objectSelection={selection} />)
+            replaceChildren(document.body, <Outliner nodeTree={nodeTree} objectSelection={selection} propertyTab={propertyTab}/>)
 
             user.expectToHaveItemsInOrder([
                 [0, "Crate"],
@@ -39,9 +39,9 @@ describe("Outliner", () => {
         })
 
         it("selection's active and selected nodes are shown in outliner", async () => {
-            const { selection, nodeTree } = setupScene1()
+            const { selection, nodeTree, propertyTab } = setupScene1()
 
-            replaceChildren(document.body, <Outliner model={nodeTree} objectSelection={selection} />)
+            replaceChildren(document.body, <Outliner nodeTree={nodeTree} objectSelection={selection}  propertyTab={propertyTab}/>)
 
             selection.add(nodeTree.root.children[0].children[0])
             user.expectItemIsNotActiveOrSelected("Crate")
@@ -63,8 +63,8 @@ describe("Outliner", () => {
         // https://docs.solidjs.com/reference/reactive-utilities/untrack
         // untrack executes a function without collecting dependencies from the current reactive scope.
         it("clicking on the chevron rotates it and hides/shows the item's children", () => {
-            const { selection, nodeTree } = setupScene1()
-            replaceChildren(document.body, <Outliner model={nodeTree} objectSelection={selection} />)
+            const { selection, nodeTree, propertyTab } = setupScene1()
+            replaceChildren(document.body, <Outliner nodeTree={nodeTree} objectSelection={selection}  propertyTab={propertyTab}/>)
 
             const chevron = user.findChevron("xform0")!
             const children = user.findIndent("xform")!
@@ -83,8 +83,8 @@ describe("Outliner", () => {
     })
     describe("behaviour", () => {
         it("LMB sets item as selected while removing others from selection", async () => {
-            const { selection, nodeTree, xform1 } = setupScene1()
-            replaceChildren(document.body, <Outliner model={nodeTree} objectSelection={selection} />)
+            const { selection, nodeTree, propertyTab, xform1 } = setupScene1()
+            replaceChildren(document.body, <Outliner nodeTree={nodeTree} objectSelection={selection}  propertyTab={propertyTab}/>)
 
             user.moveToItem("xform1")
             user.click()
@@ -93,8 +93,8 @@ describe("Outliner", () => {
             expect(selection.selected).to.contain(xform1)
         })
         it("Ctrl+LMB adds item to selection", async () => {
-            const { selection, nodeTree, xform1, xform3 } = setupScene1()
-            replaceChildren(document.body, <Outliner model={nodeTree} objectSelection={selection} />)
+            const { selection, nodeTree, propertyTab, xform1, xform3 } = setupScene1()
+            replaceChildren(document.body, <Outliner nodeTree={nodeTree} objectSelection={selection}  propertyTab={propertyTab}/>)
 
             user.moveToItem("xform1")
             user.click()
@@ -178,7 +178,7 @@ function setupScene() {
     const nodeTree = new NodeTree()
     const context = { selection, invalidate: () => { } } as any
     nodeTree.root = new Root(context)
-    return { selection, nodeTree }
+    return { selection, nodeTree, propertyTab: editorModel.propertyTab }
 }
 
 /**
@@ -192,7 +192,7 @@ function setupScene() {
  * ```
  */
 function setupScene1() {
-    const { selection, nodeTree } = setupScene()
+    const { selection, nodeTree, propertyTab } = setupScene()
     const xform0 = new XForm(nodeTree.root)
     xform0.objectName = "xform0"
     const xform1 = new XForm(xform0)
@@ -201,5 +201,5 @@ function setupScene1() {
     xform2.objectName = "xform2"
     const xform3 = new XForm(xform2)
     xform3.objectName = "xform3"
-    return { selection, nodeTree, xform0, xform1, xform2, xform3 }
+    return { selection, nodeTree, propertyTab, xform0, xform1, xform2, xform3 }
 }

@@ -6,7 +6,9 @@ import { Mesh } from "src/nodes/Mesh"
 import { Root } from "src/nodes/Root"
 import { XForm } from "src/nodes/XForm"
 import { Model } from "toad.js/appkit/Model"
+import type { OptionModel } from "toad.js/appkit/OptionModel"
 import { replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
+import { PropertyTab } from "../app/PropertyTab"
 
 // Exclude from View Layer (checkbox shown for collections)
 // Hide in Viewport (the open/closed eye)
@@ -79,8 +81,9 @@ class ListSelection<T> extends Model {
 }
 
 export interface OutlinerProps extends HTMLElementProps {
-    model: NodeTree
+    nodeTree: NodeTree
     objectSelection: ObjectSelection
+    propertyTab: OptionModel<PropertyTab>
 }
 
 // const selection = new ValueModel<ShapeKey | null>(null)
@@ -119,21 +122,33 @@ export function OutlineChevron(props?: {
     )
 }
 
-function node2html(node: IndyNode | undefined, map: Map<IndyNode, HTMLElement>, listSelection: ListSelection<IndyNode>, depth = 0): JSX.Element | undefined {
+function node2html(
+    node: IndyNode | undefined,
+    map: Map<IndyNode, HTMLElement>,
+    listSelection: ListSelection<IndyNode>,
+    currentPropertyTab: OptionModel<PropertyTab>,
+    depth = 0
+): JSX.Element | undefined {
     if (node === undefined) { return }
     let name = node.constructor.name
     let icon: JSX.Element = <svg width="16" height="16" style={{ color: "#ab5a61" }}><use href="icons.svg#blender-material-data" /></svg>
+
+
+    let propertyTab: PropertyTab | undefined
+
     if (node instanceof Root) {
         name = "Crate"
         icon = <svg width="17" height="16"><use href="icons.svg#blender-collection" /></svg>
     }
     if (node instanceof XForm) {
+        propertyTab = PropertyTab.OBJECT
         if (node.objectName) {
             name = node.objectName
         }
         icon = <svg width="16" height="16" style={{ color: "#bd7f4d" }}><use href="icons.svg#blender-outliner-obj-data" /></svg>
     }
     if (node instanceof Mesh) {
+        propertyTab = PropertyTab.DATA
         if (node.dataName) {
             name = node.dataName
         }
@@ -149,7 +164,7 @@ function node2html(node: IndyNode | undefined, map: Map<IndyNode, HTMLElement>, 
 
     const children: JSX.Element[] = []
     for (let child of node.children) {
-        const element = node2html(child, map, listSelection, depth + 1)
+        const element = node2html(child, map, listSelection, currentPropertyTab, depth + 1)
         if (element) {
             children.push(element)
         }
@@ -203,7 +218,10 @@ function node2html(node: IndyNode | undefined, map: Map<IndyNode, HTMLElement>, 
             node.context.selection.set(node)
         }
         node.context.invalidate()
-        console.log(`set focus to ${node.constructor.name}`)
+        // console.log(`set focus to ${node.constructor.name}`)
+        if (propertyTab) {
+            currentPropertyTab.value = propertyTab
+        }
         item.focus()
     }
     return result
@@ -247,13 +265,13 @@ export function Outliner(props: OutlinerProps) {
     const updateFromModel = () => {
         // console.log(`Outliner: node tree changed`)
         node2element = new Map()
-        const children = node2html(props.model.root, node2element, listSelection)
+        const children = node2html(props.nodeTree.root, node2element, listSelection, props.propertyTab)
         // console.log(children)
         replaceChildren(outliner, children)
         updateFromSelection()
     }
 
-    props.model.signal.add(updateFromModel)
+    props.nodeTree.signal.add(updateFromModel)
     props.objectSelection.signal.add(updateFromSelection)
     listSelection.signal.add(updateFromSelection)
 

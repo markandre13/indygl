@@ -5,6 +5,7 @@ import { TransformModel } from "../appkit/TransformModel"
 import { TransformOrientation } from "./TransformOrientation"
 import { NumberModel } from "toad.js/appkit/NumberModel"
 import { PropertyTab } from "./PropertyTab"
+import { PropertyTabModel } from "./PropertyTabModel"
 
 export class EditorModel {
     //
@@ -36,14 +37,7 @@ export class EditorModel {
     //
     // for the controls in the property panel
     //
-    readonly propertyTab = new OptionModel(
-        PropertyTab.OBJECT, [
-        [PropertyTab.OBJECT, 0],
-        [PropertyTab.DATA, 1],
-        [PropertyTab.VERTEX_GROUPS, 2],
-        [PropertyTab.SHAPE_KEY, 3],
-        [PropertyTab.MATERIAL, 4],
-    ], { local: "transform-orientation" })
+    readonly propertyTab = new PropertyTabModel(PropertyTab.OBJECT, { local: "transform-orientation" })
 
     readonly transform = new TransformModel()
 
