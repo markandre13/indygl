@@ -27,7 +27,10 @@ function quat2euler(q: quat): { x: number, y: number, z: number } {
     return { x: angX, y: angY, z: angZ }
 }
 
-export class Selection {
+/**
+ * I track the currently selected object plus the last selected object aka. active object.
+ */
+export class ObjectSelection {
     signal = new Signal()
     model: EditorModel
     private active?: IndyNode
@@ -83,12 +86,12 @@ export class Selection {
         // HOW : make 'active' private, then everybody has to operate through the selection
         //       which keeps everything updated. the way the IndyNode does not have to become
         //       a 
-        node = node.getXForm()!
+        node = node.getXForm() ?? node
 
         this.active = node
         this.selected.add(node)
 
-        console.log(`Selection.add(${node.constructor.name})`)
+        // console.log(`Selection.add(${node.constructor.name})`)
 
         // Initialize rotation state for the new active object so that
         // transformActive sees correct deltas if signals fire during update()
@@ -185,8 +188,9 @@ export class Selection {
         if (!this.active) { return }
         if (this.lock) return
         this.lock = true
-        const node = this.active
-        const parent = node.parent as XForm
+        const parent = this.active.getXForm()
+        // const parent = node.parent as XForm
+        if (!parent) { return }
         if (!parent.transform) {
             parent.transform = mat4.create()
         }

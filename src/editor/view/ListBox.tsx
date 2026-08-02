@@ -64,7 +64,7 @@ export function ListBox() {
                     list.focus()
                     selection.value = it
                 }}
-                classList={{ "tx-active": it === selection.value }}
+                classList={{ "selected": it === selection.value }}
             >
                 {it.name} {it.value.toFixed(3)}
             </div>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { mat4, quat, vec3 } from "gl-matrix"
 import { EditorModel } from "src/editor/app/EditorModel"
-import { Selection } from "src/gl/Selection"
+import { ObjectSelection } from "src/gl/ObjectSelection"
 import { Root } from "src/nodes/Root"
 import { XForm } from "src/nodes/XForm"
 import { IndyNode } from "src/nodes/IndyNode"
@@ -20,7 +20,7 @@ describe("Selection", () => {
     describe("add()", () => {
         it("syncs model translation from parent transform", () => {
             const editor = new EditorModel()
-            const sel = new Selection(editor)
+            const sel = new ObjectSelection(editor)
             const { parent, active } = createObjectTree()
             parent.transform = mat4.fromTranslation(mat4.create(), [3, 5, 7])
 
@@ -33,7 +33,7 @@ describe("Selection", () => {
 
         it("syncs model rotation from parent transform", () => {
             const editor = new EditorModel()
-            const sel = new Selection(editor)
+            const sel = new ObjectSelection(editor)
             const { parent, active } = createObjectTree()
             const m = mat4.create()
             mat4.fromRotationTranslation(m, quat.fromEuler(quat.create(), 30, 45, 60), [0, 0, 0])
@@ -48,7 +48,7 @@ describe("Selection", () => {
 
         it("initializes lastEuler so transformActive is a no-op on first call", () => {
             const editor = new EditorModel()
-            const sel = new Selection(editor)
+            const sel = new ObjectSelection(editor)
             const { parent, active } = createObjectTree()
             parent.transform = mat4.create()
             sel.add(active)
@@ -64,7 +64,7 @@ describe("Selection", () => {
 
         it("does not mutate the previously active object's transform", () => {
             const editor = new EditorModel()
-            const sel = new Selection(editor)
+            const sel = new ObjectSelection(editor)
             const context = {} as any
             const root = new Root(context)
 
@@ -91,7 +91,7 @@ describe("Selection", () => {
     describe("cross-object selection", () => {
         it("switches model values between objects with different rotations", () => {
             const editor = new EditorModel()
-            const sel = new Selection(editor)
+            const sel = new ObjectSelection(editor)
             const context = {} as any
             const root = new Root(context)
 
@@ -121,7 +121,7 @@ describe("Selection", () => {
     describe("gimbal lock elimination", () => {
         it("at Y=270, X and Z rotations produce different local-axis results", () => {
             const editorX = new EditorModel()
-            const selX = new Selection(editorX)
+            const selX = new ObjectSelection(editorX)
             const { parent: parentX, active: activeX } = createObjectTree()
             parentX.transform = mat4.create()
             selX.add(activeX)
@@ -129,7 +129,7 @@ describe("Selection", () => {
             editorX.transform.rotation.y.value = 270
 
             const editorZ = new EditorModel()
-            const selZ = new Selection(editorZ)
+            const selZ = new ObjectSelection(editorZ)
             const { parent: parentZ, active: activeZ } = createObjectTree()
             parentZ.transform = mat4.create()
             selZ.add(activeZ)
@@ -141,7 +141,7 @@ describe("Selection", () => {
 
         it("accumulates sequential deltas for the same axis", () => {
             const editor = new EditorModel()
-            const sel = new Selection(editor)
+            const sel = new ObjectSelection(editor)
             const { parent, active } = createObjectTree()
             parent.transform = mat4.create()
             sel.add(active)
@@ -156,7 +156,7 @@ describe("Selection", () => {
 
         it("wraps model values through 360deg without large jumps", () => {
             const editor = new EditorModel()
-            const sel = new Selection(editor)
+            const sel = new ObjectSelection(editor)
             const { parent, active } = createObjectTree()
             parent.transform = mat4.create()
             sel.add(active)
@@ -177,7 +177,7 @@ describe("Selection", () => {
     describe("update()", () => {
         it("reads parent transform changes back into the model", () => {
             const editor = new EditorModel()
-            const sel = new Selection(editor)
+            const sel = new ObjectSelection(editor)
             const { parent, active } = createObjectTree()
             parent.transform = mat4.create()
             sel.add(active)

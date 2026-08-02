@@ -11,14 +11,14 @@ import { Slider } from "toad.js/viewkit/Slider"
 import { Outliner } from "./Outliner"
 import type { HTMLElementProps } from "toad.jsx/jsx-runtime"
 import type { NodeTree } from "src/NodeTree"
-import type { Selection } from "src/gl/Selection"
+import type { ObjectSelection } from "src/gl/ObjectSelection"
 import { PropertyTab } from "../app/PropertyTab"
 import { If } from "toad.js/viewkit/If"
 import { ListBox } from "./ListBox"
 
 interface MainScreenProps extends HTMLElementProps {
     model: EditorModel
-    selection: Selection
+    selection: ObjectSelection
     nodeTree: NodeTree
 }
 
@@ -81,7 +81,7 @@ export function MainScreen(props: MainScreenProps) {
         <canvas ref={canvas} class="canvas" tabIndex={0}></canvas>
         <svg ref={svg} class="overlay" id="svg-overlay" />
         <div ref={overlay} class="overlay" id="overlay" />
-        <Outliner ref={outliner} model={props.nodeTree} selection={props.selection} />
+        <Outliner ref={outliner} model={props.nodeTree} objectSelection={props.selection} />
 
         <div ref={panel} class="panel">
             <div class="panel-tabs">

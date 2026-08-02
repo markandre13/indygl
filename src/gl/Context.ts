@@ -10,7 +10,7 @@ import { deg2rad } from './algorithms/deg2rad'
 import { AxisRenderer } from './AxisRenderer'
 import type { Controller } from 'src/editor/controllers/Controller'
 import { EditorModel } from 'src/editor/app/EditorModel'
-import { Selection } from './Selection'
+import { ObjectSelection } from './ObjectSelection'
 import type { Point } from './types/Point'
 import { NodeTree } from 'src/NodeTree'
 
@@ -26,7 +26,7 @@ export class Context {
     presentationFormat: GPUTextureFormat
 
     editorModel: EditorModel
-    readonly selection: Selection
+    readonly selection: ObjectSelection
     nodeTree: NodeTree
 
     bindGroupLayout: BindGroupLayoutCollection
@@ -38,7 +38,7 @@ export class Context {
 
     // renderPassDescriptor: GPURenderPassDescriptor
 
-    constructor(device: Device, canvas: HTMLCanvasElement, editorModel: EditorModel, selection: Selection, nodeTree: NodeTree) {
+    constructor(device: Device, canvas: HTMLCanvasElement, editorModel: EditorModel, selection: ObjectSelection, nodeTree: NodeTree) {
         this.device = device
         this.canvas = canvas
 

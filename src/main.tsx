@@ -17,7 +17,7 @@ import { ObjectSelectController } from './editor/controllers/ObjectSelectControl
 import { MorphTarget } from './MorphTarget'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { NodeTree } from './NodeTree'
-import { Selection } from './gl/Selection'
+import { ObjectSelection } from './gl/ObjectSelection'
 import { initTheme } from './theme'
 
 export async function loadMesh(parent: XForm, filename: string) {
@@ -352,7 +352,7 @@ export async function main() {
 
     const nodeTree = new NodeTree()
     const editorModel = new EditorModel()
-    const selection = new Selection(editorModel)
+    const selection = new ObjectSelection(editorModel)
     replaceChildren(document.body, <MainScreen model={editorModel} selection={selection} nodeTree={nodeTree} />)
 
     const canvas = document.querySelector<HTMLCanvasElement>('canvas')

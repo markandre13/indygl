@@ -17,15 +17,12 @@ const theme = {
                     normal: "rgba(0,0,0,0)",
                     hover: changeSaturationLightBy(listBackgroundNormal, 0, 20),
 
-                    selected: listBackgroundSelected,
-                    selectedHover: changeSaturationLightBy(listBackgroundSelected, -10, 10),
-
-                    active: changeSaturationLightBy(listBackgroundSelected, 0, 10),
-                    activeHover: changeSaturationLightBy(listBackgroundSelected, -10, 20),
+                    selected: changeSaturationLightBy(listBackgroundSelected, 0, 10),
+                    selectedHover: changeSaturationLightBy(listBackgroundSelected, -10, 20),
                 },
                 outline: {
-                    active: changeSaturationLightBy(listBackgroundSelected, 0, 30),
-                    activeHover: changeSaturationLightBy(listBackgroundSelected, -10, 40),
+                    selected: changeSaturationLightBy(listBackgroundSelected, 0, 30),
+                    selectedHover: changeSaturationLightBy(listBackgroundSelected, -10, 40),
                 }
             }
         }
@@ -45,15 +42,29 @@ const theme = {
         //       not the active/selected objects, which are indicated by text color
         // note: hover always adds to the background
         // note: the active highlight also has an outline
-
-        selectedObjects: "#e96a00",
-        activeObject: "#ffaf29",
-
-        editedObject: "#00806266",
-        alternateRows: "#ffffff04",
         text: {
             normal: "#CCCCCC",
             selected: "#FFFFFF"
+        },
+
+
+        object: {
+            selected: "#e96a00",
+            active: "#ffaf29",
+        },
+
+        background: {
+            normal: "rgba(0,0,0,0)",
+            bar: "#f00", // "#282828",
+
+            hover: changeSaturationLightBy(listBackgroundNormal, 0, 20),
+
+            selected: changeSaturationLightBy(listBackgroundSelected, 0, 10),
+            selectedHover: changeSaturationLightBy(listBackgroundSelected, -10, 20),
+        },
+        outline: {
+            selected: changeSaturationLightBy(listBackgroundSelected, 0, 30),
+            selectedHover: changeSaturationLightBy(listBackgroundSelected, -10, 40),
         }
     }
 }

@@ -1,6 +1,6 @@
 import { EditorModel } from "src/editor/app/EditorModel"
 import { Outliner } from "src/editor/view/Outliner"
-import { Selection } from "src/gl/Selection"
+import { ObjectSelection } from "src/gl/ObjectSelection"
 import { Root } from "src/nodes/Root"
 import { XForm } from "src/nodes/XForm"
 import { NodeTree } from "src/NodeTree"
@@ -27,7 +27,7 @@ describe("Outliner", () => {
         it("renders all items of the node tree, indented by depth", async () => {
             const { selection, nodeTree } = setupScene1()
 
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+            replaceChildren(document.body, <Outliner model={nodeTree} objectSelection={selection} />)
 
             user.expectToHaveItemsInOrder([
                 [0, "Crate"],
@@ -41,7 +41,7 @@ describe("Outliner", () => {
         it("selection's active and selected nodes are shown in outliner", async () => {
             const { selection, nodeTree } = setupScene1()
 
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+            replaceChildren(document.body, <Outliner model={nodeTree} objectSelection={selection} />)
 
             selection.add(nodeTree.root.children[0].children[0])
             user.expectItemIsNotActiveOrSelected("Crate")
@@ -64,7 +64,7 @@ describe("Outliner", () => {
         // untrack executes a function without collecting dependencies from the current reactive scope.
         it("clicking on the chevron rotates it and hides/shows the item's children", () => {
             const { selection, nodeTree } = setupScene1()
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+            replaceChildren(document.body, <Outliner model={nodeTree} objectSelection={selection} />)
 
             const chevron = user.findChevron("xform0")!
             const children = user.findIndent("xform")!
@@ -84,7 +84,7 @@ describe("Outliner", () => {
     describe("behaviour", () => {
         it("LMB sets item as selected while removing others from selection", async () => {
             const { selection, nodeTree, xform1 } = setupScene1()
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+            replaceChildren(document.body, <Outliner model={nodeTree} objectSelection={selection} />)
 
             user.moveToItem("xform1")
             user.click()
@@ -94,7 +94,7 @@ describe("Outliner", () => {
         })
         it("Ctrl+LMB adds item to selection", async () => {
             const { selection, nodeTree, xform1, xform3 } = setupScene1()
-            replaceChildren(document.body, <Outliner model={nodeTree} selection={selection} />)
+            replaceChildren(document.body, <Outliner model={nodeTree} objectSelection={selection} />)
 
             user.moveToItem("xform1")
             user.click()
@@ -174,7 +174,7 @@ class OutlinerUser extends BrowserUser {
 
 function setupScene() {
     const editorModel = new EditorModel()
-    const selection = new Selection(editorModel)
+    const selection = new ObjectSelection(editorModel)
     const nodeTree = new NodeTree()
     const context = { selection, invalidate: () => { } } as any
     nodeTree.root = new Root(context)
