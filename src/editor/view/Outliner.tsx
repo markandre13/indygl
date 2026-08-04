@@ -9,6 +9,8 @@ import { Model } from "toad.js/appkit/Model"
 import type { OptionModel } from "toad.js/appkit/OptionModel"
 import { replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
 import { PropertyTab } from "../app/PropertyTab"
+import { BlendShapeGroup } from "src/nodes/BlendShapeGroup"
+import { BlendShape } from "src/nodes/BlendShape"
 
 // Exclude from View Layer (checkbox shown for collections)
 // Hide in Viewport (the open/closed eye)
@@ -136,6 +138,7 @@ function node2html(
 
     let propertyTab: PropertyTab | undefined
 
+    // TODO: move this into the nodes
     if (node instanceof Root) {
         name = "Crate"
         icon = <svg width="17" height="16"><use href="icons.svg#blender-collection" /></svg>
@@ -160,6 +163,15 @@ function node2html(
         }
         icon = <svg width="16" height="16" style={{ color: "#ab5a61" }}><use href="icons.svg#blender-material-data" /></svg>
     }
+    if (node instanceof BlendShapeGroup) {
+        propertyTab = PropertyTab.SHAPE_KEY
+        icon = <svg width="16" height="16" style={{ color: "#6387d2" }}><use href="icons.svg#blender-shapekey-data" /></svg>
+    }
+    if (node instanceof BlendShape) {
+        propertyTab = PropertyTab.SHAPE_KEY
+        icon = <svg width="16" height="16" style={{ color: "#6387d2" }}><use href="icons.svg#blender-shapekey-data" /></svg>
+    }
+
     // console.log(`${"    ".repeat(depth)}${name}`)
 
     const children: JSX.Element[] = []

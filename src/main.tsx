@@ -1,23 +1,25 @@
 import { mat4, quat, vec3 } from 'gl-matrix'
-import { Context } from './gl/Context'
-import { Device } from './gl/Device'
 import { replaceChildren } from 'toad.jsx'
 import { EditorModel } from './editor/app/EditorModel'
-import { MainScreen } from './editor/view/MainScreen'
-import { Mesh } from './nodes/Mesh'
-import { XForm } from "./nodes/XForm"
-import { Root } from "./nodes/Root"
-import { IndyNode } from "./nodes/IndyNode"
-import { Material } from "./nodes/Material"
 import { ViewportShading } from './editor/app/ViewportShading'
-import { deg2rad } from './gl/algorithms/deg2rad'
-import { Texture } from './gl/buffers/Texture'
 import { BasicMode } from './editor/controllers/BasicController'
 import { ObjectSelectController } from './editor/controllers/ObjectSelectController'
-import { MorphTarget } from './MorphTarget'
+import { MainScreen } from './editor/view/MainScreen'
+import { deg2rad } from './gl/algorithms/deg2rad'
+import { Texture } from './gl/buffers/Texture'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
-import { NodeTree } from './NodeTree'
+import { Context } from './gl/Context'
+import { Device } from './gl/Device'
 import { ObjectSelection } from './gl/ObjectSelection'
+import { MorphTarget } from './MorphTarget'
+import { BlendShape } from './nodes/BlendShape'
+import { BlendShapeGroup } from './nodes/BlendShapeGroup'
+import { IndyNode } from "./nodes/IndyNode"
+import { Material } from "./nodes/Material"
+import { Mesh } from './nodes/Mesh'
+import { Root } from "./nodes/Root"
+import { XForm } from "./nodes/XForm"
+import { NodeTree } from './NodeTree'
 import { initTheme } from './theme'
 
 export async function loadMesh(parent: XForm, filename: string) {
@@ -305,26 +307,31 @@ async function loadBlendshapes(root: Root, context: Context) {
     // with the rest of the code to render and transform it
     // so... keep the code below but give each one a Blendshape parent...
 
-    const neutral = new XForm(root)
-    neutral.objectName = "Neutral"
-    const neutralMesh = await loadMesh(neutral, "obj/arkit/Neutral.obj")
-    neutralMesh.dataName = "Neutral"
-    neutralMesh.material = new Material(context, [1, 0.5, 0, 1])
-    neutral.transform = mat4.create()
-    const s = 10.257156372070312
-    mat4.translate(neutral.transform, neutral.transform, vec3.fromValues(0, 7.0285, 0.9557))
-    mat4.scale(neutral.transform, neutral.transform, vec3.fromValues(s, s, s))
-    neutral.dirty = true
+    const blendshapes = new BlendShapeGroup(humanMesh)
+    const key0 = new BlendShape(blendshapes)
+    const key1 = new BlendShape(blendshapes)
+    const key2 = new BlendShape(blendshapes)
 
-    const browInnerUp = new XForm(root)
-    browInnerUp.objectName = "browInnerUp"
-    const browInnerUpMesh = await loadMesh(browInnerUp, "obj/arkit/browInnerUp.obj")
-    browInnerUpMesh.dataName = "browInnerUp"
-    browInnerUpMesh.material = new Material(context, [0.5, 1, 0, 1])
-    browInnerUp.transform = mat4.create()
-    mat4.translate(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(0, 7.0285, 0.9557))
-    mat4.scale(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(s, s, s))
-    browInnerUp.dirty = true
+    // const neutral = new XForm(root)
+    // neutral.objectName = "Neutral"
+    // const neutralMesh = await loadMesh(neutral, "obj/arkit/Neutral.obj")
+    // neutralMesh.dataName = "Neutral"
+    // neutralMesh.material = new Material(context, [1, 0.5, 0, 1])
+    // neutral.transform = mat4.create()
+    // const s = 10.257156372070312
+    // mat4.translate(neutral.transform, neutral.transform, vec3.fromValues(0, 7.0285, 0.9557))
+    // mat4.scale(neutral.transform, neutral.transform, vec3.fromValues(s, s, s))
+    // neutral.dirty = true
+
+    // const browInnerUp = new XForm(root)
+    // browInnerUp.objectName = "browInnerUp"
+    // const browInnerUpMesh = await loadMesh(browInnerUp, "obj/arkit/browInnerUp.obj")
+    // browInnerUpMesh.dataName = "browInnerUp"
+    // browInnerUpMesh.material = new Material(context, [0.5, 1, 0, 1])
+    // browInnerUp.transform = mat4.create()
+    // mat4.translate(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(0, 7.0285, 0.9557))
+    // mat4.scale(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(s, s, s))
+    // browInnerUp.dirty = true
 
     // const morph = new MorphTarget()
     // morph.diff(neutralMesh.xyz!, browInnerUpMesh.xyz!)
