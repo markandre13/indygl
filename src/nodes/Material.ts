@@ -1,16 +1,27 @@
+import { PropertyTab } from "src/editor/app/PropertyTab"
 import { ColorUniform } from "../gl/buffers/ColorUniform"
 import { Texture } from "../gl/buffers/Texture"
 import type { Context } from "../gl/Context"
+import { IndyNode, type NodeUiHints } from "./IndyNode"
 import type { Mesh } from "./Mesh"
 
 
-export class Material {
+export class Material extends IndyNode {
+    static override uiHints: NodeUiHints = {
+        color: "#ab5a61",
+        icon: "icons.svg#blender-material-data",
+        propertyTab: PropertyTab.MATERIAL
+    }
+    override get name(): string { return this.dataName ?? this.constructor.name }
+    override get uihints(): NodeUiHints { return Material.uiHints }
+
     bindGroup: GPUBindGroup
     dataName?: string
 
     constructor(context: Context, rgba: number[])
     constructor(context: Context, texture: Texture)
     constructor(context: Context, rgbaOrTexture: number[] | Texture) {
+        super(undefined as any) // FIXME
         const device = context.device
         if (rgbaOrTexture instanceof Texture) {
             this.texture = rgbaOrTexture

@@ -14,6 +14,10 @@ import type { ObjectSelection } from "src/gl/ObjectSelection"
 import { PropertyTab } from "../app/PropertyTab"
 import { If } from "toad.js/viewkit/If"
 import { ListBox } from "./ListBox"
+import { Mesh } from "src/nodes/Mesh"
+import { Material } from "src/nodes/Material"
+import { BlendShapeGroup } from "src/nodes/BlendShapeGroup"
+import { XForm } from "src/nodes/XForm"
 
 interface MainScreenProps extends HTMLElementProps {
     model: EditorModel
@@ -84,30 +88,30 @@ export function MainScreen(props: MainScreenProps) {
 
         <div ref={panel} class="panel">
             <div class="panel-tabs">
-                <PropertyTabButton model={propertyTab} value={PropertyTab.OBJECT}
+                <PropertyTabButton model={propertyTab} value={XForm.uiHints.propertyTab}
                     title="Object&#013;Object Properties"
-                    color="#bd7f4d"
-                    svgHref="icons.svg#blender-outliner-obj-data"
+                    color={XForm.uiHints.color}
+                    svgHref={XForm.uiHints.icon}
                 />
-                <PropertyTabButton model={propertyTab} value={PropertyTab.DATA}
+                <PropertyTabButton model={propertyTab} value={Mesh.uiHints.propertyTab}
                     title="Data&#013;Object Data Properties"
-                    color="#00c090"
-                    svgHref="icons.svg#blender-outliner-data-mesh"
+                    color={Mesh.uiHints.color}
+                    svgHref={Mesh.uiHints.icon}
                 />
                 <PropertyTabButton model={propertyTab} value={PropertyTab.VERTEX_GROUPS}
                     title="Vertex Group&#013;Object Data Vertex Group Properties"
                     color="#6387d2"
                     svgHref="icons.svg#blender-group-vertex"
                 />
-                <PropertyTabButton model={propertyTab} value={PropertyTab.SHAPE_KEY}
+                <PropertyTabButton model={propertyTab} value={BlendShapeGroup.uiHints.propertyTab}
                     title="Shape Key&#013;Object Data Shape Key Properties"
-                    color="#6387d2"
-                    svgHref="icons.svg#blender-shapekey-data"
+                    color={BlendShapeGroup.uiHints.color}
+                    svgHref={BlendShapeGroup.uiHints.icon}
                 />
-                <PropertyTabButton model={propertyTab} value={PropertyTab.MATERIAL}
+                <PropertyTabButton model={propertyTab} value={Material.uiHints.propertyTab}
                     title="Material&#013;Material Properties"
-                    color="#ab5a61"
-                    svgHref="icons.svg#blender-material-data"
+                    color={Material.uiHints.color}
+                    svgHref={Material.uiHints.icon}
                 />
             </div>
             <div class="panel-data">

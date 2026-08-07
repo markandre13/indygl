@@ -135,42 +135,11 @@ function node2html(
     let name = node.constructor.name
     let icon: JSX.Element = <svg width="16" height="16" style={{ color: "#ab5a61" }}><use href="icons.svg#blender-material-data" /></svg>
 
-
     let propertyTab: PropertyTab | undefined
 
-    // TODO: move this into the nodes
-    if (node instanceof Root) {
-        name = "Crate"
-        icon = <svg width="17" height="16"><use href="icons.svg#blender-collection" /></svg>
-    }
-    if (node instanceof XForm) {
-        propertyTab = PropertyTab.OBJECT
-        if (node.objectName) {
-            name = node.objectName
-        }
-        icon = <svg width="16" height="16" style={{ color: "#bd7f4d" }}><use href="icons.svg#blender-outliner-obj-data" /></svg>
-    }
-    if (node instanceof Mesh) {
-        propertyTab = PropertyTab.DATA
-        if (node.dataName) {
-            name = node.dataName
-        }
-        icon = <svg width="16" height="16" style={{ color: "#00c090" }}><use href="icons.svg#blender-outliner-data-mesh" /></svg>
-    }
-    if (node instanceof Material) {
-        if (node.dataName) {
-            name = node.dataName
-        }
-        icon = <svg width="16" height="16" style={{ color: "#ab5a61" }}><use href="icons.svg#blender-material-data" /></svg>
-    }
-    if (node instanceof BlendShapeGroup) {
-        propertyTab = PropertyTab.SHAPE_KEY
-        icon = <svg width="16" height="16" style={{ color: "#6387d2" }}><use href="icons.svg#blender-shapekey-data" /></svg>
-    }
-    if (node instanceof BlendShape) {
-        propertyTab = PropertyTab.SHAPE_KEY
-        icon = <svg width="16" height="16" style={{ color: "#6387d2" }}><use href="icons.svg#blender-shapekey-data" /></svg>
-    }
+    name = node.name
+    icon = <svg width="16" height="16" style={{ color: node.uihints.color }}><use href={node.uihints.icon} /></svg>
+    propertyTab = node.uihints.propertyTab
 
     // console.log(`${"    ".repeat(depth)}${name}`)
 

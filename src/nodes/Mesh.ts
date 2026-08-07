@@ -9,12 +9,21 @@ import { smoothShading } from "src/gl/algorithms/smoothShading"
 import type { MeshData } from "../gl/algorithms/MeshData"
 import type { MeshSubset } from "src/gl/algorithms/MeshSubset"
 import { edges } from "src/gl/algorithms/edges"
-import { IndyNode } from "./IndyNode"
+import { IndyNode, type NodeUiHints } from "./IndyNode"
 import { XForm } from "./XForm"
 import { vec3 } from "gl-matrix"
 import { WavefrontObj } from "src/gl/file/WavefrontObj"
+import { PropertyTab } from "src/editor/app/PropertyTab"
 
 export class Mesh extends IndyNode implements MeshData {
+    static override uiHints: NodeUiHints = {
+        color: "#00c090",
+        icon: "icons.svg#blender-outliner-data-mesh",
+        propertyTab: PropertyTab.DATA
+    }
+    override get name(): string { return this.dataName ?? this.constructor.name }
+    override get uihints(): NodeUiHints { return Mesh.uiHints }
+
     filename?: string
     dataName?: string
 
