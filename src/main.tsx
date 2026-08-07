@@ -11,7 +11,6 @@ import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { Context } from './gl/Context'
 import { Device } from './gl/Device'
 import { ObjectSelection } from './gl/ObjectSelection'
-import { MorphTarget } from './MorphTarget'
 import { BlendShape } from './nodes/BlendShape'
 import { BlendShapeGroup } from './nodes/BlendShapeGroup'
 import { IndyNode } from "./nodes/IndyNode"
@@ -44,6 +43,9 @@ function prepareNode(
     }
 
     if (node.dirty) {
+        //
+        // update node.combined
+        //
         if (node instanceof XForm && node.transform !== undefined) {
             if (node.parent === undefined) {
                 mat4.copy(node.combined, node.transform)
@@ -58,6 +60,9 @@ function prepareNode(
             }
         }
 
+        //
+        // update modelView.normalMatrix
+        //
         if (node instanceof Mesh) {
             // copy object transformation to webgpu uniform
             mat4.copy(node.modelView.modelViewMatrix, node.combined)
@@ -76,6 +81,9 @@ function prepareNode(
         }
     }
 
+    /**
+     * collect shaders
+     */
     if (node instanceof Mesh && node.xyz) {
         const xform = node.getXForm()!
         switch (editorModel.viewportShading.value) {
@@ -299,57 +307,14 @@ async function loadBlendshapes(root: Root, context: Context) {
     humanMesh.material = new Material(context, bodyTexture)
     // humanMesh.material = new Material(context, [0, 0.5, 1, 1])
 
-    // TODO: the stuff below is going to move into shape key nodes
-    // e.g.
-    // new Blendshape(humanMesh, "Neutral", "obj/arkit/Neutral.obj")
-    // new Blendshape(humanMesh, "browInnerUp", "obj/arkit/browInnerUp.obj")
-    // but we would actually need an Xform and Mesh below each one to be compatible
-    // with the rest of the code to render and transform it
-    // so... keep the code below but give each one a Blendshape parent...
+    const blendshapeGroup = new BlendShapeGroup(humanMesh)
+    const s = 10.257156372070312
+    blendshapeGroup.transform = mat4.create()
+    mat4.translate(blendshapeGroup.transform, blendshapeGroup.transform, vec3.fromValues(0, 7.0285, 0.9557))
+    mat4.scale(blendshapeGroup.transform, blendshapeGroup.transform, vec3.fromValues(s, s, s))
 
-    const blendshapes = new BlendShapeGroup(humanMesh)
-    const key0 = new BlendShape(blendshapes)
-    const key1 = new BlendShape(blendshapes)
-    const key2 = new BlendShape(blendshapes)
-
-    // const neutral = new XForm(root)
-    // neutral.objectName = "Neutral"
-    // const neutralMesh = await loadMesh(neutral, "obj/arkit/Neutral.obj")
-    // neutralMesh.dataName = "Neutral"
-    // neutralMesh.material = new Material(context, [1, 0.5, 0, 1])
-    // neutral.transform = mat4.create()
-    // const s = 10.257156372070312
-    // mat4.translate(neutral.transform, neutral.transform, vec3.fromValues(0, 7.0285, 0.9557))
-    // mat4.scale(neutral.transform, neutral.transform, vec3.fromValues(s, s, s))
-    // neutral.dirty = true
-
-    // const browInnerUp = new XForm(root)
-    // browInnerUp.objectName = "browInnerUp"
-    // const browInnerUpMesh = await loadMesh(browInnerUp, "obj/arkit/browInnerUp.obj")
-    // browInnerUpMesh.dataName = "browInnerUp"
-    // browInnerUpMesh.material = new Material(context, [0.5, 1, 0, 1])
-    // browInnerUp.transform = mat4.create()
-    // mat4.translate(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(0, 7.0285, 0.9557))
-    // mat4.scale(browInnerUp.transform, browInnerUp.transform, vec3.fromValues(s, s, s))
-    // browInnerUp.dirty = true
-
-    // const morph = new MorphTarget()
-    // morph.diff(neutralMesh.xyz!, browInnerUpMesh.xyz!)
-
-    // destinationBuffer = neutralMesh.points
-
-    // const data = new Float32Array(neutralMesh.xyz!)
-    // sourceBuffer = new VertexBuffer(context.device, data, GPUBufferUsage.COPY_SRC | GPUBufferUsage.MAP_WRITE)
-
-    // context.editorModel.morph.signal.add(async () => {
-    //     // NOTE: we should also update the normals!!!
-    //     const v = context.editorModel.morph.value
-    //     data.set(neutralMesh.xyz!)
-    //     morph.apply(data, v)
-    //     await sourceBuffer!.update(data)
-    //     copyBuffer = true
-    //     context.invalidate()
-    // })
+    const key0 = new BlendShape(blendshapeGroup, "Neutral", "obj/arkit/Neutral.obj")
+    const key1 = new BlendShape(blendshapeGroup, "browInnerUp", "obj/arkit/browInnerUp.obj")
 }
 
 // MainScreen provides the canvas needed by Context (formerly CanvasContext)

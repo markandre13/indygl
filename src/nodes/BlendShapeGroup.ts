@@ -1,5 +1,6 @@
 import { PropertyTab } from 'src/editor/app/PropertyTab'
 import { IndyNode, type NodeUiHints } from './IndyNode'
+import type { mat4 } from 'gl-matrix'
 
 export class BlendShapeGroup extends IndyNode {
     static override uiHints: NodeUiHints = {
@@ -9,4 +10,6 @@ export class BlendShapeGroup extends IndyNode {
     }
     override get name(): string { return this.constructor.name }
     override get uihints(): NodeUiHints { return BlendShapeGroup.uiHints }
+
+    transform?: mat4
 }
