@@ -14,6 +14,7 @@ import { XForm } from "./XForm"
 import { vec3 } from "gl-matrix"
 import { WavefrontObj } from "src/gl/file/WavefrontObj"
 import { PropertyTab } from "src/editor/app/PropertyTab"
+import { ColorBuffer } from "src/gl/buffers/ColorBuffer"
 
 export class Mesh extends IndyNode implements MeshData {
     static override uiHints: NodeUiHints = {
@@ -36,6 +37,7 @@ export class Mesh extends IndyNode implements MeshData {
     fuv?: ArrayLike<number>
     normal?: ArrayLike<number>
     fnormal?: ArrayLike<number>
+    rgb?: ArrayLike<number>
     groupSubset?: Map<string, MeshSubset>
     materialSubset?: Map<string, MeshSubset>
     // vertex groups
@@ -94,6 +96,7 @@ export class Mesh extends IndyNode implements MeshData {
     protected _points?: PositionBuffer
     protected _normals?: VertexBuffer
     protected _texcoords?: VertexBuffer
+    protected _colors?: ColorBuffer
 
     material?: Material
 
@@ -176,6 +179,14 @@ export class Mesh extends IndyNode implements MeshData {
             this._texcoords = new VertexBuffer(this.context.device, this._single_index!.uv!)
         }
         return this._texcoords
+    }
+    get colors(): ColorBuffer {
+        if (this._colors) {
+            return this._colors
+        }
+        this.prepare()
+        this._colors = new ColorBuffer(this.context.device, this.rgb!) // FIXME: needs to be via MeshDataSingleIndex
+        return this._colors
     }
     group(name: string) {
         this.prepare()

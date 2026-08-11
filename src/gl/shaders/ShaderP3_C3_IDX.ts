@@ -2,31 +2,40 @@ import { ColorBuffer } from "../buffers/ColorBuffer"
 import type { IndexBuffer } from "../buffers/IndexBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { PositionBuffer } from "../buffers/PositionBuffer"
+import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
 import type { Context } from "../Context"
-import type { Device } from "../Device"
 import { Shader } from "./Shader"
 
 export class ShaderP3_C3_IDX extends Shader {
     pipeline: GPURenderPipeline
-    constructor(device: Device,
-        context: Context,
+    pipelineOutline: GPURenderPipeline
+
+    constructor(context: Context,
         cullMode: GPUCullMode | undefined = "back",
-        topology: GPUPrimitiveTopology | undefined = 'triangle-list',
-        depthCompare: GPUCompareFunction | undefined = 'less'
+        topology: GPUPrimitiveTopology | undefined = 'triangle-list'
     ) {
-        super(device, code)
+        const label = 'p3-c3-idx'
+        const device = context.device
+        super(device, label)
         const pipelineDef: GPURenderPipelineDescriptor = {
-            layout: 'auto',
+            label,
+            layout: device.device.createPipelineLayout({
+                label,
+                bindGroupLayouts: [
+                    context.bindGroupLayout.scene,
+                    context.bindGroupLayout.model,
+                ]
+            }),
             vertex: {
                 buffers: [{
-                    arrayStride: PositionBuffer.bytesPerVertex,
+                    arrayStride: FLOAT32_NUM_BYTES * 3,
                     attributes: [
-                        { shaderLocation: 0, ...PositionBuffer.position },
+                        { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
                     ]
                 }, {
-                    arrayStride: ColorBuffer.bytesPerVertex,
+                    arrayStride: FLOAT32_NUM_BYTES * 3,
                     attributes: [
-                        { shaderLocation: 1, ...ColorBuffer.color },
+                        { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
                     ]
                 }],
                 module: this.module
@@ -40,11 +49,28 @@ export class ShaderP3_C3_IDX extends Shader {
                 cullMode,
             },
             depthStencil: {
-                depthWriteEnabled: true,
-                depthCompare,
                 format: context.depthTextureFormat,
+
+                depthWriteEnabled: true,
+                depthBias: 1, // this make points and lines look better
+                depthBiasSlopeScale: 1,
+                depthCompare: 'less',
+
+                stencilFront: {
+                    compare: "always",
+                    passOp: "replace"
+                },
+                stencilBack: {
+                    compare: "always",
+                    passOp: "replace"
+                }
             },
         }
+        this.pipelineOutline = device.device!.createRenderPipeline(pipelineDef)
+
+        // only touch the depth flag
+        pipelineDef.depthStencil!.stencilWriteMask = 0x04
+
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
 
@@ -77,36 +103,3 @@ export class ShaderP3_C3_IDX extends Shader {
         pass.drawIndexed(indices.length)
     }
 }
-
-const code = /* wgsl */ `
-    struct SceneUniforms { 
-        uProjectionMatrix: mat4x4f,
-    };
-    struct ModelUniforms { 
-        uModelViewMatrix: mat4x4f,
-        uNormalMatrix: mat4x4f,
-    };
-    @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
-    @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
-
-    struct Vertex2Fragment {
-        @builtin(position) Position: vec4f,
-        @location(0) rgb: vec3f
-    }
-
-    @vertex
-    fn vertex_main(
-        @location(0) position: vec3f,
-        @location(1) rgb: vec3f
-    ) -> Vertex2Fragment {
-        let pos = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(position, 1);
-        return Vertex2Fragment(pos, rgb);
-    }
-
-    @fragment
-    fn fragment_main(
-        vin: Vertex2Fragment
-    ) -> @location(0) vec4f {
-        return vec4f(vin.rgb, 1);
-    }
-`

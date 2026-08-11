@@ -25,18 +25,22 @@ export async function loadMesh(parent: XForm, filename: string) {
     return new Mesh(parent, filename)
 }
 
+interface RenderBuckets {
+    rgbNodes: Mesh[]
+    texNodes: Mesh[]
+    rgbNodesSelected: Mesh[]
+    texNodesSelected: Mesh[]
+    rgbPerPtNodes: Mesh[]
+    rgbPerPtNodesSelected: Mesh[]
+    lineNodes: Mesh[]
+}
+
 function prepareNode(
     node: IndyNode,
     editorModel: EditorModel,
     context: Context,
     device: Device,
-    buckets: {
-        rgbNodes: Mesh[]
-        texNodes: Mesh[]
-        rgbNodesSelected: Mesh[]
-        texNodesSelected: Mesh[]
-        lineNodes: Mesh[]
-    }
+    buckets: RenderBuckets
 ) {
     if (node.parent && node.parent.dirty) {
         node.dirty = true
@@ -46,7 +50,7 @@ function prepareNode(
         //
         // update node.combined
         //
-        if (node instanceof XForm && node.transform !== undefined) {
+        if ((node instanceof XForm || node instanceof BlendShapeGroup || node instanceof BlendShape) && node.transform !== undefined) {
             if (node.parent === undefined) {
                 mat4.copy(node.combined, node.transform)
             } else {
@@ -84,7 +88,7 @@ function prepareNode(
     /**
      * collect shaders
      */
-    if (node instanceof Mesh && node.xyz) {
+    if (node instanceof Mesh && node.xyz && !(node.parent instanceof BlendShape)) {
         const xform = node.getXForm()!
         switch (editorModel.viewportShading.value) {
             case ViewportShading.WIREFRAME_XRAY:
@@ -109,6 +113,21 @@ function prepareNode(
                     }
                 }
         }
+    }
+    if (node instanceof BlendShape) {
+        if (node.name === "browInnerUp") {
+            const mesh = node.mesh
+            if (mesh) {
+                const xform = node.getXForm()!
+                if (context.selection.selected.has(xform)) {
+                    buckets.rgbPerPtNodesSelected.push(mesh)
+                } else {
+                    buckets.rgbPerPtNodes.push(mesh)
+                }
+            }
+        }
+        // node.dirty = false
+        // return
     }
     for (const child of node.children) {
         prepareNode(child, editorModel, context, device, buckets)
@@ -175,6 +194,53 @@ function renderRGBFaces(
         }
         pass.setVertexBuffer(0, node.points.buffer)
         pass.setVertexBuffer(1, node.normals.buffer)
+        pass.setIndexBuffer(node.indices.buffer, 'uint32')
+        if (node.groupSubset?.has("body")) {
+            const group = node.group("body")!
+            pass.drawIndexed(group.length, 1, group.start)
+        } else {
+            pass.drawIndexed(node.indices.length)
+        }
+    }
+}
+
+function renderRGBPerPtFaces(
+    outline: boolean,
+    pass: GPURenderPassEncoder,
+    nodes: Mesh[],
+    selectedNodes: Mesh[],
+    context: Context,
+    editorModel: EditorModel,
+    background: Material
+) {
+    const list = outline ? selectedNodes : nodes
+    if (list.length === 0) return
+
+    if (editorModel.viewportShading.value === ViewportShading.WIREFRAME) {
+        pass.setBindGroup(2, background.bindGroup)
+        pass.setPipeline(context.shader.p3_idx.pipeline)
+    } else {
+        if (outline) {
+            pass.setPipeline(context.shader.p3_c3_idx.pipelineOutline)
+        } else {
+            pass.setStencilReference(0)
+            pass.setPipeline(context.shader.p3_c3_idx.pipeline)
+        }
+    }
+
+    for (const node of list) {
+        if (outline) {
+            // TODO: handle isActive(node.getXForm()!) via one call
+            const xform = node.getXForm()!
+            pass.setStencilReference(context.selection.isActive(xform) ? 1 + 4 : 2 + 4)
+        }
+        pass.setBindGroup(1, node.modelView.bindGroup)
+        // pass.setBindGroup(2, node.modelView.bindGroup) // DUMMY
+        // if (editorModel.viewportShading.value !== ViewportShading.WIREFRAME) {
+        //     pass.setBindGroup(2, node.material!.bindGroup)
+        // }
+        pass.setVertexBuffer(0, node.points.buffer)
+        pass.setVertexBuffer(1, node.colors.buffer)
         pass.setIndexBuffer(node.indices.buffer, 'uint32')
         if (node.groupSubset?.has("body")) {
             const group = node.group("body")!
@@ -358,11 +424,13 @@ export async function main() {
     const materials = { wire: matWire, selected: matObjectSelected, active: matActiveObject }
 
     context.paint = () => {
-        const buckets = {
+        const buckets: RenderBuckets = {
             rgbNodes: [] as Mesh[],
             texNodes: [] as Mesh[],
             rgbNodesSelected: [] as Mesh[],
             texNodesSelected: [] as Mesh[],
+            rgbPerPtNodes: [] as Mesh[],
+            rgbPerPtNodesSelected: [] as Mesh[],
             lineNodes: [] as Mesh[],
         }
         prepareNode(root, editorModel, context, device, buckets)
@@ -379,9 +447,11 @@ export async function main() {
 
         renderLines(pass, buckets.lineNodes, context, materials)
         for (let outline of [true, false]) {
-            renderRGBFaces(outline, pass, buckets.rgbNodes, buckets.rgbNodesSelected, context, editorModel, background)
-            renderTexFaces(outline, pass, buckets.texNodes, buckets.texNodesSelected, context)
+            // renderRGBFaces(outline, pass, buckets.rgbNodes, buckets.rgbNodesSelected, context, editorModel, background)
+            // renderTexFaces(outline, pass, buckets.texNodes, buckets.texNodesSelected, context)
+            renderRGBPerPtFaces(outline, pass, buckets.rgbPerPtNodes, buckets.rgbPerPtNodesSelected, context, editorModel, background)
         }
+
         renderFloorAndAxis(pass, context)
 
         pass.end()

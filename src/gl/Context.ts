@@ -238,6 +238,7 @@ export class Context {
 
     getRenderPassDescriptor(view = this.getCanvasView(), backgroundColor = this.backgroundColor) {
         const renderPassDescriptor: GPURenderPassDescriptor = {
+            label: "Context.getRenderPassDescriptor()",
             colorAttachments: [
                 {
                     view: view,

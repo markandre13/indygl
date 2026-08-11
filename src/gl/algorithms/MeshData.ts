@@ -9,6 +9,7 @@ export interface MeshData {
     fuv?: ArrayLike<number>
     normal?: ArrayLike<number>
     fnormal?: ArrayLike<number>
+    rgb?: ArrayLike<number>
     groupSubset?: Map<string, MeshSubset>
     materialSubset?: Map<string, MeshSubset>
 }
