@@ -155,7 +155,17 @@ export class Mesh extends IndyNode implements MeshData {
     get edgeIndices() {
         this.prepare()
         if (this._edgeIndices === undefined) {
-            this._edgeIndices = new IndexBuffer(this.context.device, edges(this))
+            let offset: number, length: number
+            if (this.groupSubset?.has("body")) {
+                const group = this.groupSubset.get("body")! // non-triangle variant
+                offset = group.start
+                length = group.length
+            } else {
+                offset = 0
+                length = this.indices.length
+            }
+
+            this._edgeIndices = new IndexBuffer(this.context.device, edges(this, offset, length))
         }
         return this._edgeIndices
     }

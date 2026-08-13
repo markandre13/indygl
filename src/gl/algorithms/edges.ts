@@ -1,6 +1,6 @@
 import type { MeshData } from "./MeshData"
 
-export function edges(data: MeshData): ArrayLike<number> {
+export function edges(data: MeshData, offset: number, length: number): ArrayLike<number> {
     if (!data.fxyz || !data.vcount) {
         throw Error()
     }
@@ -26,8 +26,10 @@ export function edges(data: MeshData): ArrayLike<number> {
         edges.push(e0, e1)
     }
     let fp = 0
-    for (let i = 0; i < data.vcount.length; ++i) {
+    // console.log(`edges(..., offset=${offset}, length=${length})`)
+    for (let i = offset; length > 0; ++i) {
         const n = data.vcount[i]
+        length -= n
         const el = data.fxyz[fp++]
         let e0 = el
         for(let i=1; i<n; ++i) {

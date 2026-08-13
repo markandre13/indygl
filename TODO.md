@@ -1,3 +1,18 @@
+[ ] tweak all rendering modes to be correct (so that i can see the lines on the morph heat map)
+[ ] assign material to groups, don't draw groups without material (to clean up the render)
+    NOTE: it might be easier to split a Wavefront file with groups into multiple meshes...
+          but then Blender also support assigning multiple materials to a single mesh...
+          also: internally the code should be compatible with USD, meaning instead of
+          Wavefront's subgroup ranges, we'd need sets of indices.
+          *sigh* this makes stuff tricky: again, i should begin to TDD it before it gets
+          out of control
+[ ] marking points/edges would be great (via vertex group?) to assist laying out one mesh
+    onto the other
+[ ] maybe instead of splitting the mesh for the morph, i could implement a deform mesh???
+    the deform mesh would need to modes: edit the deform mesh and deform the deform mesh
+    ^ THIS LOOKS LIKE A GREAT IDEA AS OF NOW
+    (as adjusting each morph separatly may lead to inconsitencies anyway)
+
 ### for IndyGL
 
 [X] outline of textured mesh rendered wrong

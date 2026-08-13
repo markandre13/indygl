@@ -29,9 +29,6 @@ export class BlendShape extends IndyNode {
     }
 
     transform?: mat4
-
-    // TODO: maybe TDD this stuff 1st???
-
     _meshData?: MeshData
     _mesh?: Mesh
 

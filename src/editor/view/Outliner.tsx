@@ -1,16 +1,10 @@
 import type { NodeTree } from "src/NodeTree"
 import type { ObjectSelection } from "src/gl/ObjectSelection"
 import type { IndyNode } from "src/nodes/IndyNode"
-import { Material } from "src/nodes/Material"
-import { Mesh } from "src/nodes/Mesh"
-import { Root } from "src/nodes/Root"
-import { XForm } from "src/nodes/XForm"
 import { Model } from "toad.js/appkit/Model"
 import type { OptionModel } from "toad.js/appkit/OptionModel"
 import { replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
 import { PropertyTab } from "../app/PropertyTab"
-import { BlendShapeGroup } from "src/nodes/BlendShapeGroup"
-import { BlendShape } from "src/nodes/BlendShape"
 
 // Exclude from View Layer (checkbox shown for collections)
 // Hide in Viewport (the open/closed eye)
@@ -151,7 +145,9 @@ function node2html(
         }
     }
 
-    let result: JSX.Element, item!: HTMLElement, indent!: HTMLElement, chevron!: SVGElement
+    // TODO: break this up into more compomnents? or views and models? other?
+
+    let result: JSX.Element, item!: HTMLElement, indent!: HTMLElement, chevron!: SVGElement, toggles!: HTMLDivElement
     if (children.length) {
         result = <>
             <div ref={item} class="item" tabIndex={0} style={{ "padding-left": `${depth * 20}px` }}>
@@ -170,26 +166,46 @@ function node2html(
                         ev.stopPropagation()
                     }} />
                 {icon}{name}
+                <div ref={toggles} class="toggles">
+                    <div
+                        title="Hide in Viewport"
+                        onpointerdown={(ev) => {
+                            ev.preventDefault()
+                            const span = ev.currentTarget as HTMLElement
+                            const svg = span.children[0] as SVGElement
+                            const use = svg.children[0] as SVGUseElement
+                            if (use.getAttribute("href")?.endsWith("-on")) {
+                                use.setAttribute("href", "icons.svg#blender-hide-off")
+                            } else {
+                                use.setAttribute("href", "icons.svg#blender-hide-on")
+                            }
+                        }}
+                    >
+                        <svg width="16" height="16"><use href="icons.svg#blender-hide-off" /></svg>
+                    </div>
+                </div>
             </div>
             <div ref={indent} class="indent">{...children}</div>
         </>
     } else {
-        result = <div ref={item} class="item" tabIndex={0} style={{ "padding-left": `${depth * 20 + 12}px` }}>{icon}{name}</div>
+        result = <div ref={item} class="item" tabIndex={0} style={{ "padding-left": `${depth * 20 + 12}px` }}>
+            {icon}{name}
+            <div class="toggles">
+                <svg width="16" height="16"><use href="icons.svg#blender-hide-off" /></svg>
+            </div>
+        </div>
     }
     map.set(node, item)
-    // let inside = false
-    // item.onpointerleave = () => { inside = false }
-    // item.onpointerenter = () => { inside = true }
 
     // prevent context menu so we can use ctrl + pointer button
-    item.oncontextmenu = (ev: PointerEvent) => {
-        ev.preventDefault()
-    }
-    item.onpointerdown = (ev: PointerEvent) => {
-        ev.preventDefault()
-    }
+    item.oncontextmenu = (ev: PointerEvent) => ev.preventDefault()
+    item.onpointerdown = (ev: PointerEvent) => ev.preventDefault()
     item.onclick = (ev: PointerEvent) => {
-        ev.preventDefault()
+        if (chevron.contains(ev.target as Node) || toggles.contains(ev.target as Node)) {
+            return
+        }
+
+        // console.log(`item.onclick`)
         const xform = node?.getXForm()!
         if (ev.shiftKey) { // this is Ctrl in blender
             listSelection.add(node, xform)

@@ -119,6 +119,17 @@ function prepareNode(
             const mesh = node.mesh
             if (mesh) {
                 const xform = node.getXForm()!
+                switch (editorModel.viewportShading.value) {
+                    case ViewportShading.WIREFRAME_XRAY:
+                        buckets.lineNodes.push(mesh)
+                        break
+                    case ViewportShading.WIREFRAME:
+                        buckets.lineNodes.push(mesh) // colored lines!!!
+                        //                 buckets.rgbNodes.push(node)
+                        break
+                    //             default:
+                }
+
                 if (context.selection.selected.has(xform)) {
                     buckets.rgbPerPtNodesSelected.push(mesh)
                 } else {
@@ -447,8 +458,8 @@ export async function main() {
 
         renderLines(pass, buckets.lineNodes, context, materials)
         for (let outline of [true, false]) {
-            // renderRGBFaces(outline, pass, buckets.rgbNodes, buckets.rgbNodesSelected, context, editorModel, background)
-            // renderTexFaces(outline, pass, buckets.texNodes, buckets.texNodesSelected, context)
+            renderRGBFaces(outline, pass, buckets.rgbNodes, buckets.rgbNodesSelected, context, editorModel, background)
+            renderTexFaces(outline, pass, buckets.texNodes, buckets.texNodesSelected, context)
             renderRGBPerPtFaces(outline, pass, buckets.rgbPerPtNodes, buckets.rgbPerPtNodesSelected, context, editorModel, background)
         }
 
