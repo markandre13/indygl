@@ -25,10 +25,21 @@ export class Mesh extends IndyNode implements MeshData {
     override get name(): string { return this.dataName ?? this.constructor.name }
     override get uihints(): NodeUiHints { return Mesh.uiHints }
 
+    override get show(): boolean | undefined {
+        return this._show
+    }
+    override set show(value: boolean | undefined) {
+        if (value === undefined) {
+            throw Error(`show can not be set to undefined for ${this.constructor.name}`)
+        }
+        this._show = value
+    }
+    private _show = true
+
     filename?: string
     dataName?: string
 
-    modelView: ModelUniform
+    modelView!: ModelUniform
 
     vcount?: ArrayLike<number>
     xyz?: ArrayLike<number>
@@ -49,6 +60,7 @@ export class Mesh extends IndyNode implements MeshData {
     constructor(parent: XForm, filename?: string)
     constructor(parent: XForm, optOrFilename?: MeshData | string) {
         super(parent)
+        if (this.context.device === undefined) { return }
 
         this.modelView = new ModelUniform(this.context)
         if (typeof optOrFilename === "string") {

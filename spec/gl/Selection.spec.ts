@@ -2,9 +2,8 @@ import { describe, expect, it } from "vitest"
 import { mat4, quat, vec3 } from "gl-matrix"
 import { EditorModel } from "src/editor/app/EditorModel"
 import { ObjectSelection } from "src/gl/ObjectSelection"
-import { Root } from "src/nodes/Root"
 import { XForm } from "src/nodes/XForm"
-import { IndyNode } from "src/nodes/IndyNode"
+import { IndyNode, Root } from "src/nodes/IndyNode"
 import { deg2rad } from "src/gl/algorithms/deg2rad"
 
 

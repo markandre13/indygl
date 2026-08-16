@@ -1,6 +1,5 @@
 import { Signal } from 'toad.js/reactive/Signal'
-import { Root } from './nodes/Root'
-
+import type { Root } from './nodes/IndyNode'
 
 export class NodeTree {
     signal = new Signal()

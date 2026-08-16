@@ -67,7 +67,7 @@ export class BlendShape extends IndyNode {
         // * neutral with colors for displacement
         // * neutral, with just the parts that move
 
-        const mesh = new Mesh(this, shape)
+        const mesh = new Mesh(this as any, shape)
         mesh.dataName = `Mesh for Blendshape ${this.shapeName}`
         // mesh.material = new Material(this.context, [0, 0.2, 1, 1])
 

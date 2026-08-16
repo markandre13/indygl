@@ -13,10 +13,9 @@ import { Device } from './gl/Device'
 import { ObjectSelection } from './gl/ObjectSelection'
 import { BlendShape } from './nodes/BlendShape'
 import { BlendShapeGroup } from './nodes/BlendShapeGroup'
-import { IndyNode } from "./nodes/IndyNode"
+import { IndyNode, Root } from "./nodes/IndyNode"
 import { Material } from "./nodes/Material"
 import { Mesh } from './nodes/Mesh'
-import { Root } from "./nodes/Root"
 import { XForm } from "./nodes/XForm"
 import { NodeTree } from './NodeTree'
 import { initTheme } from './theme'

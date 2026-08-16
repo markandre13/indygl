@@ -1,13 +1,13 @@
 import { EditorModel } from "src/editor/app/EditorModel"
 import { Outliner } from "src/editor/view/Outliner"
 import { ObjectSelection } from "src/gl/ObjectSelection"
-import { Root } from "src/nodes/Root"
 import { XForm } from "src/nodes/XForm"
 import { NodeTree } from "src/NodeTree"
 import { replaceChildren } from "toad.jsx/jsx-runtime"
 import { describe, expect, it } from "vitest"
 import { BrowserUser } from "clickclick.js"
 import { fit } from "../../spec"
+import { Root } from "src/nodes/IndyNode"
 
 // TODO
 // [ ] open/close subtree by click on chevron

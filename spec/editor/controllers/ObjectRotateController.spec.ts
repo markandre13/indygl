@@ -1,10 +1,10 @@
 import { describe, expect, it, beforeEach, vi } from "vitest"
 import { mat4, vec3 } from "gl-matrix"
 import { ObjectRotateController } from "src/editor/controllers/ObjectRotateController"
-import { Root } from "src/nodes/Root"
 import { XForm } from "src/nodes/XForm"
 import { Mesh } from "src/nodes/Mesh"
 import { AxisRenderer } from "src/gl/AxisRenderer"
+import { Root } from "src/nodes/IndyNode"
 
 function createMockAxisRenderer(): AxisRenderer {
     const r = Object.create(AxisRenderer.prototype)
