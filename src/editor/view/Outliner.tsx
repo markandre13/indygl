@@ -1,9 +1,8 @@
-import type { NodeTree } from "src/NodeTree"
 import type { ObjectSelection } from "src/gl/ObjectSelection"
-import type { IndyNode } from "src/nodes/IndyNode"
+import { NODE_CHANGE, type IndyNode, type NodeEvent, type Root } from "src/nodes/IndyNode"
 import { Model } from "toad.js/appkit/Model"
 import type { OptionModel } from "toad.js/appkit/OptionModel"
-import { replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
+import { makeRef, Reference, replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
 import { PropertyTab } from "../app/PropertyTab"
 
 // Exclude from View Layer (checkbox shown for collections)
@@ -77,7 +76,7 @@ class ListSelection<T> extends Model {
 }
 
 export interface OutlinerProps extends HTMLElementProps {
-    nodeTree: NodeTree
+    root: Root
     objectSelection: ObjectSelection
     propertyTab: OptionModel<PropertyTab>
 }
@@ -89,7 +88,7 @@ export function OutlineChevron(props?: {
     onpointerdown?: (ev: PointerEvent) => void,
     onpointerup?: (ev: PointerEvent) => void,
     onclick?: (ev: PointerEvent) => void,
-    ref?: unknown | ((e: unknown) => void) | undefined
+    ref?: JSX.Ref
 }) {
     // TODO: need to extend toad.jsx to handle this as tag
     const svgNS = "http://www.w3.org/2000/svg"
@@ -120,7 +119,8 @@ export function OutlineChevron(props?: {
 
 function node2html(
     node: IndyNode | undefined,
-    map: Map<IndyNode, HTMLElement>,
+    node2element: Map<IndyNode, HTMLElement>,
+    node2handler: Map<IndyNode, (ev: NodeEvent) => void>,
     listSelection: ListSelection<IndyNode>,
     currentPropertyTab: OptionModel<PropertyTab>,
     depth = 0
@@ -139,15 +139,35 @@ function node2html(
 
     const children: JSX.Element[] = []
     for (let child of node.children) {
-        const element = node2html(child, map, listSelection, currentPropertyTab, depth + 1)
+        const element = node2html(child, node2element, node2handler, listSelection, currentPropertyTab, depth + 1)
         if (element) {
             children.push(element)
         }
     }
 
     // TODO: break this up into more compomnents? or views and models? other?
+    let result: JSX.Element, item = makeRef<HTMLElement>(), indent = makeRef(), chevron = makeRef(), toggles = makeRef()
+    let toggleHideSvg = makeRef()
 
-    let result: JSX.Element, item!: HTMLElement, indent!: HTMLElement, chevron!: SVGElement, toggles!: HTMLDivElement
+    // console.log(`node '${node.name}', show=${node.show ? "on" : "off"}`)
+
+    const nested = <>{icon}{name}
+        <div ref={toggles} class="toggles">
+            <div
+                title="Hide in Viewport"
+                onpointerdown={(ev) => {
+                    ev.preventDefault()
+                    if (node.showEnabled) {
+                        console.log(`toggle node(${node.name}) to ${!node.show}`)
+                        node.show = !node.show
+                    }
+                }}
+            >
+                <svg ref={toggleHideSvg} width="16" height="16" />
+            </div>
+        </div>
+    </>
+
     if (children.length) {
         result = <>
             <div ref={item} class="item" tabIndex={0} style={{ "padding-left": `${depth * 20}px` }}>
@@ -156,52 +176,49 @@ function node2html(
                     onpointerup={(ev) => ev.stopPropagation()}
                     onclick={(ev) => {
                         // TODO: persist state in the node
-                        if (chevron.style.transform !== "") {
-                            chevron.style.transform = ""
-                            indent.style.display = "none"
+                        if (chevron.current.style.transform !== "") {
+                            chevron.current.style.transform = ""
+                            indent.current.style.display = "none"
                         } else {
-                            chevron.style.transform = "rotate(90deg)"
-                            indent.style.display = ""
+                            chevron.current.style.transform = "rotate(90deg)"
+                            indent.current.style.display = ""
                         }
                         ev.stopPropagation()
                     }} />
-                {icon}{name}
-                <div ref={toggles} class="toggles">
-                    <div
-                        title="Hide in Viewport"
-                        onpointerdown={(ev) => {
-                            ev.preventDefault()
-                            const span = ev.currentTarget as HTMLElement
-                            const svg = span.children[0] as SVGElement
-                            const use = svg.children[0] as SVGUseElement
-                            if (use.getAttribute("href")?.endsWith("-on")) {
-                                use.setAttribute("href", "icons.svg#blender-hide-off")
-                            } else {
-                                use.setAttribute("href", "icons.svg#blender-hide-on")
-                            }
-                        }}
-                    >
-                        <svg width="16" height="16"><use href="icons.svg#blender-hide-off" /></svg>
-                    </div>
-                </div>
+                {nested}
             </div>
             <div ref={indent} class="indent">{...children}</div>
         </>
     } else {
         result = <div ref={item} class="item" tabIndex={0} style={{ "padding-left": `${depth * 20 + 12}px` }}>
-            {icon}{name}
-            <div class="toggles">
-                <svg width="16" height="16"><use href="icons.svg#blender-hide-off" /></svg>
-            </div>
+            {nested}
         </div>
     }
-    map.set(node, item)
+    node2element.set(node, item.current)
+
+    // { node.show === undefined ? undefined : <use href={`icons.svg#blender-hide-${node.show ? 'off' : 'on'}`} /> }
+    const update = (ev: NodeEvent) => {
+        // console.log(`HANDLER: ${ev.type.description} ${node.name}`)
+        switch (node.show) {
+            case true:
+                replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-off" />)
+                break
+            case false:
+                replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-on" />)
+                break
+            case undefined:
+                replaceChildren(toggleHideSvg, undefined)
+                break
+        }
+    }
+    node2handler.set(node, update)
+    update({ type: NODE_CHANGE, node })
 
     // prevent context menu so we can use ctrl + pointer button
-    item.oncontextmenu = (ev: PointerEvent) => ev.preventDefault()
-    item.onpointerdown = (ev: PointerEvent) => ev.preventDefault()
-    item.onclick = (ev: PointerEvent) => {
-        if (chevron.contains(ev.target as Node) || toggles.contains(ev.target as Node)) {
+    item.current.oncontextmenu = (ev: PointerEvent) => ev.preventDefault()
+    item.current.onpointerdown = (ev: PointerEvent) => ev.preventDefault()
+    item.current.onclick = (ev: PointerEvent) => {
+        if (chevron.current.contains(ev.target as Node) || toggles.current.contains(ev.target as Node)) {
             return
         }
 
@@ -219,7 +236,7 @@ function node2html(
         if (propertyTab) {
             currentPropertyTab.value = propertyTab
         }
-        item.focus()
+        item.current.focus()
     }
     return result
 }
@@ -240,6 +257,7 @@ export function Outliner(props: OutlinerProps) {
     outliner.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(backgroundImage)}")`
 
     let node2element: Map<IndyNode, HTMLElement>
+    let handler: Map<IndyNode, (ev: NodeEvent) => void>
     let listSelection = new ListSelection<IndyNode>()
 
     const updateFromSelection = () => {
@@ -262,15 +280,22 @@ export function Outliner(props: OutlinerProps) {
     const updateFromModel = () => {
         // console.log(`Outliner: node tree changed`)
         node2element = new Map()
-        const children = node2html(props.nodeTree.root, node2element, listSelection, props.propertyTab)
+        handler = new Map()
+        const children = node2html(props.root.root, node2element, handler, listSelection, props.propertyTab)
         // console.log(children)
         replaceChildren(outliner, children)
         updateFromSelection()
     }
 
-    props.nodeTree.signal.add(updateFromModel)
+    props.root.signal.add(updateFromModel)
     props.objectSelection.signal.add(updateFromSelection)
     listSelection.signal.add(updateFromSelection)
+    // console.log(props.nodeTree.root)
+    props.root.signal.add((ev: NodeEvent) => {
+        console.log(`Root.signal: ${ev.type.description} for '${ev.node.name}'`)
+        const h = handler.get(ev.node)
+        if (h) { h(ev) }
+    })
 
     updateFromModel()
     updateFromSelection()

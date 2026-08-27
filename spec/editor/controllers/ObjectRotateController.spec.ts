@@ -62,7 +62,8 @@ function createEnvironment() {
 }
 
 function createNodeTree(context: any) {
-    const root = new Root(context)
+    const root = new Root()
+    root._context = context
     const parent = new XForm(root)
     parent.transform = mat4.create()
 

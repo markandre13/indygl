@@ -1,12 +1,12 @@
 import { LengthModel } from 'src/editor/appkit/units/LengthModel'
 import { TupleElementInput } from 'src/editor/viewkit/TupleElementInput'
-import { replaceChildren } from 'toad.jsx/jsx-runtime'
+import { makeRef, replaceChildren } from 'toad.jsx/jsx-runtime'
 import { describe, expect, it } from 'vitest'
 import { page } from 'vitest/browser'
 
 describe("TupleElementInput", () => {
     it("clicking on the right button increments the model", async () => {
-        let view!: HTMLElement
+        let view = makeRef()
         const model = new LengthModel(0, { step: 1 })
         replaceChildren(document.body, <TupleElementInput ref={view} model={model} />)
 
@@ -18,7 +18,7 @@ describe("TupleElementInput", () => {
     })
 
     it("clicking on the left button decrements the model", async () => {
-        let view!: HTMLElement
+        let view = makeRef()
         const model = new LengthModel(0, { step: 1 })
         replaceChildren(document.body, <TupleElementInput ref={view} model={model} />)
 
@@ -30,7 +30,7 @@ describe("TupleElementInput", () => {
     })
 
     it("entering a value changes the model", async () => {
-        let view!: HTMLElement
+        let view = makeRef()
         const model = new LengthModel(0, { step: 1 })
         replaceChildren(document.body, <TupleElementInput ref={view} model={model} />)
 
@@ -44,7 +44,7 @@ describe("TupleElementInput", () => {
     })
 
     it("scrolling up on the capture area increments the model", async () => {
-        let view!: HTMLElement
+        let view = makeRef()
         const model = new LengthModel(0, { step: 1 })
         replaceChildren(document.body, <TupleElementInput ref={view} model={model} />)
 
@@ -55,7 +55,7 @@ describe("TupleElementInput", () => {
     })
 
     it("scrolling down on the capture area decrements the model", async () => {
-        let view!: HTMLElement
+        let view = makeRef()
         const model = new LengthModel(0, { step: 1 })
         replaceChildren(document.body, <TupleElementInput ref={view} model={model} />)
 
@@ -66,7 +66,7 @@ describe("TupleElementInput", () => {
     })
 
     it("scrolling with shiftKey applies finer step", async () => {
-        let view!: HTMLElement
+        let view = makeRef()
         const model = new LengthModel(0, { step: 1 })
         replaceChildren(document.body, <TupleElementInput ref={view} model={model} />)
 
@@ -77,7 +77,7 @@ describe("TupleElementInput", () => {
     })
 
     it("scrolling with ctrlKey snaps to step multiples", async () => {
-        let view!: HTMLElement
+        let view = makeRef()
         const model = new LengthModel(0, { step: 0.5 })
         replaceChildren(document.body, <TupleElementInput ref={view} model={model} />)
 
@@ -106,7 +106,7 @@ describe("TupleElementInput", () => {
     })
 
     it("dragging pointer to the right increases the value", async () => {
-        let view!: HTMLElement
+        let view = makeRef()
         const model = new LengthModel(0, { step: 1 })
         replaceChildren(document.body, <TupleElementInput ref={view} model={model} />)
 
@@ -129,7 +129,7 @@ describe("TupleElementInput", () => {
     })
 
     it("dragging pointer to the left decreases the value", async () => {
-        let view!: HTMLElement
+        let view = makeRef()
         const model = new LengthModel(0, { step: 1 })
         replaceChildren(document.body, <TupleElementInput ref={view} model={model} />)
 

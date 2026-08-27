@@ -8,8 +8,7 @@ import { TripleInput } from "../viewkit/TripleInput"
 import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption, IconShift } from "../viewkit/InputIcons"
 import { TransformOrientation } from "../app/TransformOrientation"
 import { Outliner } from "./Outliner"
-import type { HTMLElementProps } from "toad.jsx/jsx-runtime"
-import type { NodeTree } from "src/NodeTree"
+import { makeRef, type HTMLElementProps } from "toad.jsx/jsx-runtime"
 import type { ObjectSelection } from "src/gl/ObjectSelection"
 import { PropertyTab } from "../app/PropertyTab"
 import { If } from "toad.js/viewkit/If"
@@ -18,18 +17,19 @@ import { Mesh } from "src/nodes/Mesh"
 import { Material } from "src/nodes/Material"
 import { BlendShapeGroup } from "src/nodes/BlendShapeGroup"
 import { XForm } from "src/nodes/XForm"
+import type { Root } from "src/nodes/IndyNode"
 
 interface MainScreenProps extends HTMLElementProps {
     model: EditorModel
     selection: ObjectSelection
-    nodeTree: NodeTree
+    root: Root
 }
 
 export function MainScreen(props: MainScreenProps) {
-    let menubar!: HTMLElement, toolbar!: HTMLElement,
-        overlay!: HTMLElement, svg!: SVGElement, canvas!: HTMLElement,
-        outliner!: HTMLElement, panel!: HTMLElement,
-        status!: HTMLElement
+    let menubar = makeRef(), toolbar = makeRef(),
+        overlay = makeRef(), svg = makeRef<SVGElement>(), canvas = makeRef(),
+        outliner = makeRef(), panel = makeRef(),
+        status = makeRef()
 
     // for the controls in the toolbar
     const selectionMode = props.model.selectionMode
@@ -84,7 +84,7 @@ export function MainScreen(props: MainScreenProps) {
         <canvas ref={canvas} class="canvas" tabIndex={0}></canvas>
         <svg ref={svg} class="overlay" id="svg-overlay" />
         <div ref={overlay} class="overlay" id="overlay" />
-        <Outliner ref={outliner} nodeTree={props.nodeTree} objectSelection={props.selection} propertyTab={propertyTab}/>
+        <Outliner ref={outliner} root={props.root} objectSelection={props.selection} propertyTab={propertyTab}/>
 
         <div ref={panel} class="panel">
             <div class="panel-tabs">

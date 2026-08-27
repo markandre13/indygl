@@ -1,3 +1,4 @@
+import type { JSX } from "toad.jsx/jsx-runtime"
 import { bind } from "../appkit/details/decorators/bind"
 
 // type SpringHow = "none" | "form" | "window" | "opposite"
@@ -165,7 +166,7 @@ export class SpringLayout {
         }
 
         // check for recursion
-        for(const n of this.#def.values()) {
+        for (const n of this.#def.values()) {
             walk(n)
         }
     }
@@ -394,7 +395,8 @@ class SpringLayoutBuilder {
      * @param element The HTML element to position
      * @returns This builder instance for chaining
      */
-    element(element: SpringLayoutElementApi): SpringLayoutBuilder {
+    element(element: SpringLayoutElementApi | JSX.Ref<SpringLayoutElementApi>): SpringLayoutBuilder {
+        if ("current" in element) { element = element.current }
         this.currentElement = element
         return this
     }
@@ -406,7 +408,7 @@ class SpringLayoutBuilder {
      * @param element Optional element to position relative to
      * @returns This builder instance for chaining
      */
-    top(element?: SpringLayoutElementApi): SpringLayoutBuilder {
+    top(element?: SpringLayoutElementApi | JSX.Ref<SpringLayoutElementApi>): SpringLayoutBuilder {
         return this.define(SpringWhere.TOP, element)
     }
 
@@ -417,7 +419,7 @@ class SpringLayoutBuilder {
      * @param element Optional element to position relative to
      * @returns This builder instance for chaining
      */
-    bottom(element?: SpringLayoutElementApi): SpringLayoutBuilder {
+    bottom(element?: SpringLayoutElementApi | JSX.Ref<SpringLayoutElementApi>): SpringLayoutBuilder {
         return this.define(SpringWhere.BOTTOM, element)
     }
 
@@ -428,7 +430,7 @@ class SpringLayoutBuilder {
      * @param element Optional element to position relative to
      * @returns This builder instance for chaining
      */
-    left(element?: SpringLayoutElementApi): SpringLayoutBuilder {
+    left(element?: SpringLayoutElementApi | JSX.Ref<SpringLayoutElementApi>): SpringLayoutBuilder {
         return this.define(SpringWhere.LEFT, element)
     }
 
@@ -439,7 +441,7 @@ class SpringLayoutBuilder {
      * @param element Optional element to position relative to
      * @returns This builder instance for chaining
      */
-    right(element?: SpringLayoutElementApi): SpringLayoutBuilder {
+    right(element?: SpringLayoutElementApi | JSX.Ref<SpringLayoutElementApi>): SpringLayoutBuilder {
         return this.define(SpringWhere.RIGHT, element)
     }
 
@@ -452,7 +454,8 @@ class SpringLayoutBuilder {
         return new SpringLayout(this.definitions)
     }
 
-    private define(where: SpringWhere, which?: SpringLayoutElementApi): SpringLayoutBuilder {
+    private define(where: SpringWhere, which?: SpringLayoutElementApi | JSX.Ref<SpringLayoutElementApi>): SpringLayoutBuilder {
+        if (which && "current" in which) { which = which.current }
         for (const def of this.definitions) {
             if (def.element === this.currentElement && def.which === which) {
                 if (!def.where.includes(where)) {

@@ -12,7 +12,7 @@ import type { Controller } from 'src/editor/controllers/Controller'
 import { EditorModel } from 'src/editor/app/EditorModel'
 import { ObjectSelection } from './ObjectSelection'
 import type { Point } from './types/Point'
-import { NodeTree } from 'src/NodeTree'
+import { Root } from 'src/nodes/IndyNode'
 
 export enum Projection {
     ORTHOGONAL,
@@ -27,7 +27,7 @@ export class Context {
 
     editorModel: EditorModel
     readonly selection: ObjectSelection
-    nodeTree: NodeTree
+    root!: Root
 
     bindGroupLayout: BindGroupLayoutCollection
     shader: ShaderCollection
@@ -38,13 +38,12 @@ export class Context {
 
     // renderPassDescriptor: GPURenderPassDescriptor
 
-    constructor(device: Device, canvas: HTMLCanvasElement, editorModel: EditorModel, selection: ObjectSelection, nodeTree: NodeTree) {
+    constructor(device: Device, canvas: HTMLCanvasElement, editorModel: EditorModel, selection: ObjectSelection) {
         this.device = device
         this.canvas = canvas
 
         this.editorModel = editorModel
         this.selection = selection
-        this.nodeTree = nodeTree
 
         this.bindGroupLayout = new BindGroupLayoutCollection(device)
 

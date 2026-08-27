@@ -8,7 +8,7 @@
             "DOM.Iterable"
         ],
         "skipLibCheck": true,
-        "jsx": "preserve",
+        "jsx": "react-jsx",
         "jsxImportSource": "toad.jsx",
         "types": [
             "@webgpu/types"

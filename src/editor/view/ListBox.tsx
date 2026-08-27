@@ -1,5 +1,5 @@
 import { ValueModel } from "toad.js/appkit/ValueModel"
-import { effect, replaceChildren } from "toad.jsx/jsx-runtime"
+import { effect, makeRef, replaceChildren } from "toad.jsx/jsx-runtime"
 
 // for now I'll ignore toad.js' ArrayTableModel and SelectionModel in the hope
 // to come up with some easier to use APIs
@@ -45,7 +45,7 @@ const model = new ListModel([
 const selection = new ValueModel<ShapeKey | null>(null)
 
 export function ListBox() {
-    let list!: HTMLElement
+    let list = makeRef()
     const listbox = <>
         <div class="listbox">
             <div ref={list} class="list" tabIndex={0}>
@@ -61,7 +61,7 @@ export function ListBox() {
         replaceChildren(list, model.value.map(it =>
             <div
                 onclick={() => {
-                    list.focus()
+                    list.current.focus()
                     selection.value = it
                 }}
                 classList={{ "selected": it === selection.value }}

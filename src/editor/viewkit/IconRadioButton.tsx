@@ -9,7 +9,7 @@ export function IconRadioButton<V>(props: IconRadioButtonProps<V>) {
     return (
         <div
             title={props.title}
-            classList={{ 'tx-active': props.model!.value === props.value }}
+            classList={{ 'tx-active': () => props.model!.value === props.value }}
             onpointerdown={() => props.model!.value = props.value}
         >
             <svg class="tool-icon">

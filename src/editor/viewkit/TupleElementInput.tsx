@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js"
 import type { UnitModel } from "../appkit/units/UnitModel"
 import { Chevron } from "./Chevron"
-import type { HTMLElementProps } from "toad.jsx/jsx-runtime"
+import { makeRef, type HTMLElementProps } from "toad.jsx/jsx-runtime"
 
 interface TupleElementInputProps extends HTMLElementProps {
     model: UnitModel
@@ -16,8 +16,8 @@ interface TupleElementInputProps extends HTMLElementProps {
 export function TupleElementInput(props: TupleElementInputProps) {
     let oldValue!: BigNumber
     let pointerDownX: number | undefined
-    let input!: HTMLInputElement
-    let capture!: HTMLDivElement
+    let input = makeRef<HTMLInputElement>()
+    let capture = makeRef()
     let moved!: boolean
     const e = <div
         classList={{
@@ -72,8 +72,8 @@ export function TupleElementInput(props: TupleElementInputProps) {
             onpointerup={(e: PointerEvent) => {
                 e.preventDefault()
                 if (!moved) {
-                    input.focus()
-                    input.select()
+                    input.current.focus()
+                    input.current.select()
                 }
             }}
             onpointermove={(e: PointerEvent) => {
@@ -103,7 +103,7 @@ export function TupleElementInput(props: TupleElementInputProps) {
             onlostpointercapture={(e) => {
                 if (moved) {
                     moved = false
-                    input.blur()
+                    input.current.blur()
                 }
                 pointerDownX = undefined
 
@@ -117,14 +117,14 @@ export function TupleElementInput(props: TupleElementInputProps) {
                 value={`${props.model.value} ${props.model.symbol}`.trim()}
                 onchange={() => {
                     // TODO: minimum decimal places when moving
-                    props.model.value = input.value
+                    props.model.value = input.current.value
                 }}
             />
         </div>
         <button onclick={props.model.increment}><Chevron /></button>
     </div>
     if (props.edit) {
-        requestAnimationFrame(() => { input.focus() })
+        requestAnimationFrame(() => { input.current.focus() })
     }
     return e
 }

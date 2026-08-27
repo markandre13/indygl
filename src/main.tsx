@@ -17,7 +17,6 @@ import { IndyNode, Root } from "./nodes/IndyNode"
 import { Material } from "./nodes/Material"
 import { Mesh } from './nodes/Mesh'
 import { XForm } from "./nodes/XForm"
-import { NodeTree } from './NodeTree'
 import { initTheme } from './theme'
 
 export async function loadMesh(parent: XForm, filename: string) {
@@ -398,10 +397,13 @@ async function loadBlendshapes(root: Root, context: Context) {
 export async function main() {
     initTheme()
 
-    const nodeTree = new NodeTree()
+    // const nodeTree = new NodeTree()
     const editorModel = new EditorModel()
     const selection = new ObjectSelection(editorModel)
-    replaceChildren(document.body, <MainScreen model={editorModel} selection={selection} nodeTree={nodeTree} />)
+
+    const root = new Root()
+
+    replaceChildren(document.body, <MainScreen model={editorModel} selection={selection} root={root} />)
 
     const canvas = document.querySelector<HTMLCanvasElement>('canvas')
     if (canvas === null) {
@@ -411,8 +413,8 @@ export async function main() {
     const device = new Device()
     await device.init()
 
-    const context = new Context(device, canvas, editorModel, selection, nodeTree)
-    const root = context.nodeTree.root = new Root(context)
+    const context = new Context(device, canvas, editorModel, selection)
+    root._context = context
 
     editorModel.transform.signal.add(context.invalidate)
     editorModel.selectionMode.signal.add(context.invalidate)
@@ -421,10 +423,10 @@ export async function main() {
     context.pushController(new BasicMode(context))
     context.pushController(new ObjectSelectController(context, root))
 
-    // await loadDemoScene(root, context)
-    await loadBlendshapes(root, context)
+    await loadDemoScene(root, context)
+    // await loadBlendshapes(root, context)
 
-    context.nodeTree.signal.emit()
+    // context.nodeTree.signal.emit()
 
     const matWire = new Material(context, [0, 0, 0, 1])
     const matObjectSelected = new Material(context, [0.929, 0.341, 0, 1])

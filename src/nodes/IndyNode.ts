@@ -62,7 +62,7 @@ export class IndyNode {
         if (parent) {
             this.parent = parent
             this.root = parent.root
-            this.context = parent.context
+            // this.context = parent.context
             parent.children.push(this)
             this.root.signal.emit({ type: NODE_INSERT, node: this })
         }
@@ -99,7 +99,9 @@ export class IndyNode {
         }
         return undefined
     }
-    context!: Context
+    get context(): Context {
+        return this.root._context
+    }
     parent?: IndyNode
     root!: Root
     children: IndyNode[] = [];
@@ -109,6 +111,7 @@ export class IndyNode {
 }
 
 export class Root extends IndyNode {
+    _context!: Context
     signal = new Signal<NodeEvent>()
     static override uiHints: NodeUiHints = {
         color: "#6387d2",
@@ -118,9 +121,8 @@ export class Root extends IndyNode {
     override get name(): string { return this.constructor.name }
     override get uihints(): NodeUiHints { return Root.uiHints }
 
-    constructor(context: Context) {
+    constructor() {
         super(undefined as any)
         this.root = this
-        this.context = context
     }
 }

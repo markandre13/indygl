@@ -97,6 +97,7 @@ function makeScenario() {
     const editorModel = new EditorModel()
     const selection = new ObjectSelection(editorModel)
     const context = { selection, invalidate: () => { } } as any
-    const root = new Root(context)
+    const root = new Root()
+    root._context = context
     return { root }
 }

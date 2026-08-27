@@ -9,7 +9,8 @@ import { deg2rad } from "src/gl/algorithms/deg2rad"
 
 function createObjectTree() {
     const context = {} as any
-    const root = new Root(context)
+    const root = new Root()
+    root._context = context
     const parent = new XForm(root)
     const active = new IndyNode(parent)
     return { root, parent, active }
@@ -65,7 +66,8 @@ describe("Selection", () => {
             const editor = new EditorModel()
             const sel = new ObjectSelection(editor)
             const context = {} as any
-            const root = new Root(context)
+            const root = new Root()
+            root._context = context
 
             const parentA = new XForm(root)
             const activeA = new IndyNode(parentA)
@@ -92,7 +94,8 @@ describe("Selection", () => {
             const editor = new EditorModel()
             const sel = new ObjectSelection(editor)
             const context = {} as any
-            const root = new Root(context)
+            const root = new Root()
+            root._context = context
 
             const parentA = new XForm(root)
             const activeA = new IndyNode(parentA)

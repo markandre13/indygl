@@ -26,21 +26,20 @@
         "@types/chai-almost": "^1.0.3",
         "@types/earcut": "^3.0.0",
         "@typescript/native-preview": "^7.0.0-dev.20260707.2",
-        "@vitest/browser-playwright": "^4.1.10",
-        "@webgpu/types": "^0.1.71",
+        "@vitest/browser-playwright": "^4.1.11",
+        "@webgpu/types": "^0.1.72",
         "chai-almost": "^1.0.1",
         "clickclick.js": "^0.0.1",
-        "concurrently": "^10.0.4",
+        "concurrently": "^10.0.5",
         "jsdom": "^30.0.1",
-        "vite": "^8.2.1",
+        "vite": "^8.2.2",
         "vite-plugin-glsl": "^1.6.1",
-        "vite-plugin-solid": "^2.11.14",
-        "vitest": "^4.1.10"
+        "vitest": "^4.1.11"
     },
     "dependencies": {
         "bignumber.js": "^11.1.5",
         "earcut": "^3.2.3",
         "gl-matrix": "^3.4.4",
-        "toad.js": "^0.3.7"
+        "toad.js": "^0.3.8"
     }
 }

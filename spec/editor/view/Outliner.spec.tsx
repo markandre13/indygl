@@ -2,7 +2,6 @@ import { EditorModel } from "src/editor/app/EditorModel"
 import { Outliner } from "src/editor/view/Outliner"
 import { ObjectSelection } from "src/gl/ObjectSelection"
 import { XForm } from "src/nodes/XForm"
-import { NodeTree } from "src/NodeTree"
 import { replaceChildren } from "toad.jsx/jsx-runtime"
 import { describe, expect, it } from "vitest"
 import { BrowserUser } from "clickclick.js"
@@ -25,9 +24,9 @@ describe("Outliner", () => {
 
     describe("look", () => {
         it("renders all items of the node tree, indented by depth", async () => {
-            const { selection, nodeTree, propertyTab } = setupScene1()
+            const { selection, root, propertyTab } = setupScene1()
 
-            replaceChildren(document.body, <Outliner nodeTree={nodeTree} objectSelection={selection} propertyTab={propertyTab}/>)
+            replaceChildren(document.body, <Outliner root={root} objectSelection={selection} propertyTab={propertyTab}/>)
 
             user.expectToHaveItemsInOrder([
                 [0, "Crate"],
@@ -39,18 +38,18 @@ describe("Outliner", () => {
         })
 
         it("selection's active and selected nodes are shown in outliner", async () => {
-            const { selection, nodeTree, propertyTab } = setupScene1()
+            const { selection, root, propertyTab } = setupScene1()
 
-            replaceChildren(document.body, <Outliner nodeTree={nodeTree} objectSelection={selection}  propertyTab={propertyTab}/>)
+            replaceChildren(document.body, <Outliner root={root} objectSelection={selection}  propertyTab={propertyTab}/>)
 
-            selection.add(nodeTree.root.children[0].children[0])
+            selection.add(root.children[0].children[0])
             user.expectItemIsNotActiveOrSelected("Crate")
             user.expectItemIsNotActiveOrSelected("xform0")
             user.expectItemIsActive("xform1")
             user.expectItemIsNotActiveOrSelected("xform2")
             user.expectItemIsNotActiveOrSelected("xform3")
 
-            selection.add(nodeTree.root.children[1].children[0])
+            selection.add(root.children[1].children[0])
             user.expectItemIsNotActiveOrSelected("Crate")
             user.expectItemIsNotActiveOrSelected("xform0")
             user.expectItemIsSelected("xform1")
@@ -63,8 +62,8 @@ describe("Outliner", () => {
         // https://docs.solidjs.com/reference/reactive-utilities/untrack
         // untrack executes a function without collecting dependencies from the current reactive scope.
         it("clicking on the chevron rotates it and hides/shows the item's children", () => {
-            const { selection, nodeTree, propertyTab } = setupScene1()
-            replaceChildren(document.body, <Outliner nodeTree={nodeTree} objectSelection={selection}  propertyTab={propertyTab}/>)
+            const { selection, root, propertyTab } = setupScene1()
+            replaceChildren(document.body, <Outliner root={root} objectSelection={selection}  propertyTab={propertyTab}/>)
 
             const chevron = user.findChevron("xform0")!
             const children = user.findIndent("xform")!
@@ -83,8 +82,8 @@ describe("Outliner", () => {
     })
     describe("behaviour", () => {
         it("LMB sets item as selected while removing others from selection", async () => {
-            const { selection, nodeTree, propertyTab, xform1 } = setupScene1()
-            replaceChildren(document.body, <Outliner nodeTree={nodeTree} objectSelection={selection}  propertyTab={propertyTab}/>)
+            const { selection, root, propertyTab, xform1 } = setupScene1()
+            replaceChildren(document.body, <Outliner root={root} objectSelection={selection}  propertyTab={propertyTab}/>)
 
             user.moveToItem("xform1")
             user.click()
@@ -93,8 +92,8 @@ describe("Outliner", () => {
             expect(selection.selected).to.contain(xform1)
         })
         it("Ctrl+LMB adds item to selection", async () => {
-            const { selection, nodeTree, propertyTab, xform1, xform3 } = setupScene1()
-            replaceChildren(document.body, <Outliner nodeTree={nodeTree} objectSelection={selection}  propertyTab={propertyTab}/>)
+            const { selection, root, propertyTab, xform1, xform3 } = setupScene1()
+            replaceChildren(document.body, <Outliner root={root} objectSelection={selection}  propertyTab={propertyTab}/>)
 
             user.moveToItem("xform1")
             user.click()
@@ -175,10 +174,10 @@ class OutlinerUser extends BrowserUser {
 function setupScene() {
     const editorModel = new EditorModel()
     const selection = new ObjectSelection(editorModel)
-    const nodeTree = new NodeTree()
     const context = { selection, invalidate: () => { } } as any
-    nodeTree.root = new Root(context)
-    return { selection, nodeTree, propertyTab: editorModel.propertyTab }
+    const root = new Root()
+    root._context = context
+    return { selection, root, propertyTab: editorModel.propertyTab }
 }
 
 /**
@@ -192,14 +191,14 @@ function setupScene() {
  * ```
  */
 function setupScene1() {
-    const { selection, nodeTree, propertyTab } = setupScene()
-    const xform0 = new XForm(nodeTree.root)
+    const { selection, root, propertyTab } = setupScene()
+    const xform0 = new XForm(root)
     xform0.objectName = "xform0"
     const xform1 = new XForm(xform0)
     xform1.objectName = "xform1"
-    const xform2 = new XForm(nodeTree.root)
+    const xform2 = new XForm(root)
     xform2.objectName = "xform2"
     const xform3 = new XForm(xform2)
     xform3.objectName = "xform3"
-    return { selection, nodeTree, propertyTab, xform0, xform1, xform2, xform3 }
+    return { selection, root, propertyTab, xform0, xform1, xform2, xform3 }
 }

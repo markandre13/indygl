@@ -1,12 +1,10 @@
 import { defineConfig } from 'vite'
-import solidPlugin from 'vite-plugin-solid'
 import glsl from 'vite-plugin-glsl'
 import { playwright } from '@vitest/browser-playwright'
 
 export default defineConfig({
     plugins: [
         glsl(),
-        solidPlugin({ solid: { moduleName: "toad.jsx" } }),
     ],
     resolve: {
         // the tsconfig is for tsc
