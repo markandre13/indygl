@@ -119,7 +119,7 @@ export function OutlineChevron(props?: {
 
 function node2html(
     node: IndyNode | undefined,
-    node2element: Map<IndyNode, HTMLElement>,
+    // node2element: Map<IndyNode, HTMLElement>,
     node2handler: Map<IndyNode, (ev: NodeEvent) => void>,
     listSelection: ListSelection<IndyNode>,
     currentPropertyTab: OptionModel<PropertyTab>,
@@ -139,7 +139,7 @@ function node2html(
 
     const children: JSX.Element[] = []
     for (let child of node.children) {
-        const element = node2html(child, node2element, node2handler, listSelection, currentPropertyTab, depth + 1)
+        const element = node2html(child, node2handler, listSelection, currentPropertyTab, depth + 1)
         if (element) {
             children.push(element)
         }
@@ -158,7 +158,7 @@ function node2html(
                 onpointerdown={(ev) => {
                     ev.preventDefault()
                     if (node.showEnabled) {
-                        console.log(`toggle node(${node.name}) to ${!node.show}`)
+                        console.log(`toggle node(${node.constructor.name} ${node.name}) to ${!node.show}`)
                         node.show = !node.show
                     }
                 }}
@@ -194,17 +194,31 @@ function node2html(
             {nested}
         </div>
     }
-    node2element.set(node, item.current)
+    // node2element.set(node, item.current)
 
     // { node.show === undefined ? undefined : <use href={`icons.svg#blender-hide-${node.show ? 'off' : 'on'}`} /> }
     const update = (ev: NodeEvent) => {
-        // console.log(`HANDLER: ${ev.type.description} ${node.name}`)
-        switch (node.show) {
+        // if (ev.type !== NODE_CHANGE) {
+        //     return
+        // }
+        console.log(`UPDATE: ${ev.type.description}`)
+        const show = ev.node.show
+        const showEnabled = ev.node.showEnabled
+        console.log(`  UPDATE: ${ev.type.description} ${node.constructor.name}(${node.name}): show=${show} showEnabled=${showEnabled}`)
+        switch (show) {
             case true:
-                replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-off" />)
+                if (showEnabled) {
+                    replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-off" style="color: #fff;"/>)
+                } else {
+                    replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-off" style="color: #888;" />)
+                }
                 break
             case false:
-                replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-on" />)
+                if (showEnabled) {
+                    replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-on" style="color: #fff;"/>)
+                } else {
+                    replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-on" style="color: #888;" />)
+                }
                 break
             case undefined:
                 replaceChildren(toggleHideSvg, undefined)
@@ -217,26 +231,28 @@ function node2html(
     // prevent context menu so we can use ctrl + pointer button
     item.current.oncontextmenu = (ev: PointerEvent) => ev.preventDefault()
     item.current.onpointerdown = (ev: PointerEvent) => ev.preventDefault()
-    item.current.onclick = (ev: PointerEvent) => {
-        if (chevron.current.contains(ev.target as Node) || toggles.current.contains(ev.target as Node)) {
-            return
-        }
+    if (chevron.current) {
+        item.current.onclick = (ev: PointerEvent) => {
+            if (chevron.current.contains(ev.target as Node) || toggles.current.contains(ev.target as Node)) {
+                return
+            }
 
-        // console.log(`item.onclick`)
-        const xform = node?.getXForm()!
-        if (ev.shiftKey) { // this is Ctrl in blender
-            listSelection.add(node, xform)
-            node.context.selection.add(node)
-        } else {
-            listSelection.set(node, xform)
-            node.context.selection.set(node)
+            // console.log(`item.onclick`)
+            const xform = node?.getXForm()!
+            if (ev.shiftKey) { // this is Ctrl in blender
+                listSelection.add(node, xform)
+                node.context.selection.add(node)
+            } else {
+                listSelection.set(node, xform)
+                node.context.selection.set(node)
+            }
+            node.context.invalidate()
+            // console.log(`set focus to ${node.constructor.name}`)
+            if (propertyTab) {
+                currentPropertyTab.value = propertyTab
+            }
+            item.current.focus()
         }
-        node.context.invalidate()
-        // console.log(`set focus to ${node.constructor.name}`)
-        if (propertyTab) {
-            currentPropertyTab.value = propertyTab
-        }
-        item.current.focus()
     }
     return result
 }
@@ -256,49 +272,47 @@ export function Outliner(props: OutlinerProps) {
         + `</svg>`
     outliner.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(backgroundImage)}")`
 
-    let node2element: Map<IndyNode, HTMLElement>
     let handler: Map<IndyNode, (ev: NodeEvent) => void>
     let listSelection = new ListSelection<IndyNode>()
 
-    const updateFromSelection = () => {
-        // console.log(`updateFromSelection: map ${map.entries}`)
-        for (const [node, element] of node2element.entries()) {
-            element.classList.toggle("selected", listSelection.has(node))
-
-            if (props.objectSelection.isActive(node)) {
-                element.classList.add("obj-active")
-                element.classList.remove("obj-selected")
-            } else if (props.objectSelection.isSelected(node)) {
-                element.classList.remove("obj-active")
-                element.classList.add("obj-selected")
-            } else {
-                element.classList.remove("obj-active", "obj-selected")
-            }
-        }
-    }
+    // const updateFromSelection = () => {
+    //     // console.log(`updateFromSelection: map ${map.entries}`)
+    //     for (const [node, element] of node2element.entries()) {
+    //         element.classList.toggle("selected", listSelection.has(node))
+    //         if (props.objectSelection.isActive(node)) {
+    //             element.classList.add("obj-active")
+    //             element.classList.remove("obj-selected")
+    //         } else if (props.objectSelection.isSelected(node)) {
+    //             element.classList.remove("obj-active")
+    //             element.classList.add("obj-selected")
+    //         } else {
+    //             element.classList.remove("obj-active", "obj-selected")
+    //         }
+    //     }
+    // }
 
     const updateFromModel = () => {
         // console.log(`Outliner: node tree changed`)
-        node2element = new Map()
         handler = new Map()
-        const children = node2html(props.root.root, node2element, handler, listSelection, props.propertyTab)
+        const children = node2html(props.root.root, handler, listSelection, props.propertyTab)
         // console.log(children)
         replaceChildren(outliner, children)
-        updateFromSelection()
+        // updateFromSelection()
     }
 
-    props.root.signal.add(updateFromModel)
-    props.objectSelection.signal.add(updateFromSelection)
-    listSelection.signal.add(updateFromSelection)
+    // props.root.signal.add(updateFromModel)
+    // props.objectSelection.signal.add(updateFromSelection)
+    // listSelection.signal.add(updateFromSelection)
     // console.log(props.nodeTree.root)
+    handler = new Map()
     props.root.signal.add((ev: NodeEvent) => {
-        console.log(`Root.signal: ${ev.type.description} for '${ev.node.name}'`)
+        console.log(`Root.signal: ${ev.type.description} for ${ev.node.constructor.name}('${ev.node.name}')`)
         const h = handler.get(ev.node)
         if (h) { h(ev) }
     })
 
     updateFromModel()
-    updateFromSelection()
+    // updateFromSelection()
 
     return outliner
 }

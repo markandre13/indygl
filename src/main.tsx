@@ -319,11 +319,11 @@ function renderOutlinePass(commandEncoder: GPUCommandEncoder, context: Context) 
     pass.end()
 }
 
-async function loadDemoScene(root: Root, context: Context) {
+async function loadDemoScene(root: Root) {
     const teapot = new XForm(root)
     const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
     teapot.objectName = teapotMesh.dataName = "Utah Teapot"
-    teapotMesh.material = new Material(context, [1, 0.5, 0, 1])
+    teapotMesh.material = new Material(root, [1, 0.5, 0, 1])
     teapot.transform = mat4.create()
     // mat4.translate(teapot.transform, teapot.transform, vec3.fromValues(3, 5, -7))
     // mat4.rotateX(teapot.transform, teapot.transform, deg2rad(20))
@@ -333,39 +333,39 @@ async function loadDemoScene(root: Root, context: Context) {
     const dodecahedron = new XForm(root)
     const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj")
     dodecahedron.objectName = dodecahedronMesh.dataName = "Dodecahedron"
-    dodecahedronMesh.material = new Material(context, [0, 1, 0, 1])
+    dodecahedronMesh.material = new Material(root, [0, 1, 0, 1])
     dodecahedron.transform = mat4.create()
     mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15, 3.4, 0))
 
     const cube = new XForm(root)
     const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
     cube.objectName = cubeMesh.dataName = "Cube"
-    cubeMesh.material = new Material(context, [0, 0.2, 1, 1])
+    cubeMesh.material = new Material(root, [0, 0.2, 1, 1])
     cube.transform = mat4.create()
     mat4.translate(cube.transform, cube.transform, vec3.fromValues(2, 1, 4))
 
-    const human = new XForm(root)
-    const humanMesh = await loadMesh(human, "obj/mh/base.obj")
-    human.objectName = humanMesh.dataName = "Human"
-    const bodyTexture = new Texture()
-    await bodyTexture.load(context, "img/young_caucasian_female_special_suit.jpg")
-    humanMesh.material = new Material(context, bodyTexture)
+    // const human = new XForm(root)
+    // const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    // human.objectName = humanMesh.dataName = "Human"
+    // const bodyTexture = new Texture()
+    // await bodyTexture.load(context, "img/young_caucasian_female_special_suit.jpg")
+    // humanMesh.material = new Material(context, bodyTexture)
 
-    human.transform = mat4.create()
-    mat4.translate(human.transform, human.transform, vec3.fromValues(3, 8.05, -7))
-    // mat4.rotateX(human.transform, human.transform, deg2rad(20))
-    // mat4.rotateY(human.transform, human.transform, deg2rad(30))
-    // mat4.rotateZ(human.transform, human.transform, deg2rad(40))
+    // human.transform = mat4.create()
+    // mat4.translate(human.transform, human.transform, vec3.fromValues(3, 8.05, -7))
+    // // mat4.rotateX(human.transform, human.transform, deg2rad(20))
+    // // mat4.rotateY(human.transform, human.transform, deg2rad(30))
+    // // mat4.rotateZ(human.transform, human.transform, deg2rad(40))
 
-    // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
+    // // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
 
-    // const teeth = new XForm(root)
-    // const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
-    // teethMesh.material = new Material(context, [1, 1, 1, 1])
-    // // this wrecks the shading, guess through the normal matrix being messed up
-    // teeth.transform = mat4.create()
-    // mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
-    // // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
+    // // const teeth = new XForm(root)
+    // // const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
+    // // teethMesh.material = new Material(context, [1, 1, 1, 1])
+    // // // this wrecks the shading, guess through the normal matrix being messed up
+    // // teeth.transform = mat4.create()
+    // // mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
+    // // // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
 }
 
 let sourceBuffer: VertexBuffer | undefined
@@ -379,7 +379,7 @@ async function loadBlendshapes(root: Root, context: Context) {
     humanMesh.dataName = "Human"
     const bodyTexture = new Texture()
     await bodyTexture.load(context, "img/young_caucasian_female_special_suit.jpg")
-    humanMesh.material = new Material(context, bodyTexture)
+    humanMesh.material = new Material(root, bodyTexture)
     // humanMesh.material = new Material(context, [0, 0.5, 1, 1])
 
     const blendshapeGroup = new BlendShapeGroup(humanMesh)
@@ -393,7 +393,6 @@ async function loadBlendshapes(root: Root, context: Context) {
 }
 
 // MainScreen provides the canvas needed by Context (formerly CanvasContext)
-
 export async function main() {
     initTheme()
 
@@ -402,6 +401,7 @@ export async function main() {
     const selection = new ObjectSelection(editorModel)
 
     const root = new Root()
+    await loadDemoScene(root)
 
     replaceChildren(document.body, <MainScreen model={editorModel} selection={selection} root={root} />)
 
@@ -423,15 +423,15 @@ export async function main() {
     context.pushController(new BasicMode(context))
     context.pushController(new ObjectSelectController(context, root))
 
-    await loadDemoScene(root, context)
     // await loadBlendshapes(root, context)
 
     // context.nodeTree.signal.emit()
 
-    const matWire = new Material(context, [0, 0, 0, 1])
-    const matObjectSelected = new Material(context, [0.929, 0.341, 0, 1])
-    const matActiveObject = new Material(context, [1, 0.627, 0.157, 1])
-    const background = new Material(context, context.backgroundColor)
+    // FIXME: these materials are internal and should not be nodes => split the Material class?
+    const matWire = new Material(root, [0, 0, 0, 1])
+    const matObjectSelected = new Material(root, [0.929, 0.341, 0, 1])
+    const matActiveObject = new Material(root, [1, 0.627, 0.157, 1])
+    const background = new Material(root, context.backgroundColor)
 
     const materials = { wire: matWire, selected: matObjectSelected, active: matActiveObject }
 

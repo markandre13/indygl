@@ -9,7 +9,7 @@ import { smoothShading } from "src/gl/algorithms/smoothShading"
 import type { MeshData } from "../gl/algorithms/MeshData"
 import type { MeshSubset } from "src/gl/algorithms/MeshSubset"
 import { edges } from "src/gl/algorithms/edges"
-import { IndyNode, type NodeUiHints } from "./IndyNode"
+import { IndyNode, NODE_CHANGE, type NodeUiHints } from "./IndyNode"
 import { XForm } from "./XForm"
 import { vec3 } from "gl-matrix"
 import { WavefrontObj } from "src/gl/file/WavefrontObj"
@@ -26,20 +26,25 @@ export class Mesh extends IndyNode implements MeshData {
     override get uihints(): NodeUiHints { return Mesh.uiHints }
 
     override get show(): boolean | undefined {
-        return this._show
+        if (!this.#show) {
+            console.log(`SHOW=${this.#show}`)
+        }
+        return this.#show
     }
     override set show(value: boolean | undefined) {
         if (value === undefined) {
             throw Error(`show can not be set to undefined for ${this.constructor.name}`)
         }
-        this._show = value
+        this.#show = value
+        this.root.signal.emit({ type: NODE_CHANGE, node: this })
+        XForm.showChange(this)
     }
-    private _show = true
+    #show = true
 
     filename?: string
     dataName?: string
 
-    modelView!: ModelUniform
+    _modelView?: ModelUniform
 
     vcount?: ArrayLike<number>
     xyz?: ArrayLike<number>
@@ -60,9 +65,9 @@ export class Mesh extends IndyNode implements MeshData {
     constructor(parent: XForm, filename?: string)
     constructor(parent: XForm, optOrFilename?: MeshData | string) {
         super(parent)
-        if (this.context.device === undefined) { return }
+        // if (this.context.device === undefined) { return }
 
-        this.modelView = new ModelUniform(this.context)
+        // this.modelView = new ModelUniform(this.context)
         if (typeof optOrFilename === "string") {
             const filename = this.filename = optOrFilename
             fetch(filename).then(response => {
@@ -83,6 +88,13 @@ export class Mesh extends IndyNode implements MeshData {
         } else {
             this.init(optOrFilename)
         }
+    }
+
+    get modelView(): ModelUniform {
+        if (this._modelView === undefined) {
+            this._modelView = new ModelUniform(this.context)
+        }
+        return this._modelView
     }
 
     protected init(obj?: MeshData) {
