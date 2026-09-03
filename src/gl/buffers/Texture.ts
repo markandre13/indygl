@@ -1,5 +1,4 @@
 import type { Context } from "../Context"
-import type { Device } from "../Device"
 
 export class Texture {
     texture?: GPUTexture

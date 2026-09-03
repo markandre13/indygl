@@ -192,6 +192,11 @@ function renderRGBFaces(
     }
 
     for (const node of list) {
+        const mbg = node.material?.bindGroup
+        if (mbg === undefined) {
+            continue
+        }
+
         if (outline) {
             // TODO: handle isActive(node.getXForm()!) via one call
             const xform = node.getXForm()!
@@ -279,6 +284,9 @@ function renderTexFaces(
     }
 
     for (const node of list) {
+        if (node.material?.bindGroup === undefined) {
+            continue
+        }
         if (outline) {
             // TODO: handle isActive(node.getXForm()!) via one call
             const xform = node.getXForm()!
@@ -344,28 +352,27 @@ async function loadDemoScene(root: Root) {
     cube.transform = mat4.create()
     mat4.translate(cube.transform, cube.transform, vec3.fromValues(2, 1, 4))
 
-    // const human = new XForm(root)
-    // const humanMesh = await loadMesh(human, "obj/mh/base.obj")
-    // human.objectName = humanMesh.dataName = "Human"
-    // const bodyTexture = new Texture()
-    // await bodyTexture.load(context, "img/young_caucasian_female_special_suit.jpg")
-    // humanMesh.material = new Material(context, bodyTexture)
+    const human = new XForm(root)
+    const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    human.objectName = humanMesh.dataName = "Human"
+    // const bodyTexture = new Texture("img/young_caucasian_female_special_suit.jpg")
+    humanMesh.material = new Material(root, "img/young_caucasian_female_special_suit.jpg")
 
-    // human.transform = mat4.create()
-    // mat4.translate(human.transform, human.transform, vec3.fromValues(3, 8.05, -7))
-    // // mat4.rotateX(human.transform, human.transform, deg2rad(20))
-    // // mat4.rotateY(human.transform, human.transform, deg2rad(30))
-    // // mat4.rotateZ(human.transform, human.transform, deg2rad(40))
+    human.transform = mat4.create()
+    mat4.translate(human.transform, human.transform, vec3.fromValues(3, 8.05, -7))
+    // mat4.rotateX(human.transform, human.transform, deg2rad(20))
+    // mat4.rotateY(human.transform, human.transform, deg2rad(30))
+    // mat4.rotateZ(human.transform, human.transform, deg2rad(40))
 
-    // // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
+    // humanMesh.material = new Material(context, [0.996, 0.890, 0.831, 1])
 
-    // // const teeth = new XForm(root)
-    // // const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
-    // // teethMesh.material = new Material(context, [1, 1, 1, 1])
-    // // // this wrecks the shading, guess through the normal matrix being messed up
-    // // teeth.transform = mat4.create()
-    // // mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
-    // // // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
+    // const teeth = new XForm(root)
+    // const teethMesh = await loadMesh(teeth, "obj/teeth.obj") // two materials
+    // teethMesh.material = new Material(context, [1, 1, 1, 1])
+    // // this wrecks the shading, guess through the normal matrix being messed up
+    // teeth.transform = mat4.create()
+    // mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
+    // // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
 }
 
 let sourceBuffer: VertexBuffer | undefined
@@ -377,9 +384,7 @@ async function loadBlendshapes(root: Root, context: Context) {
     human.objectName = "Human"
     const humanMesh = await loadMesh(human, "obj/mh/base.obj")
     humanMesh.dataName = "Human"
-    const bodyTexture = new Texture()
-    await bodyTexture.load(context, "img/young_caucasian_female_special_suit.jpg")
-    humanMesh.material = new Material(root, bodyTexture)
+    humanMesh.material = new Material(root, "img/young_caucasian_female_special_suit.jpg")
     // humanMesh.material = new Material(context, [0, 0.5, 1, 1])
 
     const blendshapeGroup = new BlendShapeGroup(humanMesh)

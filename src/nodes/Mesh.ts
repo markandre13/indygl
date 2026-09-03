@@ -78,7 +78,7 @@ export class Mesh extends IndyNode implements MeshData {
                     const obj = new WavefrontObj(filename, body)
                     this.init(obj)
                     this.dirty = true
-                    this.context.invalidate()
+                    // this.context.invalidate()
                 }).catch(e => {
                     console.error(e)
                 })
