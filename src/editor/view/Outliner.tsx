@@ -4,6 +4,7 @@ import { Model } from "toad.js/appkit/Model"
 import type { OptionModel } from "toad.js/appkit/OptionModel"
 import { makeRef, Reference, replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
 import { PropertyTab } from "../app/PropertyTab"
+import { Signal } from "toad.js/reactive/Signal"
 
 // Exclude from View Layer (checkbox shown for collections)
 // Hide in Viewport (the open/closed eye)
@@ -21,7 +22,8 @@ import { PropertyTab } from "../app/PropertyTab"
 // * The rows of selected data-blocks are highlighted blue, with 
 // * the active data-block highlighted in a lighter blue.
 
-class ListSelection<T> extends Model {
+class ListSelection<T> {
+    readonly signal = new Signal<Set<T>>()
     private value = new Set<T>()
     add(...value: T[]) {
         // will change?
@@ -39,7 +41,7 @@ class ListSelection<T> extends Model {
         for (let i = 0; i < value.length; ++i) {
             this.value.add(value[i])
         }
-        this.signal.emit()
+        this.signal.emit(new Set(value))
     }
     set(...value: T[]) {
         // will change?
@@ -56,19 +58,21 @@ class ListSelection<T> extends Model {
             }
         }
 
+        const changedElements = new Set(this.value)
         this.value.clear()
         for (let i = 0; i < value.length; ++i) {
-            this.value.add(value[i])
+            const v = value[i]
+            changedElements.add(v)
+            this.value.add(v)
         }
-
-        this.signal.emit()
+        this.signal.emit(changedElements)
     }
     delete(value: T) {
         if (!this.value.has(value)) {
             return
         }
         this.value.delete(value)
-        this.signal.emit()
+        this.signal.emit(new Set([value]))
     }
     has(value: T) {
         return this.value.has(value)
@@ -126,13 +130,11 @@ function node2html(
     depth = 0
 ): JSX.Element | undefined {
     if (node === undefined) { return }
-    let name = node.constructor.name
-    let icon: JSX.Element = <svg width="16" height="16" style={{ color: "#ab5a61" }}><use href="icons.svg#blender-material-data" /></svg>
 
     let propertyTab: PropertyTab | undefined
 
-    name = node.name
-    icon = <svg width="16" height="16" style={{ color: node.uihints.color }}><use href={node.uihints.icon} /></svg>
+    let name = node.name
+    let icon = <svg width="16" height="16" style={{ color: node.uihints.color }}><use href={node.uihints.icon} /></svg>
     propertyTab = node.uihints.propertyTab
 
     // console.log(`${"    ".repeat(depth)}${name}`)
@@ -210,6 +212,8 @@ function node2html(
         const show = ev.node.show
         const showEnabled = ev.node.showEnabled
         // console.log(`  UPDATE: ${ev.type.description} ${node.constructor.name}(${node.name}): show=${show} showEnabled=${showEnabled}`)
+
+        item.current.classList.toggle("selected", listSelection.has(node))
 
         if (objectSelection.isActive(node)) {
             // console.log(`  is active`)
@@ -306,6 +310,18 @@ export function Outliner(props: OutlinerProps) {
     })
     props.objectSelection.signal.add((changedNodes) => {
         // console.log(`object selection changed for ${changedNodes.size} nodes`)
+        for (let node of changedNodes) {
+            // console.log(`  update node ${node.constructor.name}(${node.name})`)
+            const ev: NodeChangeEvent = { type: NODE_CHANGE, node }
+            const update = node2update.get(node)
+            if (update !== undefined) {
+                update(ev)
+            } else {
+                console.log("oops")
+            }
+        }
+    })
+    listSelection.signal.add((changedNodes) => {
         for (let node of changedNodes) {
             // console.log(`  update node ${node.constructor.name}(${node.name})`)
             const ev: NodeChangeEvent = { type: NODE_CHANGE, node }
