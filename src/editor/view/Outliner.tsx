@@ -250,28 +250,27 @@ function node2html(
     // prevent context menu so we can use ctrl + pointer button
     item.current.oncontextmenu = (ev: PointerEvent) => ev.preventDefault()
     item.current.onpointerdown = (ev: PointerEvent) => ev.preventDefault()
-    if (chevron.current) {
-        item.current.onclick = (ev: PointerEvent) => {
-            if (chevron.current.contains(ev.target as Node) || toggles.current.contains(ev.target as Node)) {
-                return
-            }
-
-            // console.log(`item.onclick`)
-            const xform = node?.getXForm()!
-            if (ev.shiftKey) { // this is Ctrl in blender
-                listSelection.add(node, xform)
-                node.context.selection.add(node)
-            } else {
-                listSelection.set(node, xform)
-                node.context.selection.set(node)
-            }
-            node.context.invalidate()
-            // console.log(`set focus to ${node.constructor.name}`)
-            if (propertyTab) {
-                currentPropertyTab.value = propertyTab
-            }
-            item.current.focus()
+    item.current.onclick = (ev: PointerEvent) => {
+        // if in chevron, do nothing here
+        if (chevron.current && (
+            chevron.current.contains(ev.target as Node) || toggles.current.contains(ev.target as Node))) {
+            return
         }
+
+        const xform = node?.getXForm()!
+        if (ev.shiftKey) { // this is Ctrl in blender
+            listSelection.add(node, xform)
+            node.context.selection.add(node)
+        } else {
+            listSelection.set(node, xform)
+            node.context.selection.set(node)
+        }
+        node.context.invalidate()
+        // console.log(`set focus to ${node.constructor.name}`)
+        if (propertyTab) {
+            currentPropertyTab.value = propertyTab
+        }
+        item.current.focus()
     }
     return result
 }
