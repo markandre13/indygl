@@ -1,5 +1,5 @@
 import type { ObjectSelection } from "src/gl/ObjectSelection"
-import { NODE_CHANGE, type IndyNode, type NodeEvent, type Root } from "src/nodes/IndyNode"
+import { NODE_CHANGE, type IndyNode, type NodeChangeEvent, type NodeEvent, type Root } from "src/nodes/IndyNode"
 import { Model } from "toad.js/appkit/Model"
 import type { OptionModel } from "toad.js/appkit/OptionModel"
 import { makeRef, Reference, replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
@@ -119,9 +119,9 @@ export function OutlineChevron(props?: {
 
 function node2html(
     node: IndyNode | undefined,
-    // node2element: Map<IndyNode, HTMLElement>,
-    node2handler: Map<IndyNode, (ev: NodeEvent) => void>,
+    node2update: Map<IndyNode, (ev: NodeEvent) => void>,
     listSelection: ListSelection<IndyNode>,
+    objectSelection: ObjectSelection,
     currentPropertyTab: OptionModel<PropertyTab>,
     depth = 0
 ): JSX.Element | undefined {
@@ -139,14 +139,14 @@ function node2html(
 
     const children: JSX.Element[] = []
     for (let child of node.children) {
-        const element = node2html(child, node2handler, listSelection, currentPropertyTab, depth + 1)
+        const element = node2html(child, node2update, listSelection, objectSelection, currentPropertyTab, depth + 1)
         if (element) {
             children.push(element)
         }
     }
 
     // TODO: break this up into more compomnents? or views and models? other?
-    let result: JSX.Element, item = makeRef<HTMLElement>(), indent = makeRef(), chevron = makeRef(), toggles = makeRef()
+    let result: JSX.Element, item = makeRef<HTMLDivElement>(), indent = makeRef(), chevron = makeRef(), toggles = makeRef()
     let toggleHideSvg = makeRef()
 
     // console.log(`node '${node.name}', show=${node.show ? "on" : "off"}`)
@@ -170,7 +170,9 @@ function node2html(
 
     if (children.length) {
         result = <>
-            <div ref={item} class="item" tabIndex={0} style={{ "padding-left": `${depth * 20}px` }}>
+            <div ref={item}
+                class="item"
+                tabIndex={0} style={{ "padding-left": `${depth * 20}px` }}>
                 <OutlineChevron ref={chevron} rotate={90}
                     onpointerdown={(ev) => ev.stopPropagation()}
                     onpointerup={(ev) => ev.stopPropagation()}
@@ -190,32 +192,49 @@ function node2html(
             <div ref={indent} class="indent">{...children}</div>
         </>
     } else {
-        result = <div ref={item} class="item" tabIndex={0} style={{ "padding-left": `${depth * 20 + 12}px` }}>
+        result = <div ref={item}
+            class="item"
+            tabIndex={0} style={{ "padding-left": `${depth * 20 + 12}px` }}>
             {nested}
         </div>
     }
-    // node2element.set(node, item.current)
 
-    // { node.show === undefined ? undefined : <use href={`icons.svg#blender-hide-${node.show ? 'off' : 'on'}`} /> }
-    const update = (ev: NodeEvent) => {
+    // note: this function uses toggleHideSvg
+    function updateNode(ev: NodeEvent) {
         // if (ev.type !== NODE_CHANGE) {
         //     return
         // }
-        console.log(`UPDATE: ${ev.type.description}`)
+        const node = ev.node
+        // console.log(`${ev.type.description} ${node.constructor.name}(${node.name})`)
+
         const show = ev.node.show
         const showEnabled = ev.node.showEnabled
-        console.log(`  UPDATE: ${ev.type.description} ${node.constructor.name}(${node.name}): show=${show} showEnabled=${showEnabled}`)
+        // console.log(`  UPDATE: ${ev.type.description} ${node.constructor.name}(${node.name}): show=${show} showEnabled=${showEnabled}`)
+
+        if (objectSelection.isActive(node)) {
+            // console.log(`  is active`)
+            item.current.classList.add("obj-active")
+            item.current.classList.remove("obj-selected")
+        } else if (objectSelection.isSelected(node)) {
+            // console.log(`  is selected`)
+            item.current.classList.remove("obj-active")
+            item.current.classList.add("obj-selected")
+        } else {
+            // console.log(`  is neither active nor selected`)
+            item.current.classList.remove("obj-active", "obj-selected")
+        }
+
         switch (show) {
             case true:
                 if (showEnabled) {
-                    replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-off" style="color: #fff;"/>)
+                    replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-off" style="color: #fff;" />)
                 } else {
                     replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-off" style="color: #888;" />)
                 }
                 break
             case false:
                 if (showEnabled) {
-                    replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-on" style="color: #fff;"/>)
+                    replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-on" style="color: #fff;" />)
                 } else {
                     replaceChildren(toggleHideSvg, <use href="icons.svg#blender-hide-on" style="color: #888;" />)
                 }
@@ -225,8 +244,8 @@ function node2html(
                 break
         }
     }
-    node2handler.set(node, update)
-    update({ type: NODE_CHANGE, node })
+    updateNode({ type: NODE_CHANGE, node })
+    node2update.set(node, updateNode)
 
     // prevent context menu so we can use ctrl + pointer button
     item.current.oncontextmenu = (ev: PointerEvent) => ev.preventDefault()
@@ -272,46 +291,35 @@ export function Outliner(props: OutlinerProps) {
         + `</svg>`
     outliner.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(backgroundImage)}")`
 
-    let handler: Map<IndyNode, (ev: NodeEvent) => void>
+    let node2update = new Map<IndyNode, (ev: NodeEvent) => void>()
     let listSelection = new ListSelection<IndyNode>()
 
-    // const updateFromSelection = () => {
-    //     // console.log(`updateFromSelection: map ${map.entries}`)
-    //     for (const [node, element] of node2element.entries()) {
-    //         element.classList.toggle("selected", listSelection.has(node))
-    //         if (props.objectSelection.isActive(node)) {
-    //             element.classList.add("obj-active")
-    //             element.classList.remove("obj-selected")
-    //         } else if (props.objectSelection.isSelected(node)) {
-    //             element.classList.remove("obj-active")
-    //             element.classList.add("obj-selected")
-    //         } else {
-    //             element.classList.remove("obj-active", "obj-selected")
-    //         }
-    //     }
-    // }
-
-    const updateFromModel = () => {
-        // console.log(`Outliner: node tree changed`)
-        handler = new Map()
-        const children = node2html(props.root.root, handler, listSelection, props.propertyTab)
-        // console.log(children)
-        replaceChildren(outliner, children)
-        // updateFromSelection()
-    }
+    const children = node2html(props.root.root, node2update, listSelection, props.objectSelection, props.propertyTab)
+    replaceChildren(outliner, children)
 
     // props.root.signal.add(updateFromModel)
     // props.objectSelection.signal.add(updateFromSelection)
     // listSelection.signal.add(updateFromSelection)
     // console.log(props.nodeTree.root)
-    handler = new Map()
+    // handler = new Map()
     props.root.signal.add((ev: NodeEvent) => {
-        console.log(`Root.signal: ${ev.type.description} for ${ev.node.constructor.name}('${ev.node.name}')`)
-        const h = handler.get(ev.node)
-        if (h) { h(ev) }
+        node2update.get(ev.node)?.(ev)
+    })
+    props.objectSelection.signal.add((changedNodes) => {
+        // console.log(`object selection changed for ${changedNodes.size} nodes`)
+        for (let node of changedNodes) {
+            // console.log(`  update node ${node.constructor.name}(${node.name})`)
+            const ev: NodeChangeEvent = { type: NODE_CHANGE, node }
+            const update = node2update.get(node)
+            if (update !== undefined) {
+                update(ev)
+            } else {
+                console.log("oops")
+            }
+        }
     })
 
-    updateFromModel()
+    // updateFromModel()
     // updateFromSelection()
 
     return outliner

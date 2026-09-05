@@ -16,8 +16,16 @@ import { quat2euler } from './algorithms/quat2euler'
  * * also track other nodes
  */
 export class ObjectSelection {
-    signal = new Signal()
+    /**
+     * signal which nodes have changed
+     */
+    signal = new Signal<Set<IndyNode>>()
+
     model: EditorModel
+
+    /**
+     * the last selected node
+     */
     private active?: IndyNode
     selected = new Set<IndyNode>();
     private rotationQuat = quat.create()
@@ -38,7 +46,8 @@ export class ObjectSelection {
         model.transform.signal.add(this.updateActiveFromEditorModel)
     }
 
-    isActive(node: IndyNode | undefined) { 
+    isSelected(node: IndyNode): boolean { return this.selected.has(node) }
+    isActive(node: IndyNode | undefined) {
         if (node === undefined) {
             return false
         }
@@ -46,19 +55,23 @@ export class ObjectSelection {
             return true
         }
         if (!(node instanceof XForm)) {
-            
+
         }
+        return undefined
     }
     getActive() { return this.active }
-    isSelected(node: IndyNode) { return this.selected.has(node) }
 
     /**
      * clear selection
      */
     clear() {
+        const changedNodes = new Set<IndyNode>(this.selected)
+        if (this.active) { changedNodes.add(this.active) }
+
         this.active = undefined
         this.selected.clear()
-        this.signal.emit()
+
+        this.signal.emit(changedNodes)
     }
 
     /**
@@ -67,20 +80,53 @@ export class ObjectSelection {
      * @param node
      */
     add(node: IndyNode) {
-        // TODO: edit the active node via the panel
-        // HOW : make 'active' private, then everybody has to operate through the selection
-        //       which keeps everything updated. the way the IndyNode does not have to become
-        //       a 
+        // console.log(`ObjectSelection.add ${node.constructor.name}(${node.name})`)
         node = node.getXForm() ?? node
 
         this.active = node
         this.selected.add(node)
 
-        // console.log(`Selection.add(${node.constructor.name})`)
+        const changedNodes = new Set<IndyNode>(this.selected)
+        changedNodes.add(this.active)
+      
+        this.updateActive()
 
+        this.signal.emit(changedNodes)
+    }
+
+    set(node: IndyNode) {
+        // console.log(`ObjectSelection.set ${node.constructor.name}(${node.name})`)
+        node = node.getXForm() ?? node
+
+        const changedNodes = new Set<IndyNode>(this.selected)
+        if (this.active) { changedNodes.add(node) }
+        changedNodes.add(node)
+        
+        this.active = node
+        this.selected.clear()
+        this.selected.add(node)
+
+        this.updateActive()
+
+        this.signal.emit(changedNodes)
+    }
+
+    remove(node: IndyNode) {
+        if (this.isActive(node)) {
+            this.active = undefined
+        }
+        this.selected.delete(node)
+        this.signal.emit(new Set([node]))
+    }
+
+    private updateActive() {
+        const node = this.active
+        if (node === undefined) {
+            return
+        }
+        const xform = node.parent as XForm | undefined
         // Initialize rotation state for the new active object so that
         // transformActive sees correct deltas if signals fire during update()
-        const xform = node.parent as XForm | undefined
         if (xform?.transform) {
             mat4.getRotation(this.rotationQuat, xform.transform)
             const e = quat2euler(this.rotationQuat)
@@ -94,22 +140,6 @@ export class ObjectSelection {
             this.lastEuler = { x: 0, y: 0, z: 0 }
         }
         this.updateEditorModelFromActive()
-
-        this.signal.emit()
-    }
-
-    set(node: IndyNode) {
-        this.active = undefined
-        this.selected.clear()
-        this.add(node)
-    }
-
-    remove(node: IndyNode) {
-        if (this.isActive(node)) {
-            this.active = undefined
-        }
-        this.selected.delete(node)
-        this.signal.emit()
     }
 
     /**
