@@ -3,6 +3,11 @@ import { ColorUniform } from "../gl/buffers/ColorUniform"
 import { Texture } from "../gl/buffers/Texture"
 import { IndyNode, Root, type NodeUiHints } from "./IndyNode"
 
+/**
+ * TODO: for Material to work similar to Blender, we'd need a global list of materials
+ *       and a link to that material in the node tree.
+ *       have a look at how USD does it
+ */
 export class Material extends IndyNode {
     static override uiHints: NodeUiHints = {
         color: "#ab5a61",

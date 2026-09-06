@@ -5,6 +5,7 @@ import type { OptionModel } from "toad.js/appkit/OptionModel"
 import { makeRef, Reference, replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
 import { PropertyTab } from "../app/PropertyTab"
 import { Signal } from "toad.js/reactive/Signal"
+import { Material } from "src/nodes/Material"
 
 // Exclude from View Layer (checkbox shown for collections)
 // Hide in Viewport (the open/closed eye)
@@ -121,6 +122,44 @@ export function OutlineChevron(props?: {
     )
 }
 
+/**
+ * Display data of current file.
+ */
+export function Outliner(props: OutlinerProps) {
+
+    const outliner = <div class="outliner" ref={props.ref} /> as HTMLElement
+
+    // FIXME: seting the background via style={{backgroundImage: encodeURIComponent(backgroundImage)}} ain't working
+    const barHeight = 22
+    let backgroundImage = `<svg xmlns="http://www.w3.org/2000/svg" class="outliner-bar" viewBox="0 0 40 ${2 * barHeight}">`
+        + `<rect x="0" y="0" width="40" height="${barHeight}" fill="rgba(0,0,0,0)" stroke="none" />`
+        + `<rect x="0" y="${barHeight}" width="40" height="${barHeight}" fill="rgba(255,255,255,0.1)" stroke="none" />`
+        + `</svg>`
+    outliner.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(backgroundImage)}")`
+
+    let node2update = new Map<IndyNode, (ev: NodeEvent) => void>()
+    let listSelection = new ListSelection<IndyNode>()
+
+    const children = node2html(props.root.root, node2update, listSelection, props.objectSelection, props.propertyTab)
+    replaceChildren(outliner, children)
+
+    props.root.signal.add((ev: NodeEvent) => {
+        node2update.get(ev.node)?.(ev)
+    })
+    props.objectSelection.signal.add((changedNodes) => {
+        for (let node of changedNodes) {
+            node2update.get(node)?.({ type: NODE_CHANGE, node })
+        }
+    })
+    listSelection.signal.add((changedNodes) => {
+        for (let node of changedNodes) {
+            node2update.get(node)?.({ type: NODE_CHANGE, node })
+        }
+    })
+
+    return outliner
+}
+
 function node2html(
     node: IndyNode | undefined,
     node2update: Map<IndyNode, (ev: NodeEvent) => void>,
@@ -130,6 +169,11 @@ function node2html(
     depth = 0
 ): JSX.Element | undefined {
     if (node === undefined) { return }
+
+    // TODO: temporarily exclude Material from the Outliner for now
+    if (node instanceof Material) {
+        return
+    }
 
     let propertyTab: PropertyTab | undefined
 
@@ -277,65 +321,4 @@ function node2html(
         item.current.focus()
     }
     return result
-}
-
-/**
- * Display data of current file.
- */
-export function Outliner(props: OutlinerProps) {
-
-    const outliner = <div class="outliner" ref={props.ref} /> as HTMLElement
-
-    // FIXME: seting the background via style={{backgroundImage: encodeURIComponent(backgroundImage)}} ain't working
-    const barHeight = 22
-    let backgroundImage = `<svg xmlns="http://www.w3.org/2000/svg" class="outliner-bar" viewBox="0 0 40 ${2 * barHeight}">`
-        + `<rect x="0" y="0" width="40" height="${barHeight}" fill="rgba(0,0,0,0)" stroke="none" />`
-        + `<rect x="0" y="${barHeight}" width="40" height="${barHeight}" fill="rgba(255,255,255,0.1)" stroke="none" />`
-        + `</svg>`
-    outliner.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(backgroundImage)}")`
-
-    let node2update = new Map<IndyNode, (ev: NodeEvent) => void>()
-    let listSelection = new ListSelection<IndyNode>()
-
-    const children = node2html(props.root.root, node2update, listSelection, props.objectSelection, props.propertyTab)
-    replaceChildren(outliner, children)
-
-    // props.root.signal.add(updateFromModel)
-    // props.objectSelection.signal.add(updateFromSelection)
-    // listSelection.signal.add(updateFromSelection)
-    // console.log(props.nodeTree.root)
-    // handler = new Map()
-    props.root.signal.add((ev: NodeEvent) => {
-        node2update.get(ev.node)?.(ev)
-    })
-    props.objectSelection.signal.add((changedNodes) => {
-        // console.log(`object selection changed for ${changedNodes.size} nodes`)
-        for (let node of changedNodes) {
-            // console.log(`  update node ${node.constructor.name}(${node.name})`)
-            const ev: NodeChangeEvent = { type: NODE_CHANGE, node }
-            const update = node2update.get(node)
-            if (update !== undefined) {
-                update(ev)
-            } else {
-                console.log("oops")
-            }
-        }
-    })
-    listSelection.signal.add((changedNodes) => {
-        for (let node of changedNodes) {
-            // console.log(`  update node ${node.constructor.name}(${node.name})`)
-            const ev: NodeChangeEvent = { type: NODE_CHANGE, node }
-            const update = node2update.get(node)
-            if (update !== undefined) {
-                update(ev)
-            } else {
-                console.log("oops")
-            }
-        }
-    })
-
-    // updateFromModel()
-    // updateFromSelection()
-
-    return outliner
 }
