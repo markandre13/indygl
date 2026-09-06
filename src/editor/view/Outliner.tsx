@@ -1,27 +1,10 @@
 import type { ObjectSelection } from "src/gl/ObjectSelection"
-import { NODE_CHANGE, type IndyNode, type NodeChangeEvent, type NodeEvent, type Root } from "src/nodes/IndyNode"
-import { Model } from "toad.js/appkit/Model"
+import { NODE_CHANGE, type IndyNode, type NodeEvent, type Root } from "src/nodes/IndyNode"
 import type { OptionModel } from "toad.js/appkit/OptionModel"
 import { makeRef, Reference, replaceChildren, type HTMLElementProps, type JSX } from "toad.jsx/jsx-runtime"
 import { PropertyTab } from "../app/PropertyTab"
 import { Signal } from "toad.js/reactive/Signal"
 import { Material } from "src/nodes/Material"
-
-// Exclude from View Layer (checkbox shown for collections)
-// Hide in Viewport (the open/closed eye)
-//   for collections:
-//     Temporarily hide in viewport
-//     * Ctrl to isolate selection
-//     * Shift to set inside collections and objects
-//   others:
-//     Temporarily hide in viewport
-//     * Shift to set children
-// Disable in Renders (the camera) ;; IndyGL doesn't render
-//     Globally disable in renders
-
-// Single selections will also activate the data-block. 
-// * The rows of selected data-blocks are highlighted blue, with 
-// * the active data-block highlighted in a lighter blue.
 
 class ListSelection<T> {
     readonly signal = new Signal<Set<T>>()

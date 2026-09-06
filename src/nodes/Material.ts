@@ -46,7 +46,7 @@ export class Material extends IndyNode {
                 this._colorUniform.rgba = this._rgba
                 this._colorUniform.writeTo(device)
                 this._bindGroup = device.device.createBindGroup({
-                    label: 'material-bind-group',
+                    label: 'material-bind-group-rgba',
                     layout: this.root.context.bindGroupLayout.materialRGBA,
                     entries: [
                         { binding: 0, resource: this._colorUniform.buffer },
@@ -59,13 +59,14 @@ export class Material extends IndyNode {
                     .then(() => {
                         this._texture = texture
                         this._bindGroup = device.device.createBindGroup({
-                            label: 'material-bind-group',
+                            label: 'material-bind-group-texture',
                             layout: context.bindGroupLayout.materialTexture,
                             entries: [
                                 { binding: 0, resource: context.sampler },
                                 { binding: 1, resource: texture.texture!.createView() },
                             ],
                         })
+                        context.invalidate()
                     })
             }
         }
