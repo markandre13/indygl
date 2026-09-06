@@ -153,10 +153,11 @@ function renderLines(
     if (nodes.length === 0) return
     pass.setPipeline(context.shader.p3_idx_line.pipeline)
     for (const node of nodes) {
+        const xform = node.getXForm()!
         pass.setBindGroup(1, node.modelView.bindGroup)
-        if (context.selection.isActive(node)) {
+        if (context.selection.isActive(xform)) {
             pass.setBindGroup(2, materials.active.bindGroup)
-        } else if (context.selection.selected.has(node)) {
+        } else if (context.selection.selected.has(xform)) {
             pass.setBindGroup(2, materials.selected.bindGroup)
         } else {
             pass.setBindGroup(2, materials.wire.bindGroup)
@@ -180,6 +181,7 @@ function renderRGBFaces(
     if (list.length === 0) return
 
     if (editorModel.viewportShading.value === ViewportShading.WIREFRAME) {
+        // fill mesh with background color
         pass.setBindGroup(2, background.bindGroup)
         pass.setPipeline(context.shader.p3_idx.pipeline)
     } else {
@@ -430,10 +432,6 @@ export async function main() {
     new ResizeObserver(context.invalidate).observe(canvas)
     context.pushController(new BasicMode(context))
     context.pushController(new ObjectSelectController(context, root))
-
-
-
-    // context.nodeTree.signal.emit()
 
     // FIXME: these materials are internal and should not be nodes => split the Material class?
     const matWire = new Material(root, [0, 0, 0, 1])
