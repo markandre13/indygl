@@ -143,7 +143,7 @@ export class ObjectSelection {
     }
 
     /**
-     * update the active
+     * update the active object
      *
      * Each Euler change in the UI is applied as a delta rotation around the
      * object's current LOCAL axis using a quaternion. This eliminates gimbal
@@ -187,7 +187,7 @@ export class ObjectSelection {
         mat4.scale(m, m, this.model.transform.scale.value)
         mat4.mul(m, m, rotation)
 
-        const parent = this.active.parent as XForm
+        const parent = this.active as XForm
         parent.transform = m
         parent.dirty = true
 
