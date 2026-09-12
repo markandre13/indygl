@@ -2,8 +2,6 @@ import { mat4, vec3 } from "gl-matrix"
 import { IndyNode, NODE_CHANGE, type NodeUiHints } from "./IndyNode"
 import { PropertyTab } from "src/editor/app/PropertyTab"
 
-
-
 export class XForm extends IndyNode {
     static override uiHints: NodeUiHints = {
         color: "#bd7f4d",

@@ -6,7 +6,6 @@ import type { Context } from "src/gl/Context"
 import { Circle } from "../viewkit/svg/Circle"
 import { world2screen } from "src/gl/algorithms/coordinates"
 import { LineWithArrows } from "../viewkit/svg/LineWithArrows"
-import type { XForm } from "src/nodes/XForm"
 import { rad2deg } from "src/gl/algorithms/rad2deg"
 
 export class ObjectRotateController extends Controller {

@@ -23,26 +23,31 @@ export class AxisRenderer {
 
         const s = 10000
         this.points = new VertexBuffer(device, [
+            // x-axis
             -s, 0, 0, 1, 0, 0,
             s, 0, 0, 1, 0, 0,
 
+            // y-axis
             0, -s, 0, 0, 1, 0,
             0, s, 0, 0, 1, 0,
 
+            // z-axis
             0, 0, -s, 0, 0, 1,
             0, 0, s, 0, 0, 1,
         ])
     }
     set(x: boolean, y: boolean, z: boolean) {
+        // console.log(`set '${this.context.editorModel.transformOrientation.value}' axis ${x}, ${y}, ${z}`)
         const m = this.modelView.modelViewMatrix
         if (this.context.selection.getActive()) {
 
-            const transform = this.context.selection.getActive()?.getXForm()?.combined!
+            const transform = this.context.selection.getActive()?.combined!
 
             switch (this.context.editorModel.transformOrientation.value) {
                 case TransformOrientation.GLOBAL:
                     mat4.identity(m)
                     const t = mat4.getTranslation(vec3.create(), transform)
+                    // console.log(`set global axis through ${t[0]}, ${t[1]}, ${t[2]}`)
                     mat4.translate(m, m, t)
                     break
                 case TransformOrientation.LOCAL:

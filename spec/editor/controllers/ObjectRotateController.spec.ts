@@ -1,100 +1,36 @@
 import { describe, expect, it, beforeEach, vi } from "vitest"
-import { mat4, vec3 } from "gl-matrix"
+import { mat4 } from "gl-matrix"
 import { ObjectRotateController } from "src/editor/controllers/ObjectRotateController"
 import { XForm } from "src/nodes/XForm"
 import { Mesh } from "src/nodes/Mesh"
 import { AxisRenderer } from "src/gl/AxisRenderer"
 import { Root } from "src/nodes/IndyNode"
 
-function createMockAxisRenderer(): AxisRenderer {
-    const r = Object.create(AxisRenderer.prototype)
-    r.context = null
-    r.x = false
-    r.y = false
-    r.z = false
-    r.set = vi.fn(function (this: AxisRenderer, x: boolean, y: boolean, z: boolean) {
-        this.x = x
-        this.y = y
-        this.z = z
-    })
-    return r
-}
-
-beforeEach(() => {
-    document.getElementById("overlay")?.remove()
-    document.getElementById("svg-overlay")?.remove()
-})
-
-function createEnvironment() {
-    const infoOverlay = document.createElement("div")
-    infoOverlay.id = "overlay"
-    document.body.appendChild(infoOverlay)
-
-    const svgOverlay = document.createElement("div")
-    svgOverlay.id = "svg-overlay"
-    document.body.appendChild(svgOverlay)
-
-    const canvas = document.createElement("canvas")
-    canvas.width = 640
-    canvas.height = 480
-    Object.defineProperty(canvas, "clientWidth", { value: 640, configurable: true })
-    Object.defineProperty(canvas, "clientHeight", { value: 480, configurable: true })
-
-    const axisRenderer = createMockAxisRenderer()
-
-    const context: any = {
-        selection: {
-            active: undefined as any,
-            updateEditorModelFromActive: vi.fn(),
-        },
-        axisRenderer,
-        sceneUniforms: {
-            projectionMatrix: mat4.perspectiveZO(mat4.create(), 0.785398, 640 / 480, 0.1, 100),
-            perspective: mat4.perspectiveZO(mat4.create(), 0.785398, 640 / 480, 0.1, 100),
-            camera: mat4.create(),
-        },
-        canvas,
-        lastPointerOffset: { x: 0, y: 0 },
-        invalidate: vi.fn(),
-        popController: vi.fn(),
-    }
-    return { context, infoOverlay, svgOverlay, canvas }
-}
-
-function createNodeTree(context: any) {
-    const root = new Root()
-    root._context = context
-    const parent = new XForm(root)
-    parent.transform = mat4.create()
-
-    const combined = mat4.fromTranslation(mat4.create(), [0, 0, -10])
-    const mesh = Object.create(Mesh.prototype, {
-        combined: { value: combined, writable: true },
-        parent: { value: parent },
-        context: { value: context },
-    }) as Mesh
-
-    return { root, parent, mesh }
-}
-
 describe("ObjectRotateController", () => {
-    it("constructor sets up SVG elements, info label, and stores initial state", () => {
-        const { context, infoOverlay } = createEnvironment()
-        const { parent, mesh } = createNodeTree(context)
-        context.selection.active = mesh
-        parent.transform = mat4.fromTranslation(mat4.create(), [5, 10, 15])
-
-        const ctrl = new ObjectRotateController(context)
-
-        expect(ctrl.originMarker).toBeDefined()
-        expect(ctrl.lineToPointer).toBeDefined()
-        expect(ctrl.initialTransform).toBeDefined()
-        expect(mat4.equals(ctrl.initialTransform, parent.transform!)).toBe(true)
-        expect(context.canvas.style.cursor).toBe("none")
-        expect(infoOverlay.childElementCount).toBe(1)
+    beforeEach(() => {
+        document.getElementById("overlay")?.remove()
+        document.getElementById("svg-overlay")?.remove()
     })
 
-    it("cancel restores initial transform and pops controller", () => {
+    describe("details", () => {
+        it("constructor sets up SVG elements, info label, and stores initial state", () => {
+            const { context, infoOverlay } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            parent.transform = mat4.fromTranslation(mat4.create(), [5, 10, 15])
+
+            const ctrl = new ObjectRotateController(context)
+
+            expect(ctrl.originMarker).toBeDefined()
+            expect(ctrl.lineToPointer).toBeDefined()
+            expect(ctrl.initialTransform).toBeDefined()
+            expect(mat4.equals(ctrl.initialTransform, parent.transform!)).toBe(true)
+            expect(context.canvas.style.cursor).toBe("none")
+            expect(infoOverlay.childElementCount).toBe(1)
+        })
+    })
+
+    it("cancel() restores initial transform and pops controller", () => {
         const { context } = createEnvironment()
         const { parent, mesh } = createNodeTree(context)
         context.selection.active = mesh
@@ -112,7 +48,7 @@ describe("ObjectRotateController", () => {
         expect(context.popController).toHaveBeenCalled()
     })
 
-    it("confirm keeps transform and pops controller", () => {
+    it("confirm() keeps transform and pops controller", () => {
         const { context } = createEnvironment()
         const { parent, mesh } = createNodeTree(context)
         context.selection.active = mesh
@@ -130,7 +66,7 @@ describe("ObjectRotateController", () => {
         expect(context.popController).toHaveBeenCalled()
     })
 
-    it("destructor resets axis, removes SVG elements and resets cursor", () => {
+    it("destructor() resets axis, removes SVG elements and resets cursor", () => {
         const { context, infoOverlay, svgOverlay } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
@@ -149,7 +85,7 @@ describe("ObjectRotateController", () => {
         expect(context.axisRenderer.z).toBe(false)
     })
 
-    it("keydown sets single axis constraint", () => {
+    it("keydown() X|Y|Z sets single axis constraint", () => {
         const { context } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
@@ -171,7 +107,7 @@ describe("ObjectRotateController", () => {
         expect(context.axisRenderer.z).toBe(true)
     })
 
-    it("keydown with shift sets plane constraint", () => {
+    it("keydown() Shift+(X|Y|Z) sets plane constraint", () => {
         const { context } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
@@ -193,7 +129,7 @@ describe("ObjectRotateController", () => {
         expect(context.axisRenderer.z).toBe(false)
     })
 
-    it("pointerdown left button calls confirm", () => {
+    it("pointerdown() left mouse button calls confirm()", () => {
         const { context } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
@@ -204,7 +140,7 @@ describe("ObjectRotateController", () => {
         expect(spy).toHaveBeenCalled()
     })
 
-    it("pointerdown right button calls cancel", () => {
+    it("pointerdown() right mouse button calls cancel()", () => {
         const { context } = createEnvironment()
         const { mesh } = createNodeTree(context)
         context.selection.active = mesh
@@ -215,7 +151,7 @@ describe("ObjectRotateController", () => {
         expect(spy).toHaveBeenCalled()
     })
 
-    it("pointermove rotates parent transform (free rotate)", () => {
+    it("pointermove() rotates parent transform (free rotate)", () => {
         const { context } = createEnvironment()
         const { parent, mesh } = createNodeTree(context)
         context.selection.active = mesh
@@ -235,7 +171,7 @@ describe("ObjectRotateController", () => {
         expect(context.invalidate).toHaveBeenCalled()
     })
 
-    it("pointermove with X axis constraint rotates around X", () => {
+    it("pointermove() with X axis constraint rotates around X", () => {
         const { context } = createEnvironment()
         const { parent, mesh } = createNodeTree(context)
         context.selection.active = mesh
@@ -253,7 +189,9 @@ describe("ObjectRotateController", () => {
         expect(mat4.equals(parent.transform!, initial)).toBe(false)
     })
 
-    describe("pointermove with camera transform", () => {
+    // TODO: Y, Z
+
+    describe("pointermove() with camera transform", () => {
         it("free rotate still works when camera is translated", () => {
             const { context } = createEnvironment()
             const { parent, mesh } = createNodeTree(context)
@@ -618,3 +556,71 @@ describe("ObjectRotateController", () => {
         })
     })
 })
+
+function createMockAxisRenderer(): AxisRenderer {
+    const r = Object.create(AxisRenderer.prototype)
+    r.context = null
+    r.x = false
+    r.y = false
+    r.z = false
+    r.set = vi.fn(function (this: AxisRenderer, x: boolean, y: boolean, z: boolean) {
+        this.x = x
+        this.y = y
+        this.z = z
+    })
+    return r
+}
+
+
+
+function createEnvironment() {
+    const infoOverlay = document.createElement("div")
+    infoOverlay.id = "overlay"
+    document.body.appendChild(infoOverlay)
+
+    const svgOverlay = document.createElement("div")
+    svgOverlay.id = "svg-overlay"
+    document.body.appendChild(svgOverlay)
+
+    const canvas = document.createElement("canvas")
+    canvas.width = 640
+    canvas.height = 480
+    Object.defineProperty(canvas, "clientWidth", { value: 640, configurable: true })
+    Object.defineProperty(canvas, "clientHeight", { value: 480, configurable: true })
+
+    const axisRenderer = createMockAxisRenderer()
+
+    const context: any = {
+        selection: {
+            active: undefined as any,
+            updateEditorModelFromActive: vi.fn(),
+        },
+        axisRenderer,
+        sceneUniforms: {
+            projectionMatrix: mat4.perspectiveZO(mat4.create(), 0.785398, 640 / 480, 0.1, 100),
+            perspective: mat4.perspectiveZO(mat4.create(), 0.785398, 640 / 480, 0.1, 100),
+            camera: mat4.create(),
+        },
+        canvas,
+        lastPointerOffset: { x: 0, y: 0 },
+        invalidate: vi.fn(),
+        popController: vi.fn(),
+    }
+    return { context, infoOverlay, svgOverlay, canvas }
+}
+
+function createNodeTree(context: any) {
+    const root = new Root()
+    root._context = context
+    const parent = new XForm(root)
+    parent.transform = mat4.create()
+
+    const combined = mat4.fromTranslation(mat4.create(), [0, 0, -10])
+    const mesh = Object.create(Mesh.prototype, {
+        combined: { value: combined, writable: true },
+        parent: { value: parent },
+        context: { value: context },
+    }) as Mesh
+
+    return { root, parent, mesh }
+}

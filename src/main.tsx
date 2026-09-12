@@ -6,7 +6,6 @@ import { BasicMode } from './editor/controllers/BasicController'
 import { ObjectSelectController } from './editor/controllers/ObjectSelectController'
 import { MainScreen } from './editor/view/MainScreen'
 import { deg2rad } from './gl/algorithms/deg2rad'
-import { Texture } from './gl/buffers/Texture'
 import { VertexBuffer } from './gl/buffers/VertexBuffer'
 import { Context } from './gl/Context'
 import { Device } from './gl/Device'
@@ -112,6 +111,7 @@ function prepareNode(
                 }
         }
     }
+    // NOTE: the most universal approach would be to deform the morph mesh via another mesh
     if (node instanceof BlendShape) {
         if (node.name === "browInnerUp") {
             const mesh = node.mesh
@@ -357,7 +357,6 @@ async function loadDemoScene(root: Root) {
     const human = new XForm(root)
     const humanMesh = await loadMesh(human, "obj/mh/base.obj")
     human.objectName = humanMesh.dataName = "Human"
-    // const bodyTexture = new Texture("img/young_caucasian_female_special_suit.jpg")
     humanMesh.material = new Material(root, "img/young_caucasian_female_special_suit.jpg")
 
     human.transform = mat4.create()
@@ -381,7 +380,7 @@ let sourceBuffer: VertexBuffer | undefined
 let destinationBuffer: VertexBuffer | undefined
 let copyBuffer = false
 
-async function loadBlendshapes(root: Root, context: Context) {
+async function loadBlendshapes(root: Root) {
     const human = new XForm(root)
     human.objectName = "Human"
     const humanMesh = await loadMesh(human, "obj/mh/base.obj")
@@ -397,6 +396,8 @@ async function loadBlendshapes(root: Root, context: Context) {
 
     const key0 = new BlendShape(blendshapeGroup, "Neutral", "obj/arkit/Neutral.obj")
     const key1 = new BlendShape(blendshapeGroup, "browInnerUp", "obj/arkit/browInnerUp.obj")
+    const key2 = new BlendShape(blendshapeGroup, "browDownRight", "obj/arkit/browDownRight.obj")
+    const key3 = new BlendShape(blendshapeGroup, "browOuterUpRight", "obj/arkit/browOuterUpRight.obj")
 }
 
 // MainScreen provides the canvas needed by Context (formerly CanvasContext)
@@ -408,8 +409,8 @@ export async function main() {
     const selection = new ObjectSelection(editorModel)
 
     const root = new Root()
-    // await loadBlendshapes(root, context)
-    await loadDemoScene(root)
+    await loadBlendshapes(root)
+    // await loadDemoScene(root)
 
     console.log(root)
 

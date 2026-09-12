@@ -37,7 +37,8 @@ export class EditorModel {
     //
     // for the controls in the property panel
     //
-    readonly propertyTab = new PropertyTabModel(PropertyTab.OBJECT, { local: "transform-orientation" })
+    // TODO: toad.js did not warn about duplicate uses of local
+    readonly propertyTab = new PropertyTabModel(PropertyTab.OBJECT, { local: "property-tab" })
 
     readonly transform = new TransformModel()
 
