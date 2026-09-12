@@ -28,6 +28,25 @@ describe("ObjectRotateController", () => {
             expect(context.canvas.style.cursor).toBe("none")
             expect(infoOverlay.childElementCount).toBe(1)
         })
+
+        it("destructor() resets axis, removes SVG elements and resets cursor", () => {
+            const { context, infoOverlay, svgOverlay } = createEnvironment()
+            const { mesh } = createNodeTree(context)
+            context.selection.active = mesh
+
+            const ctrl = new ObjectRotateController(context)
+            expect(svgOverlay.childElementCount).toBe(4)
+            expect(infoOverlay.childElementCount).toBe(1)
+            context.axisRenderer.set(true, false, false)
+            ctrl.destructor()
+
+            expect(svgOverlay.childElementCount).toBe(0)
+            expect(infoOverlay.childElementCount).toBe(0)
+            expect(context.canvas.style.cursor).toBe("")
+            expect(context.axisRenderer.x).toBe(false)
+            expect(context.axisRenderer.y).toBe(false)
+            expect(context.axisRenderer.z).toBe(false)
+        })
     })
 
     it("cancel() restores initial transform and pops controller", () => {
@@ -64,25 +83,6 @@ describe("ObjectRotateController", () => {
         expect(mat4.equals(parent.transform!, modifiedTransform)).toBe(true)
 
         expect(context.popController).toHaveBeenCalled()
-    })
-
-    it("destructor() resets axis, removes SVG elements and resets cursor", () => {
-        const { context, infoOverlay, svgOverlay } = createEnvironment()
-        const { mesh } = createNodeTree(context)
-        context.selection.active = mesh
-
-        const ctrl = new ObjectRotateController(context)
-        expect(svgOverlay.childElementCount).toBe(4)
-        expect(infoOverlay.childElementCount).toBe(1)
-        context.axisRenderer.set(true, false, false)
-        ctrl.destructor()
-
-        expect(svgOverlay.childElementCount).toBe(0)
-        expect(infoOverlay.childElementCount).toBe(0)
-        expect(context.canvas.style.cursor).toBe("")
-        expect(context.axisRenderer.x).toBe(false)
-        expect(context.axisRenderer.y).toBe(false)
-        expect(context.axisRenderer.z).toBe(false)
     })
 
     it("keydown() X|Y|Z sets single axis constraint", () => {
@@ -425,7 +425,7 @@ describe("ObjectRotateController", () => {
             expect(signBehind).toBe(-signForward)
         })
 
-        it("free rotate path has no sign-flip logic (i==-1 code path)", () => {
+        it("free rotate code path has no sign-flip logic (i==-1 code path)", () => {
             // Verifying the free-rotate path exists and works (it uses a different
             // code path without the `if (p1[i] < 0) { angle = -angle }` block)
             const { context } = createEnvironment()

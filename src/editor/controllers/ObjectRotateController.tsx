@@ -11,9 +11,15 @@ import { rad2deg } from "src/gl/algorithms/rad2deg"
 export class ObjectRotateController extends Controller {
     context: Context
 
+    /**
+     * a circle indicating the origin of the object and around which we will rotate
+     */
     originMarker!: Circle
     lineToPointer!: LineWithArrows
 
+    /**
+     * the initial angle between mouse pointer and originMarker
+     */
     initialAngle!: number
     initialTransform!: mat4
 

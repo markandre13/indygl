@@ -409,10 +409,10 @@ export async function main() {
     const selection = new ObjectSelection(editorModel)
 
     const root = new Root()
-    await loadBlendshapes(root)
-    // await loadDemoScene(root)
+    // await loadBlendshapes(root)
+    await loadDemoScene(root)
 
-    console.log(root)
+    // console.log(root)
 
     replaceChildren(document.body, <MainScreen model={editorModel} selection={selection} root={root} />)
 
