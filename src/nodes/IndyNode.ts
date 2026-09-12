@@ -1,7 +1,7 @@
 import { vec3, mat4 } from "gl-matrix"
 import type { Context } from "src/gl/Context"
 import type { Mesh } from "./Mesh"
-import { XForm } from "./XForm"
+import type { XForm } from "./XForm"
 import { PropertyTab } from "src/editor/app/PropertyTab"
 import { Signal } from "toad.js/reactive/Signal"
 // import type { Root } from "./Root"

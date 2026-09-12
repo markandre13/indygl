@@ -12,3 +12,9 @@ things working so far:
 * fly mode
 * select objects
 * move, rotate, scale objects either in viewport or via sidepanel
+
+```sh
+npm start
+npm test --file=spec/editor/controllers/ObjectRotateController.spec.ts
+npm run test:watch --file=spec/editor/controllers/ObjectRotateController.spec.ts 
+```

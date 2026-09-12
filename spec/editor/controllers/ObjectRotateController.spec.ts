@@ -593,6 +593,7 @@ function createEnvironment() {
     const context: any = {
         selection: {
             active: undefined as any,
+            getActive: function () { return this.active },
             updateEditorModelFromActive: vi.fn(),
         },
         axisRenderer,

@@ -23,8 +23,9 @@ export class ObjectRotateController extends Controller {
 
         // const node = this.context.selection.active as Mesh
         // const parent = node.parent as XForm
-        const parent = this.context.selection.getActive()!.getXForm()!
-        const objectCenter = mat4.getTranslation(vec3.create(), parent.combined)
+        const node = this.context.selection.getActive()!
+        const parent = node.getXForm()!
+        const objectCenter = mat4.getTranslation(vec3.create(), node.combined)
         const canvas = context.canvas
         const screenCenter = world2screen(objectCenter, context.sceneUniforms.projectionMatrix, canvas)
         canvas.style.cursor = "none"
@@ -170,6 +171,7 @@ export class ObjectRotateController extends Controller {
         this.originMarker.remove()
         this.lineToPointer.remove()
         this.context.axisRenderer.set(false, false, false)
+        this.hideInfo()
     }
 
     confirm() {

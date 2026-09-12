@@ -20,7 +20,7 @@ export default defineConfig({
     build: {
         lib: {
             formats: ['es'],
-            entry: 'js/src/main.jsx',
+            entry: 'js/src/main.js',
         },
     },
     test: {
