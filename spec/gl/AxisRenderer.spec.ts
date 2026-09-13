@@ -174,11 +174,13 @@ describe("AxisRenderer", () => {
             expect(pass.draw).not.toHaveBeenCalled()
         })
 
-        it("GLOBAL: renders the axes through the active node using identity rotation", () => {
-            const node = makeNode(mat4.fromTranslation(mat4.create(), [1, 2, 3]))
+        it("GLOBAL: renders the axes through the median of the selected objects using identity rotation", () => {
+            const a = makeNode(mat4.fromTranslation(mat4.create(), [1, 2, 3]))
+            const b = makeNode(mat4.fromTranslation(mat4.create(), [5, 6, 7]))
             const { axisRenderer, writes } = makeAxisRenderer({
                 orientation: TransformOrientation.GLOBAL,
-                active: node,
+                active: a,
+                selected: [a, b],
             })
             const pass = makePass()
             axisRenderer.set(true, false, false)
@@ -191,18 +193,16 @@ describe("AxisRenderer", () => {
             expect(pass.draw).toHaveBeenCalledTimes(1)
             expect(pass.draw).toHaveBeenCalledWith(2, undefined, 0)
 
-            // model view matrix: identity rotation, translation of the active node
-            const expected = mat4.fromTranslation(mat4.create(), [1, 2, 3])
+            // model view matrix: identity rotation, translation at the median (3, 4, 5)
+            const expected = mat4.fromTranslation(mat4.create(), [3, 4, 5])
             expect(mat4.equals(modelViewFromWrite(writes), expected)).toBe(true)
         })
 
-        it("GLOBAL: ignores all but the active node", () => {
+        it("GLOBAL: falls back to the active node when nothing is selected", () => {
             const active = makeNode(mat4.fromTranslation(mat4.create(), [1, 2, 3]))
-            const other = makeNode(mat4.fromTranslation(mat4.create(), [10, 20, 30]))
             const { axisRenderer, writes } = makeAxisRenderer({
                 orientation: TransformOrientation.GLOBAL,
                 active,
-                selected: [active, other],
             })
             const pass = makePass()
             axisRenderer.set(true, false, false)

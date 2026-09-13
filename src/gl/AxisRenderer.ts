@@ -57,7 +57,7 @@ export class AxisRenderer {
     /**
      * the objects whose axes are displayed
      *
-     * GLOBAL: the active object.
+     * GLOBAL: the median of the selected objects.
      * LOCAL: every selected object.
      */
     private axisNodes(): IndyNode[] {
@@ -69,6 +69,13 @@ export class AxisRenderer {
                     nodes.push(node)
                 }
                 break
+            case TransformOrientation.GLOBAL: {
+                const median = this.medianNode()
+                if (median) {
+                    nodes.push(median)
+                }
+                break
+            }
             default:
                 if (selection.getActive()) {
                     nodes.push(selection.getActive()!)
@@ -76,6 +83,33 @@ export class AxisRenderer {
                 break
         }
         return nodes
+    }
+    /**
+     * a node placed at the median (average) of the selected objects' combined
+     * translations; falls back to the active object's position.
+     */
+    private medianNode(): IndyNode | undefined {
+        const selection = this.context.selection
+        const center = vec3.create()
+        const t = vec3.create()
+        let count = 0
+        for (const node of selection.getSelected()) {
+            mat4.getTranslation(t, node.combined)
+            vec3.add(center, center, t)
+            count++
+        }
+        if (count === 0) {
+            const active = selection.getActive()
+            if (!active) {
+                return undefined
+            }
+            mat4.getTranslation(center, active.combined)
+        } else {
+            vec3.scale(center, center, 1 / count)
+        }
+        const m = mat4.create()
+        mat4.translate(m, m, center)
+        return { combined: m } as unknown as IndyNode
     }
     /**
      * ModelUniform cache for LOCAL axis rendering: one uniform per node,
