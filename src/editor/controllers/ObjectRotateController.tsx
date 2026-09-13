@@ -53,34 +53,34 @@ export class ObjectRotateController extends Controller {
         const node = this.context.selection.getActive()!
         const parent = node.getXForm()!
         const objectCenter = mat4.getTranslation(vec3.create(), node.combined)
+        const isLocal = this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL
 
-        // GLOBAL: rotate all selected objects around the median of their positions.
-        // LOCAL: rotate only the active object around its own center.
-        if (this.context.editorModel.transformOrientation.value === TransformOrientation.GLOBAL) {
-            for (const selected of this.context.selection.getSelected()) {
-                const xf = selected.getXForm()
-                if (xf) {
-                    this.xforms.push(xf)
-                }
+        // Collect all selected objects for multi-object support (LOCAL and GLOBAL)
+        for (const selected of this.context.selection.getSelected()) {
+            const xf = selected.getXForm()
+            if (xf) {
+                this.xforms.push(xf)
             }
-            if (this.xforms.length === 0) {
-                const xf = node.getXForm()
-                if (xf) {
-                    this.xforms.push(xf)
-                }
+        }
+        if (this.xforms.length === 0) {
+            const xf = node.getXForm()
+            if (xf) {
+                this.xforms.push(xf)
             }
-            this.initialTransforms = this.xforms.map((xf) => mat4.clone(xf.combined))
-            this.initialXformTransforms = this.xforms.map((xf) => (xf.transform ? mat4.clone(xf.transform) : undefined))
-            this.initialParentTransforms = this.xforms.map((xf) => mat4.clone(xf.parent?.combined ?? mat4.create()))
+        }
+        this.initialTransforms = this.xforms.map((xf) => mat4.clone(xf.combined))
+        this.initialXformTransforms = this.xforms.map((xf) => (xf.transform ? mat4.clone(xf.transform) : undefined))
+        this.initialParentTransforms = this.xforms.map((xf) => mat4.clone(xf.parent?.combined ?? mat4.create()))
+
+        // GLOBAL multi-object: compute median and use it for the origin marker
+        if (!isLocal && this.xforms.length > 1) {
             const center = vec3.create()
             for (const tf of this.initialTransforms) {
                 vec3.add(center, center, mat4.getTranslation(vec3.create(), tf))
             }
             vec3.scale(center, center, 1 / this.initialTransforms.length)
             this.initialMedian = center
-            if (this.xforms.length > 1) {
-                vec3.copy(objectCenter, this.initialMedian)
-            }
+            vec3.copy(objectCenter, this.initialMedian)
         }
 
         const canvas = context.canvas
@@ -179,6 +179,9 @@ export class ObjectRotateController extends Controller {
             throw Error(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED YET`)
         }
 
+        // Save world axis before LOCAL transformQuat modifies p1
+        const worldAxis = vec3.clone(p1)
+
         if (i !== -1 && isLocal) {
             const rotation = mat4.getRotation(quat.create(), this.initialTransform)
             vec3.transformQuat(p1, p1, rotation)
@@ -210,8 +213,11 @@ export class ObjectRotateController extends Controller {
         }
 
         if (this.xforms.length > 1) {
-            // GLOBAL: rotate every selected object around the median of their positions
-            this.rotateSelectedAroundMedian(angle, p0)
+            if (isLocal) {
+                this.rotateSelectedLocally(angle, worldAxis, i === -1)
+            } else {
+                this.rotateSelectedAroundMedian(angle, p0)
+            }
             this.context.selection.updateEditorModelFromActive()
             this.context.invalidate()
             return
@@ -260,6 +266,41 @@ export class ObjectRotateController extends Controller {
 
             const parentInv = mat4.invert(mat4.create(), this.initialParentTransforms[i])!
             xf.transform = mat4.multiply(mat4.create(), parentInv, world)
+            xf.dirty = true
+        }
+    }
+
+    /**
+     * LOCAL rotation of each selected object around its own coordinate system.
+     *
+     * Each object rotates by the same angle around its own local axis.
+     * For constrained axes (X/Y/Z), the local axis is the constraint axis
+     * expressed in the object's own coordinate space.
+     * For free rotation, the rotation axis is derived from the camera.
+     */
+    private rotateSelectedLocally(angle: number, worldAxis: vec3, freeRotate: boolean) {
+        for (let i = 0; i < this.xforms.length; i++) {
+            const xf = this.xforms[i]
+            const initial = this.initialTransforms[i]
+
+            // Compute the local axis for this object (mirrors single-object code path)
+            let localAxis = vec3.clone(worldAxis)
+            const rotation = mat4.getRotation(quat.create(), initial)
+            vec3.transformQuat(localAxis, localAxis, rotation)
+
+            let m: mat4
+            if (freeRotate) {
+                m = mat4.mul(mat4.create(), this.context.sceneUniforms.camera, initial)
+            } else {
+                m = mat4.clone(initial)
+            }
+
+            mat4.invert(m, m)
+            const origin = vec3.transformMat4(vec3.fromValues(0, 0, 0), vec3.fromValues(0, 0, 0), m)
+            vec3.transformMat4(localAxis, localAxis, m)
+            const p0 = vec3.normalize(vec3.create(), vec3.sub(vec3.create(), localAxis, origin))
+
+            xf.transform = mat4.rotate(mat4.create(), initial, angle, p0)
             xf.dirty = true
         }
     }

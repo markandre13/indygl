@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from "vitest"
-import { mat4, vec3 } from "gl-matrix"
+import { mat4, quat, vec3 } from "gl-matrix"
 import { ObjectRotateController } from "src/editor/controllers/ObjectRotateController"
 import { XForm } from "src/nodes/XForm"
 import { Mesh } from "src/nodes/Mesh"
@@ -691,6 +691,132 @@ describe("ObjectRotateController", () => {
             expect(context.popController).toHaveBeenCalled()
         })
     })
+
+    describe("pointermove with LOCAL multi-object rotation", () => {
+        it("rotates all selected objects (each gets dirty)", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addNode(context, root, 10, 0, 0)
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
+
+            const ctrl = new ObjectRotateController(context)
+            context.axisRenderer.set(true, false, false) // X axis
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrl.pointermove(ev)
+
+            expect(p1.dirty).toBe(true)
+            expect(p2.dirty).toBe(true)
+        })
+
+        it("LOCAL multi-object X rotation differs from GLOBAL multi-object X rotation", () => {
+            const { context: ctxLocal } = createEnvironment()
+            const { root: rootL, parent: lp1, mesh: lm1 } = createNodeTree(ctxLocal)
+            const { parent: lp2, mesh: lm2 } = addNode(ctxLocal, rootL, 10, 0, 0)
+
+            ctxLocal.selection.active = lm1
+            ctxLocal.selection.selected.clear()
+            ctxLocal.selection.selected.add(lp1)
+            ctxLocal.selection.selected.add(lp2)
+            ctxLocal.editorModel.transformOrientation.value = TransformOrientation.LOCAL
+
+            const ctrlL = new ObjectRotateController(ctxLocal)
+            ctxLocal.axisRenderer.set(true, false, false)
+            const evL = new PointerEvent("pointermove")
+            Object.defineProperties(evL, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrlL.pointermove(evL)
+            const localP1 = mat4.clone(lp1.transform!)
+            const localP2 = mat4.clone(lp2.transform!)
+
+            const { context: ctxGlobal } = createEnvironment()
+            const { root: rootG, parent: gp1, mesh: gm1 } = createNodeTree(ctxGlobal)
+            const { parent: gp2, mesh: gm2 } = addNode(ctxGlobal, rootG, 10, 0, 0)
+
+            ctxGlobal.selection.active = gm1
+            ctxGlobal.selection.selected.clear()
+            ctxGlobal.selection.selected.add(gp1)
+            ctxGlobal.selection.selected.add(gp2)
+            ctxGlobal.editorModel.transformOrientation.value = TransformOrientation.GLOBAL
+
+            const ctrlG = new ObjectRotateController(ctxGlobal)
+            ctxGlobal.axisRenderer.set(true, false, false)
+            const evG = new PointerEvent("pointermove")
+            Object.defineProperties(evG, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrlG.pointermove(evG)
+
+            // At least one object should differ between LOCAL and GLOBAL
+            const differs =
+                !mat4.equals(localP1, gp1.transform!) ||
+                !mat4.equals(localP2, gp2.transform!)
+            expect(differs).toBe(true)
+        })
+
+        it("LOCAL multi-object with pre-rotated objects: each rotates around its own local axis", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            // Pre-rotate p2 90° around Y so its local X points along world Z
+            const { parent: p2, mesh: m2 } = addRotatedNode(context, root, 10, 0, 0, Math.PI / 2)
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
+
+            const ctrl = new ObjectRotateController(context)
+            context.axisRenderer.set(true, false, false) // X axis
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrl.pointermove(ev)
+
+            // Both objects should be modified
+            expect(p1.dirty).toBe(true)
+            expect(p2.dirty).toBe(true)
+
+            // p1 (identity) should rotate around world X
+            // p2 (rotated 90° around Y) should rotate around its local X (= world Z)
+            // So they should produce different transform changes
+            const p1Changed = !mat4.equals(p1.transform!, mat4.create())
+            const p2Changed = !mat4.equals(p2.transform!, mat4.fromTranslation(mat4.create(), [10, 0, 0]))
+            expect(p1Changed).toBe(true)
+            expect(p2Changed).toBe(true)
+        })
+
+        it("cancel restores all selected objects in LOCAL mode", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addNode(context, root, 10, 0, 0)
+
+            const initP1 = mat4.clone(p1.transform!)
+            const initP2 = mat4.clone(p2.transform!)
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
+
+            const ctrl = new ObjectRotateController(context)
+            context.axisRenderer.set(true, false, false)
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrl.pointermove(ev)
+
+            ctrl.cancel()
+
+            expect(mat4.equals(p1.transform!, initP1)).toBe(true)
+            expect(mat4.equals(p2.transform!, initP2)).toBe(true)
+            expect(context.popController).toHaveBeenCalled()
+        })
+    })
 })
 
 function runAxisRotation(
@@ -816,6 +942,21 @@ function addNode(context: any, root: Root, x: number, y: number, z: number) {
     parent.transform = mat4.create()
     mat4.copy(parent.combined, mat4.fromTranslation(mat4.create(), [x, y, z]))
     const combined = mat4.fromTranslation(mat4.create(), [x, y, z])
+    const mesh = Object.create(Mesh.prototype, {
+        combined: { value: combined, writable: true },
+        parent: { value: parent },
+        context: { value: context },
+    }) as Mesh
+    return { parent, mesh }
+}
+
+function addRotatedNode(context: any, root: Root, x: number, y: number, z: number, angleY: number) {
+    const parent = new XForm(root)
+    parent.transform = mat4.create()
+    const m = mat4.fromTranslation(mat4.create(), [x, y, z])
+    mat4.rotateY(m, m, angleY)
+    mat4.copy(parent.combined, m)
+    const combined = mat4.clone(m)
     const mesh = Object.create(Mesh.prototype, {
         combined: { value: combined, writable: true },
         parent: { value: parent },
