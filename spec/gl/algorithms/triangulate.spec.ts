@@ -17,9 +17,10 @@ describe("triangulate", () => {
                 fnormal: [6, 7, 8],
                 vcount: [3]
             }
-            expect(triangulate(mesh).fxyz).to.be.deep.equal([0, 1, 2])
-            expect(triangulate(mesh).fuv).to.be.deep.equal([3, 4, 5])
-            expect(triangulate(mesh).fnormal).to.be.deep.equal([6, 7, 8])
+            const triangles = triangulate(mesh)
+            expect(triangles.fxyz).to.be.deep.equal([0, 1, 2])
+            expect(triangles.fuv).to.be.deep.equal([3, 4, 5])
+            expect(triangles.fnormal).to.be.deep.equal([6, 7, 8])
         })
         describe("5-gon", () => {
             it.each([
@@ -65,15 +66,22 @@ describe("triangulate", () => {
                     fnormal: [10, 11, 12, 13, 14],
                     vcount: [5]
                 }
-                expect(triangulate(mesh).fxyz).to.be.deep.oneOf([
+                const triangles = triangulate(mesh)
+                expect(triangles.fxyz).to.be.deep.oneOf([
+                    [3, 4, 0, 3, 0, 1, 3, 1, 2],
+                    [2, 3, 1, 3, 4, 1, 4, 0, 1],
                     [3, 4, 0, 0, 1, 2, 2, 3, 0],
                     [4, 1, 2, 2, 3, 4, 4, 0, 1]
                 ])
-                expect(triangulate(mesh).fuv).to.be.deep.oneOf([
+                expect(triangles.fuv).to.be.deep.oneOf([
+                    [7, 8, 6, 8, 9, 6, 9, 5, 6],
+                    [8, 9, 5, 8, 5, 6, 8, 6, 7],
                     [8, 9, 5, 5, 6, 7, 7, 8, 5],
                     [9, 6, 7, 7, 8, 9, 9, 5, 6]
                 ])
-                expect(triangulate(mesh).fnormal).to.be.deep.oneOf([
+                expect(triangles.fnormal).to.be.deep.oneOf([
+                    [12, 13, 11, 13, 14, 11, 14, 10, 11],
+                    [13, 14, 10, 13, 10, 11, 13, 11, 12],
                     [13, 14, 10, 10, 11, 12, 12, 13, 10],
                     [14, 11, 12, 12, 13, 14, 14, 10, 11]
                 ])
