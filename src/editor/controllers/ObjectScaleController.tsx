@@ -1,14 +1,11 @@
 import { IconMouseLeft, IconMouseRight, IconKey, IconShift } from "src/editor/viewkit/InputIcons"
-import { Mesh } from "src/nodes/Mesh"
 import { type IndyNode } from "src/nodes/IndyNode"
 import { Controller } from "./Controller"
 import { mat4, vec3 } from "gl-matrix"
-import type { XForm } from "src/nodes/XForm"
 import type { Context } from "src/gl/Context"
 import { Circle } from "../viewkit/svg/Circle"
 import { LineWithArrows } from "../viewkit/svg/LineWithArrows"
 import { world2screen } from "src/gl/algorithms/coordinates"
-
 
 export class ObjectScaleController extends Controller {
     context: Context

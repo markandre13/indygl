@@ -1,12 +1,12 @@
 import { IconMouseLeft, IconMouseRight, IconKey, IconShift } from "src/editor/viewkit/InputIcons"
-import { Mesh } from "src/nodes/Mesh"
 import { Controller } from "./Controller"
-import { mat4, vec3 } from "gl-matrix"
+import { mat4, quat, vec3 } from "gl-matrix"
 import type { Context } from "src/gl/Context"
 import { Circle } from "../viewkit/svg/Circle"
 import { world2screen } from "src/gl/algorithms/coordinates"
 import { LineWithArrows } from "../viewkit/svg/LineWithArrows"
 import { rad2deg } from "src/gl/algorithms/rad2deg"
+import { TransformOrientation } from "../app/TransformOrientation"
 
 export class ObjectRotateController extends Controller {
     context: Context
@@ -101,6 +101,7 @@ export class ObjectRotateController extends Controller {
         // parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, vec3.fromValues(0,0,1))
 
         const axis = this.context.axisRenderer
+        const isLocal = this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL
         let i = -1
         let m: mat4
         let p1: vec3, p0: vec3
@@ -112,19 +113,24 @@ export class ObjectRotateController extends Controller {
             p1 = vec3.fromValues(0, 0, 1)
             this.setInfo(`Rotation ${degTxt}`)
         } else if ((!axis.x && axis.y && axis.z) || (axis.x && !axis.y && !axis.z)) {
-            this.setInfo(`Rotation ${degTxt} along global X`)
             i = 0
             p1 = vec3.fromValues(1, 0, 0)
+            this.setInfo(`Rotation ${degTxt} along ${isLocal ? "local" : "global"} X`)
         } else if ((axis.x && !axis.y && axis.z) || (!axis.x && axis.y && !axis.z)) {
-            this.setInfo(`Rotation ${degTxt} along global Y`)
             i = 1
             p1 = vec3.fromValues(0, 1, 0)
+            this.setInfo(`Rotation ${degTxt} along ${isLocal ? "local" : "global"} Y`)
         } else if ((axis.x && axis.y && !axis.z) || (!axis.x && !axis.y && axis.z)) {
-            this.setInfo(`Rotation ${degTxt} along global Z`)
             i = 2
             p1 = vec3.fromValues(0, 0, 1)
+            this.setInfo(`Rotation ${degTxt} along ${isLocal ? "local" : "global"} Z`)
         } else {
             throw Error(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED YET`)
+        }
+
+        if (i !== -1 && isLocal) {
+            const rotation = mat4.getRotation(quat.create(), this.initialTransform)
+            vec3.transformQuat(p1, p1, rotation)
         }
 
         if (i == -1) {

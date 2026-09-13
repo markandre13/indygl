@@ -5,6 +5,7 @@ import { XForm } from "src/nodes/XForm"
 import { Mesh } from "src/nodes/Mesh"
 import { AxisRenderer } from "src/gl/AxisRenderer"
 import { Root } from "src/nodes/IndyNode"
+import { TransformOrientation } from "src/editor/app/TransformOrientation"
 
 describe("ObjectRotateController", () => {
     beforeEach(() => {
@@ -555,7 +556,97 @@ describe("ObjectRotateController", () => {
             expect(mat4.equals(parent.transform!, initial)).toBe(false)
         })
     })
+
+    describe("pointermove with LOCAL transform orientation", () => {
+        it("rotates around the object's local X axis", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh } = createNodeTree(context)
+            context.selection.active = mesh
+            mat4.rotateX(parent.transform!, parent.transform!, 0.5)
+            context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
+            context.axisRenderer.set(true, false, false)
+
+            const ctrl = new ObjectRotateController(context)
+            const initial = mat4.clone(parent.transform!)
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrl.pointermove(ev)
+
+            expect(parent.dirty).toBe(true)
+            expect(mat4.equals(parent.transform!, initial)).toBe(false)
+        })
+
+        it("LOCAL X rotation differs from GLOBAL X rotation when object is pre-rotated", () => {
+            const { context } = createEnvironment()
+            const local = runLocalRotation(context, 0.5, true, false, false)
+            const global = runGlobalRotation(context, 0.5, true, false, false)
+
+            expect(mat4.equals(local, global)).toBe(false)
+        })
+
+        it("LOCAL Y rotation differs from GLOBAL Y rotation when object is pre-rotated", () => {
+            const { context } = createEnvironment()
+            const local = runAxisRotation(context, TransformOrientation.LOCAL, 0.5, false, true, false, "rotateX")
+            const global = runAxisRotation(context, TransformOrientation.GLOBAL, 0.5, false, true, false, "rotateX")
+
+            expect(mat4.equals(local, global)).toBe(false)
+        })
+
+        it("LOCAL Z rotation differs from GLOBAL Z rotation when object is pre-rotated", () => {
+            const { context } = createEnvironment()
+            const local = runLocalRotation(context, 0.5, false, false, true)
+            const global = runGlobalRotation(context, 0.5, false, false, true)
+
+            expect(mat4.equals(local, global)).toBe(false)
+        })
+
+        it("matches global rotation when object has no pre-rotation", () => {
+            const { context } = createEnvironment()
+            const local = runLocalRotation(context, 0, true, false, false)
+            const global = runGlobalRotation(context, 0, true, false, false)
+
+            expect(mat4.equals(local, global)).toBe(true)
+        })
+    })
 })
+
+function runAxisRotation(
+    context: any,
+    orientation: TransformOrientation,
+    preRotate: number,
+    axisX: boolean,
+    axisY: boolean,
+    axisZ: boolean,
+    preRotateFn: "rotateX" | "rotateY" | "rotateZ" = "rotateY"
+): mat4 {
+    const { parent, mesh } = createNodeTree(context)
+    context.selection.active = mesh
+    if (preRotateFn === "rotateX") {
+        mat4.rotateX(parent.transform!, parent.transform!, preRotate)
+    } else if (preRotateFn === "rotateZ") {
+        mat4.rotateZ(parent.transform!, parent.transform!, preRotate)
+    } else {
+        mat4.rotateY(parent.transform!, parent.transform!, preRotate)
+    }
+    context.editorModel.transformOrientation.value = orientation
+
+    const ctrl = new ObjectRotateController(context)
+    context.axisRenderer.set(axisX, axisY, axisZ)
+
+    const ev = new PointerEvent("pointermove")
+    Object.defineProperties(ev, { offsetX: { value: 200 }, offsetY: { value: 100 } })
+    ctrl.pointermove(ev)
+
+    return parent.transform!
+}
+
+function runLocalRotation(context: any, preRotate: number, axisX: boolean, axisY: boolean, axisZ: boolean): mat4 {
+    return runAxisRotation(context, TransformOrientation.LOCAL, preRotate, axisX, axisY, axisZ)
+}
+
+function runGlobalRotation(context: any, preRotate: number, axisX: boolean, axisY: boolean, axisZ: boolean): mat4 {
+    return runAxisRotation(context, TransformOrientation.GLOBAL, preRotate, axisX, axisY, axisZ)
+}
 
 function createMockAxisRenderer(): AxisRenderer {
     const r = Object.create(AxisRenderer.prototype)
@@ -606,6 +697,9 @@ function createEnvironment() {
         lastPointerOffset: { x: 0, y: 0 },
         invalidate: vi.fn(),
         popController: vi.fn(),
+        editorModel: {
+            transformOrientation: { value: TransformOrientation.GLOBAL },
+        },
     }
     return { context, infoOverlay, svgOverlay, canvas }
 }
