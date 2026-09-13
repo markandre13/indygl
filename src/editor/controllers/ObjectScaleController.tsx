@@ -1,5 +1,6 @@
 import { IconMouseLeft, IconMouseRight, IconKey, IconShift } from "src/editor/viewkit/InputIcons"
 import { type IndyNode } from "src/nodes/IndyNode"
+import { type XForm } from "src/nodes/XForm"
 import { Controller } from "./Controller"
 import { mat4, vec3 } from "gl-matrix"
 import type { Context } from "src/gl/Context"
@@ -17,6 +18,27 @@ export class ObjectScaleController extends Controller {
     initialDistance: number
 
     initialParentTransform: mat4
+    /**
+     * the XForm of every selected object (GLOBAL transform orientation only)
+     */
+    xforms: XForm[] = []
+    /**
+     * the combined world transform of every selected object at grab start
+     */
+    initialTransforms: mat4[] = []
+    /**
+     * the original parent-local transform of every selected object at grab start
+     */
+    initialXformTransforms: (mat4 | undefined)[] = []
+    /**
+     * the combined transform of the parent of every selected object at grab start
+     */
+    initialParentTransforms: mat4[] = []
+    /**
+     * the median of the selected objects' positions at grab start
+     */
+    initialMedian: vec3 = vec3.create()
+
     constructor(context: Context, root: IndyNode) {
         super()
         this.context = context
@@ -25,6 +47,36 @@ export class ObjectScaleController extends Controller {
         // const parent = node.parent as XForm
         const parent = this.context.selection.getActive()!.getXForm()!
         const objectCenter = mat4.getTranslation(vec3.create(), parent.combined)
+        const isLocal = this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL
+
+        // Collect all selected objects for multi-object support (GLOBAL)
+        for (const selected of this.context.selection.getSelected()) {
+            const xf = selected.getXForm()
+            if (xf) {
+                this.xforms.push(xf)
+            }
+        }
+        if (this.xforms.length === 0) {
+            const xf = parent
+            if (xf) {
+                this.xforms.push(xf)
+            }
+        }
+        this.initialTransforms = this.xforms.map((xf) => mat4.clone(xf.combined))
+        this.initialXformTransforms = this.xforms.map((xf) => (xf.transform ? mat4.clone(xf.transform) : undefined))
+        this.initialParentTransforms = this.xforms.map((xf) => mat4.clone(xf.parent?.combined ?? mat4.create()))
+
+        // GLOBAL multi-object: compute median and use it for the origin marker
+        if (!isLocal && this.xforms.length > 1) {
+            const center = vec3.create()
+            for (const tf of this.initialTransforms) {
+                vec3.add(center, center, mat4.getTranslation(vec3.create(), tf))
+            }
+            vec3.scale(center, center, 1 / this.initialTransforms.length)
+            this.initialMedian = center
+            vec3.copy(objectCenter, this.initialMedian)
+        }
+
         const canvas = context.canvas
         const screenCenter = world2screen(objectCenter, context.sceneUniforms.projectionMatrix, canvas)
         canvas.style.cursor = "none"
@@ -124,6 +176,14 @@ export class ObjectScaleController extends Controller {
             parent.transform = mat4.create()
         }
         const isLocal = this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL
+        if (!isLocal && this.xforms.length > 1) {
+            // GLOBAL: scale every selected object around the median of their positions
+            const s = vec3.fromValues(sx, sy, sz)
+            this.scaleSelectedAroundMedian(s, this.initialMedian, this.initialTransforms, this.initialParentTransforms)
+            this.context.selection.updateEditorModelFromActive()
+            this.context.invalidate()
+            return
+        }
         const scale = vec3.fromValues(sx, sy, sz)
         if (isLocal) {
             mat4.scale(parent.transform, parent.transform, scale)
@@ -141,6 +201,31 @@ export class ObjectScaleController extends Controller {
         parent.dirty = true
         this.context.selection.updateEditorModelFromActive()
         this.context.invalidate()
+    }
+
+    /**
+     * GLOBAL scaling of all selected objects around the median of their positions.
+     *
+     * Every object's world position is scaled by `factor` (component-wise) around
+     * the median, and its own transform is pre-multiplied by the scale matrix.
+     */
+    private scaleSelectedAroundMedian(
+        factor: vec3,
+        median: vec3,
+        initialTransforms: mat4[],
+        initialParentTransforms: mat4[]
+    ) {
+        const around = mat4.fromTranslation(mat4.create(), median)
+        mat4.scale(around, around, factor)
+        mat4.translate(around, around, vec3.negate(vec3.create(), median))
+
+        for (let i = 0; i < this.xforms.length; i++) {
+            const xf = this.xforms[i]
+            const newWorld = mat4.multiply(mat4.create(), around, initialTransforms[i])
+            const parentInv = mat4.invert(mat4.create(), initialParentTransforms[i])!
+            xf.transform = mat4.multiply(mat4.create(), parentInv, newWorld)
+            xf.dirty = true
+        }
     }
 
     override pointerdown(ev: PointerEvent): void {
@@ -199,13 +284,15 @@ export class ObjectScaleController extends Controller {
     cancel() {
         // const node = this.context.selection.active!
         // const parent = (node.parent as XForm)
-         const parent = this.context.selection.getActive()!.getXForm()!
-        if (this.initialParentTransform) {
-            parent.transform = mat4.clone(this.initialParentTransform)
-        } else {
-            parent.transform = undefined
+        for (let i = 0; i < this.xforms.length; i++) {
+            const xf = this.xforms[i]
+            if (this.initialXformTransforms[i]) {
+                xf.transform = mat4.clone(this.initialXformTransforms[i]!)
+            } else {
+                xf.transform = undefined
+            }
+            xf.dirty = true
         }
-        parent.dirty = true
         this.context.invalidate()
 
         this.confirm()

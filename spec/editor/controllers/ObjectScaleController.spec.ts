@@ -344,6 +344,97 @@ describe("ObjectScaleController", () => {
             expect(mat4.equals(local.transform, global.transform)).toBe(true)
         })
     })
+
+    describe("pointermove with GLOBAL multi-object scale", () => {
+        it("scales all selected objects around the median", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addNode(context, root, 10, 0, 0)
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.GLOBAL
+
+            const ctrl = new ObjectScaleController(context, root)
+            context.axisRenderer.set(true, false, false) // X axis
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 820 }, offsetY: { value: 240 } })
+            ctrl.pointermove(ev)
+
+            expect(p1.dirty).toBe(true)
+            expect(p2.dirty).toBe(true)
+
+            // median is at x=5
+            expect(ctrl.initialMedian[0]).toBeCloseTo(5, 5)
+
+            // p1 at x=0 should move away from median: 5 + (0-5)*factor
+            // p2 at x=10 should move away from median: 5 + (10-5)*factor
+            const pos1 = mat4.getTranslation(vec3.create(), p1.transform!)
+            const pos2 = mat4.getTranslation(vec3.create(), p2.transform!)
+            expect(pos1[0]).toBeLessThan(5)
+            expect(pos2[0]).toBeGreaterThan(5)
+
+            // distances from the median scale symmetrically
+            const d1 = Math.abs(5 - pos1[0])
+            const d2 = Math.abs(pos2[0] - 5)
+            expect(d1).toBeCloseTo(d2, 4)
+        })
+
+        it("keeps the median position after scaling", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addNode(context, root, 10, 0, 0)
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.GLOBAL
+
+            const ctrl = new ObjectScaleController(context, root)
+            context.axisRenderer.set(true, false, false)
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 820 }, offsetY: { value: 240 } })
+            ctrl.pointermove(ev)
+
+            const pos1 = mat4.getTranslation(vec3.create(), p1.transform!)
+            const pos2 = mat4.getTranslation(vec3.create(), p2.transform!)
+            const newMedianX = (pos1[0] + pos2[0]) / 2
+            expect(newMedianX).toBeCloseTo(5, 4)
+        })
+
+        it("cancel restores all selected objects", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addNode(context, root, 10, 0, 0)
+
+            const initP1 = mat4.clone(p1.transform!)
+            const initP2 = mat4.clone(p2.transform!)
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.GLOBAL
+
+            const ctrl = new ObjectScaleController(context, root)
+            context.axisRenderer.set(true, false, false)
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 820 }, offsetY: { value: 240 } })
+            ctrl.pointermove(ev)
+
+            ctrl.cancel()
+
+            expect(mat4.equals(p1.transform!, initP1)).toBe(true)
+            expect(mat4.equals(p2.transform!, initP2)).toBe(true)
+            expect(context.popController).toHaveBeenCalled()
+        })
+    })
 })
 
 function createMockAxisRenderer(): AxisRenderer {
@@ -382,7 +473,14 @@ function createEnvironment() {
     const context: any = {
         selection: {
             active: undefined as any,
+            selected: new Set(),
             getActive: function () { return this.active },
+            getSelected: function () {
+                if (this.selected.size === 0 && this.active) {
+                    return new Set([this.active])
+                }
+                return this.selected
+            },
             updateEditorModelFromActive: vi.fn(),
         },
         axisRenderer,
@@ -417,6 +515,19 @@ function createNodeTree(context: any) {
     }) as Mesh
 
     return { root, parent, mesh }
+}
+
+function addNode(context: any, root: Root, x: number, y: number, z: number) {
+    const parent = new XForm(root)
+    parent.transform = mat4.create()
+    mat4.copy(parent.combined, mat4.fromTranslation(mat4.create(), [x, y, z]))
+    const combined = mat4.fromTranslation(mat4.create(), [x, y, z])
+    const mesh = Object.create(Mesh.prototype, {
+        combined: { value: combined, writable: true },
+        parent: { value: parent },
+        context: { value: context },
+    }) as Mesh
+    return { parent, mesh }
 }
 
 function runPointermove(context: any, axisX: boolean, axisY: boolean, axisZ: boolean, offsetX: number, offsetY: number) {
