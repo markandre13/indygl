@@ -15,6 +15,9 @@ export class AxisRenderer {
     x = false;
     y = false;
     z = false;
+    get noAxis() {
+        return !(this.x || this.y || this.z)
+    }
 
     constructor(context: Context) {
         this.context = context

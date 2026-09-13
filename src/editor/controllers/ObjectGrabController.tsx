@@ -109,23 +109,29 @@ export class ObjectGrabController extends Controller {
         //     parent.transform = mat4.create()
         // }
 
-        let pn: vec3 | undefined
+        /** normal of plane in which to move */
+        let planeNormal: vec3 | undefined
         const axis = this.context.axisRenderer
 
         let pointerPosition = { x: ev.offsetX + this.delta!.x, y: ev.offsetY + this.delta!.y }
-        if (!axis.x && !axis.y && !axis.z) {
-            // plane normal in camera space, along which we want to move during grab
+        if (axis.noAxis) {
+            // no axis selected -> move within plane of camera normal
+            planeNormal = vec3.fromValues(0, 0, 1)
             const camMat = mat4.invert(mat4.create(), this.context.sceneUniforms.camera)!
-            pn = vec3.fromValues(0, 0, 1)
-            vec3.transformMat4(pn, pn, camMat)
-            vec3.normalize(pn, pn)
+            vec3.transformMat4(planeNormal, planeNormal, camMat)
+            vec3.normalize(planeNormal, planeNormal)
         } else if (!axis.x && axis.y && axis.z) {
-            pn = vec3.fromValues(1, 0, 0)
+            // move along global y,z-axes
+            planeNormal = vec3.fromValues(1, 0, 0)
         } else if (axis.x && !axis.y && axis.z) {
-            pn = vec3.fromValues(0, 1, 0)
+            // move along global y,z-axes
+            planeNormal = vec3.fromValues(0, 1, 0)
         } else if (axis.x && axis.y && !axis.z) {
-            pn = vec3.fromValues(0, 0, 1)
+            // move along global x,y-axes
+            planeNormal = vec3.fromValues(0, 0, 1)
         } else if (axis.x && !axis.y && !axis.z) {
+            // move along object's x-axis
+            // NOTE: this is a hack intersecting two planes
             const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
             const center = mat4.create()
             mat4.translate(center, center, t)
@@ -137,7 +143,7 @@ export class ObjectGrabController extends Controller {
             }
 
             pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, a, this.context)
-            pn = vec3.fromValues(0, 1, 0)
+            planeNormal = vec3.fromValues(0, 1, 0)
         } else if (!axis.x && axis.y && !axis.z) {
             const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
             const center = mat4.create()
@@ -150,7 +156,7 @@ export class ObjectGrabController extends Controller {
             }
 
             pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, a, this.context)
-            pn = vec3.fromValues(1, 0, 0)
+            planeNormal = vec3.fromValues(1, 0, 0)
         } else if (!axis.x && !axis.y && axis.z) {
             const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
             const center = mat4.create()
@@ -163,7 +169,7 @@ export class ObjectGrabController extends Controller {
             }
 
             pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, a, this.context)
-            pn = vec3.fromValues(1, 0, 0)
+            planeNormal = vec3.fromValues(1, 0, 0)
         } else {
             console.log(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED`)
             return
@@ -171,7 +177,7 @@ export class ObjectGrabController extends Controller {
 
         if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
             const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
-            vec3.transformQuat(pn, pn, rotation)
+            vec3.transformQuat(planeNormal, planeNormal, rotation)
         }
 
         const pt = screen2pointInPlane(
@@ -179,7 +185,7 @@ export class ObjectGrabController extends Controller {
             this.initialCenter!,
             this.context.sceneUniforms.perspective,
             this.context.sceneUniforms.camera,
-            pn,
+            planeNormal,
             this.context.canvas
         )
 
