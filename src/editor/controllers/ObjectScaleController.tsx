@@ -6,6 +6,7 @@ import type { Context } from "src/gl/Context"
 import { Circle } from "../viewkit/svg/Circle"
 import { LineWithArrows } from "../viewkit/svg/LineWithArrows"
 import { world2screen } from "src/gl/algorithms/coordinates"
+import { TransformOrientation } from "../app/TransformOrientation"
 
 export class ObjectScaleController extends Controller {
     context: Context
@@ -88,7 +89,6 @@ export class ObjectScaleController extends Controller {
         // const parent = (node.parent as XForm)
         const parent = this.context.selection.getActive()!.getXForm()!
 
-
         let factor = this.lineToPointer.distance - this.initialDistance
         factor *= 0.01
         factor += 1
@@ -123,7 +123,19 @@ export class ObjectScaleController extends Controller {
         } else {
             parent.transform = mat4.create()
         }
-        mat4.scale(parent.transform, parent.transform, vec3.fromValues(sx, sy, sz))
+        const isLocal = this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL
+        const scale = vec3.fromValues(sx, sy, sz)
+        if (isLocal) {
+            mat4.scale(parent.transform, parent.transform, scale)
+        } else {
+            // GLOBAL: scale along the parent/world axes, keeping the object's position (pivot)
+            const position = mat4.getTranslation(vec3.create(), parent.transform)
+            const scaleAroundPivot = mat4.fromTranslation(mat4.create(), position)
+            mat4.scale(scaleAroundPivot, scaleAroundPivot, scale)
+            mat4.translate(scaleAroundPivot, scaleAroundPivot, vec3.negate(vec3.create(), position))
+            mat4.multiply(scaleAroundPivot, scaleAroundPivot, parent.transform)
+            parent.transform = scaleAroundPivot
+        }
         this.updateLabel()
 
         parent.dirty = true
@@ -155,20 +167,21 @@ export class ObjectScaleController extends Controller {
         const sz = s[2].toFixed(4)
 
         const axis = this.context.axisRenderer
+        const orientation = this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL ? "local" : "global"
         if (!axis.x && !axis.y && !axis.z) {
             this.setInfo(`Scale x: ${sx} y: ${sy} z: ${sz}`)
         } else if (!axis.x && axis.y && axis.z) {
-            this.setInfo(`Scale ${sy} ${sz} locking global X`)
+            this.setInfo(`Scale ${sy} ${sz} locking ${orientation} X`)
         } else if (axis.x && !axis.y && axis.z) {
-            this.setInfo(`Scale ${sx} ${sz} locking global Y`)
+            this.setInfo(`Scale ${sx} ${sz} locking ${orientation} Y`)
         } else if (axis.x && axis.y && !axis.z) {
-            this.setInfo(`Scale ${sx} ${sy} locking global Z`)
+            this.setInfo(`Scale ${sx} ${sy} locking ${orientation} Z`)
         } else if (axis.x && !axis.y && !axis.z) {
-            this.setInfo(`Scale ${sx} along global X`)
+            this.setInfo(`Scale ${sx} along ${orientation} X`)
         } else if (!axis.x && axis.y && !axis.z) {
-            this.setInfo(`Scale ${sy} along global Y`)
+            this.setInfo(`Scale ${sy} along ${orientation} Y`)
         } else if (!axis.x && !axis.y && axis.z) {
-            this.setInfo(`Scale ${sz} along global Z`)
+            this.setInfo(`Scale ${sz} along ${orientation} Z`)
         }
     }
 

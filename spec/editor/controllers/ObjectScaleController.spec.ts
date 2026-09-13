@@ -6,6 +6,7 @@ import { Mesh } from "src/nodes/Mesh"
 import { AxisRenderer } from "src/gl/AxisRenderer"
 import { Root } from "src/nodes/IndyNode"
 import { world2screen } from "src/gl/algorithms/coordinates"
+import { TransformOrientation } from "src/editor/app/TransformOrientation"
 
 describe("ObjectScaleController", () => {
     beforeEach(() => {
@@ -254,6 +255,95 @@ describe("ObjectScaleController", () => {
             expect(context.selection.updateEditorModelFromActive).not.toHaveBeenCalled()
         })
     })
+
+    describe("pointermove with transform orientation", () => {
+        it("keydown() shows local orientation in the info label", () => {
+            const { context, infoOverlay } = createEnvironment()
+            context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
+            const { mesh, root } = createNodeTree(context)
+            context.selection.active = mesh
+            const ctrl = new ObjectScaleController(context, root)
+
+            ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyX" }))
+            expect(infoText(infoOverlay)).toBe("Scale 1.0000 along local X")
+        })
+
+        it("LOCAL X scale differs from GLOBAL X scale when object is pre-rotated", () => {
+            const { context } = createEnvironment()
+            const local = runOrientedScale(context, TransformOrientation.LOCAL, [5, 10, 15], "rotateZ", true, false, false)
+            const global = runOrientedScale(context, TransformOrientation.GLOBAL, [5, 10, 15], "rotateZ", true, false, false)
+
+            expect(mat4.equals(local.transform, global.transform)).toBe(false)
+        })
+
+        it("LOCAL Y scale differs from GLOBAL Y scale when object is pre-rotated", () => {
+            const { context } = createEnvironment()
+            const local = runOrientedScale(context, TransformOrientation.LOCAL, [5, 10, 15], "rotateZ", false, true, false)
+            const global = runOrientedScale(context, TransformOrientation.GLOBAL, [5, 10, 15], "rotateZ", false, true, false)
+
+            expect(mat4.equals(local.transform, global.transform)).toBe(false)
+        })
+
+        it("LOCAL Z scale differs from GLOBAL Z scale when object is pre-rotated", () => {
+            const { context } = createEnvironment()
+            const local = runOrientedScale(context, TransformOrientation.LOCAL, [5, 10, 15], "rotateX", false, false, true)
+            const global = runOrientedScale(context, TransformOrientation.GLOBAL, [5, 10, 15], "rotateX", false, false, true)
+
+            expect(mat4.equals(local.transform, global.transform)).toBe(false)
+        })
+
+        it("GLOBAL X scale scales along the world X axis of a pre-rotated object", () => {
+            const { context } = createEnvironment()
+            const { parent, ctrl, transform } = runOrientedScale(context, TransformOrientation.GLOBAL, [5, 10, 15], "rotateZ", true, false, false)
+
+            const factor = expectedFactor(context, parent, ctrl, 820, 240)
+            assertScale(transform, 1, factor, 1)
+        })
+
+        it("LOCAL X scale scales along the object's local X axis", () => {
+            const { context } = createEnvironment()
+            const { parent, ctrl, transform } = runOrientedScale(context, TransformOrientation.LOCAL, [5, 10, 15], "rotateZ", true, false, false)
+
+            const factor = expectedFactor(context, parent, ctrl, 820, 240)
+            assertScale(transform, factor, 1, 1)
+        })
+
+        it("GLOBAL Y scale scales along the world Y axis of a pre-rotated object", () => {
+            const { context } = createEnvironment()
+            const { parent, ctrl, transform } = runOrientedScale(context, TransformOrientation.GLOBAL, [5, 10, 15], "rotateZ", false, true, false)
+
+            const factor = expectedFactor(context, parent, ctrl, 820, 240)
+            assertScale(transform, factor, 1, 1)
+        })
+
+        it("GLOBAL scale keeps the object's position", () => {
+            const { context } = createEnvironment()
+            const { transform } = runOrientedScale(context, TransformOrientation.GLOBAL, [5, 10, 15], "rotateZ", true, false, false)
+
+            const position = mat4.getTranslation(vec3.create(), transform)
+            expect(position[0]).toBeCloseTo(5, 6)
+            expect(position[1]).toBeCloseTo(10, 6)
+            expect(position[2]).toBeCloseTo(15, 6)
+        })
+
+        it("LOCAL scale keeps the object's position", () => {
+            const { context } = createEnvironment()
+            const { transform } = runOrientedScale(context, TransformOrientation.LOCAL, [5, 10, 15], "rotateZ", true, false, false)
+
+            const position = mat4.getTranslation(vec3.create(), transform)
+            expect(position[0]).toBeCloseTo(5, 6)
+            expect(position[1]).toBeCloseTo(10, 6)
+            expect(position[2]).toBeCloseTo(15, 6)
+        })
+
+        it("uniform GLOBAL scale matches uniform LOCAL scale on a pre-rotated object", () => {
+            const { context } = createEnvironment()
+            const local = runOrientedScale(context, TransformOrientation.LOCAL, [5, 10, 15], "rotateZ", false, false, false)
+            const global = runOrientedScale(context, TransformOrientation.GLOBAL, [5, 10, 15], "rotateZ", false, false, false)
+
+            expect(mat4.equals(local.transform, global.transform)).toBe(true)
+        })
+    })
 })
 
 function createMockAxisRenderer(): AxisRenderer {
@@ -305,6 +395,9 @@ function createEnvironment() {
         lastPointerOffset: { x: 0, y: 0 },
         invalidate: vi.fn(),
         popController: vi.fn(),
+        editorModel: {
+            transformOrientation: { value: TransformOrientation.GLOBAL },
+        },
     }
     return { context, infoOverlay, svgOverlay, canvas }
 }
@@ -337,6 +430,37 @@ function runPointermove(context: any, axisX: boolean, axisY: boolean, axisZ: boo
     ctrl.pointermove(ev)
 
     return { parent, ctrl, root }
+}
+
+function runOrientedScale(
+    context: any,
+    orientation: TransformOrientation,
+    translate: [number, number, number],
+    preRotateFn: "rotateX" | "rotateY" | "rotateZ",
+    axisX: boolean,
+    axisY: boolean,
+    axisZ: boolean
+) {
+    const { parent, mesh, root } = createNodeTree(context)
+    context.selection.active = mesh
+    mat4.translate(parent.transform!, parent.transform!, translate)
+    if (preRotateFn === "rotateX") {
+        mat4.rotateX(parent.transform!, parent.transform!, Math.PI / 2)
+    } else if (preRotateFn === "rotateZ") {
+        mat4.rotateZ(parent.transform!, parent.transform!, Math.PI / 2)
+    } else {
+        mat4.rotateY(parent.transform!, parent.transform!, Math.PI / 2)
+    }
+    context.editorModel.transformOrientation.value = orientation
+
+    const ctrl = new ObjectScaleController(context, root)
+    context.axisRenderer.set(axisX, axisY, axisZ)
+
+    const ev = new PointerEvent("pointermove")
+    Object.defineProperties(ev, { offsetX: { value: 820 }, offsetY: { value: 240 } })
+    ctrl.pointermove(ev)
+
+    return { parent, ctrl, transform: parent.transform! }
 }
 
 function expectedFactor(context: any, parent: XForm, ctrl: ObjectScaleController, offsetX: number, offsetY: number): number {
