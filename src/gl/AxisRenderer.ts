@@ -15,8 +15,18 @@ export class AxisRenderer {
     x = false;
     y = false;
     z = false;
-    get noAxis() {
+    get noAxisSelected() {
         return !(this.x || this.y || this.z)
+    }
+    get oneAxisSelected() {
+        return (this.x && !this.y && !this.z) ||
+            (!this.x && this.y && !this.z) ||
+            (!this.x && !this.y && this.z)
+    }
+    get twoAxesSelected() {
+        return (!this.x && this.y && this.z) ||
+            (this.x && !this.y && this.z) ||
+            (this.x && this.y && !this.z)
     }
 
     constructor(context: Context) {

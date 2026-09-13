@@ -112,26 +112,20 @@ export class ObjectGrabController extends Controller {
         const axis = this.context.axisRenderer
 
         let pointerPosition = { x: ev.offsetX + this.delta!.x, y: ev.offsetY + this.delta!.y }
-        if (axis.noAxis) {
+        if (axis.noAxisSelected) {
             // no axis selected -> move within plane of camera normal
             planeNormal = vec3.fromValues(0, 0, 1)
             const camMat = mat4.invert(mat4.create(), this.context.sceneUniforms.camera)!
             vec3.transformMat4(planeNormal, planeNormal, camMat)
             vec3.normalize(planeNormal, planeNormal)
-        } else if (!axis.x && axis.y && axis.z) {
-            // move along global y,z-axes
-            planeNormal = vec3.fromValues(1, 0, 0)
-        } else if (axis.x && !axis.y && axis.z) {
-            // move along global y,z-axes
-            planeNormal = vec3.fromValues(0, 1, 0)
-        } else if (axis.x && axis.y && !axis.z) {
-            // move along global x,y-axes
-            planeNormal = vec3.fromValues(0, 0, 1)
-        } else if (
-            (axis.x && !axis.y && !axis.z) ||
-            (!axis.x && axis.y && !axis.z) ||
-            (!axis.x && !axis.y && axis.z)
-        ) {
+        } else if (axis.twoAxesSelected) {
+            // move within the plane perpendicular to the locked global axis
+            planeNormal = vec3.fromValues(
+                axis.x ? 0 : 1,
+                axis.y ? 0 : 1,
+                axis.z ? 0 : 1
+            )
+        } else if (axis.oneAxisSelected) {
             // single axis constraint - find nearest point on axis to camera ray
             const axisDir = vec3.fromValues(
                 axis.x ? 1 : 0,
