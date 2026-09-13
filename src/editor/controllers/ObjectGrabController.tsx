@@ -1,15 +1,12 @@
 import { IconMouseLeft, IconMouseRight, IconKey, IconShift } from "src/editor/viewkit/InputIcons"
-import { Mesh } from "src/nodes/Mesh"
 import { type IndyNode } from "src/nodes/IndyNode"
 import { Controller } from "./Controller"
 import { mat4, quat, vec3 } from "gl-matrix"
-import type { XForm } from "src/nodes/XForm"
 import type { Context } from "src/gl/Context"
 import type { Point } from "src/gl/types/Point"
-import { screen2pointInPlane, setMat4Translation, world2screen } from "src/gl/algorithms/coordinates"
-import { pointerToObjectAxisInScreenSpace } from "src/gl/algorithms/pointerToObjectAxisInScreenSpace"
+import { screen2pointInPlane, screen2world, setMat4Translation, world2screen } from "src/gl/algorithms/coordinates"
+import { nearestPointBetweenLines } from "src/gl/algorithms/nearestPointBetweenLines"
 import { TransformOrientation } from "../app/TransformOrientation"
-
 
 export class ObjectGrabController extends Controller {
     context: Context
@@ -111,6 +108,7 @@ export class ObjectGrabController extends Controller {
 
         /** normal of plane in which to move */
         let planeNormal: vec3 | undefined
+        let pt: vec3 | undefined
         const axis = this.context.axisRenderer
 
         let pointerPosition = { x: ev.offsetX + this.delta!.x, y: ev.offsetY + this.delta!.y }
@@ -129,65 +127,48 @@ export class ObjectGrabController extends Controller {
         } else if (axis.x && axis.y && !axis.z) {
             // move along global x,y-axes
             planeNormal = vec3.fromValues(0, 0, 1)
-        } else if (axis.x && !axis.y && !axis.z) {
-            // move along object's x-axis
-            // NOTE: this is a hack intersecting two planes
-            const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
-            const center = mat4.create()
-            mat4.translate(center, center, t)
-
-            const a = vec3.fromValues(1, 0, 0)
+        } else if (
+            (axis.x && !axis.y && !axis.z) ||
+            (!axis.x && axis.y && !axis.z) ||
+            (!axis.x && !axis.y && axis.z)
+        ) {
+            // single axis constraint - find nearest point on axis to camera ray
+            const axisDir = vec3.fromValues(
+                axis.x ? 1 : 0,
+                axis.y ? 1 : 0,
+                axis.z ? 1 : 0
+            )
             if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
                 const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
-                vec3.transformQuat(a, a, rotation)
+                vec3.transformQuat(axisDir, axisDir, rotation)
             }
 
-            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, a, this.context)
-            planeNormal = vec3.fromValues(0, 1, 0)
-        } else if (!axis.x && axis.y && !axis.z) {
-            const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
-            const center = mat4.create()
-            mat4.translate(center, center, t)
-
-            const a = vec3.fromValues(0, 1, 0)
-            if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
-                const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
-                vec3.transformQuat(a, a, rotation)
-            }
-
-            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, a, this.context)
-            planeNormal = vec3.fromValues(1, 0, 0)
-        } else if (!axis.x && !axis.y && axis.z) {
-            const t = mat4.getTranslation(vec3.create(), this.initialTransform!)
-            const center = mat4.create()
-            mat4.translate(center, center, t)
-
-            const a = vec3.fromValues(0, 0, 1)
-            if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
-                const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
-                vec3.transformQuat(a, a, rotation)
-            }
-
-            pointerPosition = pointerToObjectAxisInScreenSpace(ev, center, a, this.context)
-            planeNormal = vec3.fromValues(1, 0, 0)
+            const perspectiveCamera = mat4.multiply(mat4.create(), this.context.sceneUniforms.perspective, this.context.sceneUniforms.camera)
+            const camMat = mat4.invert(mat4.create(), this.context.sceneUniforms.camera)!
+            const camPos = mat4.getTranslation(vec3.create(), camMat)
+            const rayDir = screen2world({ x: ev.offsetX, y: ev.offsetY }, perspectiveCamera, this.context.canvas)
+            const result = nearestPointBetweenLines(camPos, rayDir, this.initialCenter!, axisDir)
+            pt = vec3.add(vec3.create(), this.initialCenter!, vec3.scale(vec3.create(), axisDir, result.b))
         } else {
             console.log(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED`)
             return
         }
 
-        if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
-            const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
-            vec3.transformQuat(planeNormal, planeNormal, rotation)
-        }
+        if (!pt) {
+            if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
+                const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
+                vec3.transformQuat(planeNormal!, planeNormal!, rotation)
+            }
 
-        const pt = screen2pointInPlane(
-            pointerPosition,
-            this.initialCenter!,
-            this.context.sceneUniforms.perspective,
-            this.context.sceneUniforms.camera,
-            planeNormal,
-            this.context.canvas
-        )
+            pt = screen2pointInPlane(
+                pointerPosition,
+                this.initialCenter!,
+                this.context.sceneUniforms.perspective,
+                this.context.sceneUniforms.camera,
+                planeNormal!,
+                this.context.canvas
+            )
+        }
 
         setMat4Translation(node.transform!, pt)
         this.updateLabel()
