@@ -146,80 +146,155 @@ export class ObjectGrabController extends Controller {
             this.delta = screen
         }
 
-        /** normal of plane in which to move */
-        let planeNormal: vec3 | undefined
-        let pt: vec3 | undefined
         const axis = this.context.axisRenderer
+        const isLocal = this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL
+        const pointerPosition = { x: ev.offsetX + this.delta!.x, y: ev.offsetY + this.delta!.y }
 
-        let pointerPosition = { x: ev.offsetX + this.delta!.x, y: ev.offsetY + this.delta!.y }
-        if (axis.noAxisSelected) {
-            // no axis selected -> move within plane of camera normal
-            planeNormal = vec3.fromValues(0, 0, 1)
-            const camMat = mat4.invert(mat4.create(), this.context.sceneUniforms.camera)!
-            vec3.transformMat4(planeNormal, planeNormal, camMat)
-            vec3.normalize(planeNormal, planeNormal)
-        } else if (axis.twoAxesSelected) {
-            // move within the plane perpendicular to the locked global axis
-            planeNormal = vec3.fromValues(
-                axis.x ? 0 : 1,
-                axis.y ? 0 : 1,
-                axis.z ? 0 : 1
-            )
-        } else if (axis.oneAxisSelected) {
-            // single axis constraint - find nearest point on axis to camera ray
-            const axisDir = vec3.fromValues(
-                axis.x ? 1 : 0,
-                axis.y ? 1 : 0,
-                axis.z ? 1 : 0
-            )
-            if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
-                const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
-                vec3.transformQuat(axisDir, axisDir, rotation)
-            }
-
-            const perspectiveCamera = mat4.multiply(mat4.create(), this.context.sceneUniforms.perspective, this.context.sceneUniforms.camera)
-            const camMat = mat4.invert(mat4.create(), this.context.sceneUniforms.camera)!
-            const camPos = mat4.getTranslation(vec3.create(), camMat)
-            const rayDir = screen2world(pointerPosition, perspectiveCamera, this.context.canvas)
-            const result = nearestPointBetweenLines(camPos, rayDir, this.initialCenter!, axisDir)
-            pt = vec3.add(vec3.create(), this.initialCenter!, vec3.scale(vec3.create(), axisDir, result.b))
+        if (axis.oneAxisSelected) {
+            this.grabAlongAxis(pointerPosition, isLocal)
+        } else if (axis.twoAxesSelected || axis.noAxisSelected) {
+            this.grabInPlane(pointerPosition, isLocal)
         } else {
             console.log(`CONSTRAINT ${axis.x} ${axis.y} ${axis.z} IS NOT IMPLEMENTED`)
             return
         }
 
-        if (!pt) {
-            if (this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL) {
-                const rotation = mat4.getRotation(quat.create(), this.initialTransform!)
-                vec3.transformQuat(planeNormal!, planeNormal!, rotation)
-            }
-
-            pt = screen2pointInPlane(
-                pointerPosition,
-                this.initialCenter!,
-                this.context.sceneUniforms.perspective,
-                this.context.sceneUniforms.camera,
-                planeNormal!,
-                this.context.canvas
-            )
-        }
-
-        // move all selected objects by the same delta
-        vec3.sub(this.moved, pt, this.initialCenter!)
-        for (let i = 0; i < this.xforms.length; i++) {
-            const xf = this.xforms[i]
-            if (xf.transform === undefined) {
-                xf.transform = mat4.create()
-            }
-            const pos = mat4.getTranslation(vec3.create(), this.initialTransforms[i])
-            vec3.add(pos, pos, this.moved)
-            setMat4Translation(xf.transform, pos)
-            xf.dirty = true
-        }
+        this.updateMoved()
         this.updateLabel()
 
         this.context.selection.updateEditorModelFromActive()
         this.context.invalidate()
+    }
+
+    /**
+     * initial world position of the object with the given index
+     */
+    private initialPosition(i: number): vec3 {
+        return mat4.getTranslation(vec3.create(), this.initialTransforms[i])
+    }
+
+    private setPosition(i: number, pos: vec3) {
+        const xf = this.xforms[i]
+        if (xf.transform === undefined) {
+            xf.transform = mat4.create()
+        }
+        setMat4Translation(xf.transform, pos)
+        xf.dirty = true
+    }
+
+    /**
+     * move all objects by the same world delta
+     */
+    private applyDelta(delta: vec3) {
+        for (let i = 0; i < this.xforms.length; i++) {
+            this.setPosition(i, vec3.add(vec3.create(), this.initialPosition(i), delta))
+        }
+    }
+
+    /**
+     * move along a single axis.
+     *
+     * GLOBAL: all objects move by the same world-space delta.
+     * LOCAL: each object translates along its own axis, anchored at its own position.
+     */
+    private grabAlongAxis(pointerPosition: Point, isLocal: boolean) {
+        const axis = this.context.axisRenderer
+        const worldDir = vec3.fromValues(
+            axis.x ? 1 : 0,
+            axis.y ? 1 : 0,
+            axis.z ? 1 : 0
+        )
+        const perspectiveCamera = mat4.multiply(mat4.create(), this.context.sceneUniforms.perspective, this.context.sceneUniforms.camera)
+        const camMat = mat4.invert(mat4.create(), this.context.sceneUniforms.camera)!
+        const camPos = mat4.getTranslation(vec3.create(), camMat)
+        const rayDir = screen2world(pointerPosition, perspectiveCamera, this.context.canvas)
+
+        if (!isLocal) {
+            const result = nearestPointBetweenLines(camPos, rayDir, this.initialCenter!, worldDir)
+            this.applyDelta(vec3.scale(vec3.create(), worldDir, result.b))
+            return
+        }
+
+        for (let i = 0; i < this.xforms.length; i++) {
+            const dir = vec3.clone(worldDir)
+            const rotation = mat4.getRotation(quat.create(), this.initialTransforms[i])
+            vec3.transformQuat(dir, dir, rotation)
+            const anchor = this.initialPosition(i)
+            const result = nearestPointBetweenLines(camPos, rayDir, anchor, dir)
+            const pos = vec3.add(vec3.create(), anchor, vec3.scale(vec3.create(), dir, result.b))
+            this.setPosition(i, pos)
+        }
+    }
+
+    /**
+     * move within a plane.
+     *
+     * no axis selected: plane of the camera's view direction.
+     * two axes selected: plane perpendicular to the locked axis.
+     *
+     * GLOBAL: all objects move by the same world-space delta.
+     * LOCAL: each object moves within its own plane, anchored at its own position.
+     */
+    private grabInPlane(pointerPosition: Point, isLocal: boolean) {
+        const axis = this.context.axisRenderer
+        let worldNormal: vec3
+        if (axis.noAxisSelected) {
+            worldNormal = vec3.fromValues(0, 0, 1)
+            const camMat = mat4.invert(mat4.create(), this.context.sceneUniforms.camera)!
+            vec3.transformMat4(worldNormal, worldNormal, camMat)
+            vec3.normalize(worldNormal, worldNormal)
+        } else {
+            worldNormal = vec3.fromValues(
+                axis.x ? 0 : 1,
+                axis.y ? 0 : 1,
+                axis.z ? 0 : 1
+            )
+        }
+
+        if (!isLocal) {
+            const pt = screen2pointInPlane(
+                pointerPosition,
+                this.initialCenter!,
+                this.context.sceneUniforms.perspective,
+                this.context.sceneUniforms.camera,
+                worldNormal,
+                this.context.canvas
+            )
+            this.applyDelta(vec3.sub(vec3.create(), pt, this.initialCenter!))
+            return
+        }
+
+        for (let i = 0; i < this.xforms.length; i++) {
+            const normal = vec3.clone(worldNormal)
+            const rotation = mat4.getRotation(quat.create(), this.initialTransforms[i])
+            vec3.transformQuat(normal, normal, rotation)
+            const pos = screen2pointInPlane(
+                pointerPosition,
+                this.initialPosition(i),
+                this.context.sceneUniforms.perspective,
+                this.context.sceneUniforms.camera,
+                normal,
+                this.context.canvas
+            )
+            this.setPosition(i, pos)
+        }
+    }
+
+    /**
+     * the median of the moved objects relative to the initial median
+     */
+    private updateMoved() {
+        if (this.xforms.length === 0) {
+            this.moved = vec3.create()
+            return
+        }
+        const center = vec3.create()
+        for (const xf of this.xforms) {
+            const p = mat4.getTranslation(vec3.create(), xf.transform!)
+            vec3.add(center, center, p)
+        }
+        vec3.scale(center, center, 1 / this.xforms.length)
+        vec3.sub(this.moved, center, this.initialCenter!)
     }
 
     override pointerdown(ev: PointerEvent): void {

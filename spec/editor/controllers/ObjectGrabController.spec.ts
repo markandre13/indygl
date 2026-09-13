@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from "vitest"
-import { mat4, vec3 } from "gl-matrix"
+import { mat4, quat, vec3 } from "gl-matrix"
 import { ObjectGrabController } from "src/editor/controllers/ObjectGrabController"
 import { XForm } from "src/nodes/XForm"
 import { Mesh } from "src/nodes/Mesh"
@@ -478,6 +478,38 @@ describe("ObjectGrabController", () => {
             expect(t2[1]).toBeCloseTo(2, 6)
             expect(t2[2]).toBeCloseTo(-10, 6)
         })
+
+        it("LOCAL X axis constraint moves each object along its own axis", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh, root } = createNodeTree(context)
+            // second object rotated 90° about Z, so its local X is the world Y
+            const second = addRotatedNode(context, root, 2, 0, -10, Math.PI / 2)
+            context.selection.setActive(mesh)
+            context.selection.selected.add(second.mesh)
+            tiltCamera(context)
+            context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
+            context.axisRenderer.set(true, false, false)
+            const ctrl = new ObjectGrabController(context, root)
+
+            ctrl.pointermove(makeMove(400, 300))
+            ctrl.pointermove(makeMove(500, 300))
+
+            // object 1 has an identity rotation, so it moves along world X
+            const t1 = mat4.getTranslation(vec3.create(), parent.transform!)
+            const d1 = vec3.sub(vec3.create(), t1, vec3.fromValues(0, 0, -10))
+            expect(d1[1]).toBeCloseTo(0, 4)
+            expect(d1[2]).toBeCloseTo(0, 4)
+
+            // object 2 rotated 90° about Z, its local X is the world Y
+            const t2 = mat4.getTranslation(vec3.create(), second.parent.transform!)
+            const d2 = vec3.sub(vec3.create(), t2, vec3.fromValues(2, 0, -10))
+            expect(d2[0]).toBeCloseTo(0, 4)
+            expect(d2[2]).toBeCloseTo(0, 4)
+
+            // both actually moved
+            expect(vec3.length(d1)).toBeGreaterThan(0.001)
+            expect(vec3.length(d2)).toBeGreaterThan(0.001)
+        })
     })
 })
 
@@ -560,6 +592,22 @@ function addNode(context: any, root: Root, x: number, y: number, z: number) {
     mat4.copy(parent.combined, mat4.fromTranslation(mat4.create(), [x, y, z]))
 
     const combined = mat4.fromTranslation(mat4.create(), [x, y, z])
+    const mesh = Object.create(Mesh.prototype, {
+        combined: { value: combined, writable: true },
+        parent: { value: parent },
+        context: { value: context },
+    }) as Mesh
+    return { parent, mesh }
+}
+
+function addRotatedNode(context: any, root: Root, x: number, y: number, z: number, angleZ: number) {
+    const q = quat.setAxisAngle(quat.create(), vec3.fromValues(0, 0, 1), angleZ)
+    const m = mat4.fromRotationTranslation(mat4.create(), q, [x, y, z])
+    const parent = new XForm(root)
+    parent.transform = mat4.create()
+    mat4.copy(parent.combined, m)
+
+    const combined = mat4.clone(m)
     const mesh = Object.create(Mesh.prototype, {
         combined: { value: combined, writable: true },
         parent: { value: parent },
