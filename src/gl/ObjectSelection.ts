@@ -60,6 +60,7 @@ export class ObjectSelection {
         return undefined
     }
     getActive() { return this.active }
+    getSelected() { return this.selected }
 
     /**
      * clear selection

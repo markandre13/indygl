@@ -1,5 +1,6 @@
 import { IconMouseLeft, IconMouseRight, IconKey, IconShift } from "src/editor/viewkit/InputIcons"
 import { type IndyNode } from "src/nodes/IndyNode"
+import { type XForm } from "src/nodes/XForm"
 import { Controller } from "./Controller"
 import { mat4, quat, vec3 } from "gl-matrix"
 import type { Context } from "src/gl/Context"
@@ -12,24 +13,27 @@ export class ObjectGrabController extends Controller {
     context: Context
     root: IndyNode
     grabbing = false
+    xforms: XForm[] = []
     initialCenter?: vec3
+    /**
+     * the combined transform of the active object at grab start,
+     * used for LOCAL axis/plane orientation
+     */
     initialTransform?: mat4
+    /**
+     * the combined transform of every selected object at grab start
+     */
+    initialTransforms: mat4[] = []
+    /**
+     * the median of all selected objects moved by the latest pointer move
+     */
+    moved: vec3 = vec3.create()
     delta?: Point
     constructor(context: Context, root: IndyNode) {
         super()
         this.context = context
         this.root = root
-
-        // const node = this.context.selection.active
-        const node = this.context.selection.getActive()!.getXForm()!
-        // if (node) {
-        if (node.transform === undefined) {
-            node.transform = mat4.create()
-        }
-
-        this.initialCenter = mat4.getTranslation(vec3.create(), node.combined)
-        this.initialTransform = mat4.clone(node.combined)
-        // }
+        this.initGrab()
         this.updateLabel()
     }
     override keyboardInfo() {
@@ -68,43 +72,79 @@ export class ObjectGrabController extends Controller {
                     break
             }
         }
-        // const node = this.context.selection.active
-        const node = this.context.selection.getActive()!.getXForm()!
-        if (node) {
-            this.initialCenter = mat4.getTranslation(vec3.create(), node.combined)
-            this.initialTransform = mat4.clone(node.combined)
-        }
+        this.initGrab()
         this.updateLabel()
         this.context.invalidate()
+    }
+
+    /**
+     * the XForm of every selected node; falls back to the active node
+     */
+    private selectedXForms(): XForm[] {
+        const xforms: XForm[] = []
+        for (const node of this.context.selection.getSelected()) {
+            const xf = node.getXForm()
+            if (xf) {
+                xforms.push(xf)
+            }
+        }
+        if (xforms.length === 0) {
+            const node = this.context.selection.getActive()
+            if (node) {
+                const xf = node.getXForm()
+                if (xf) {
+                    xforms.push(xf)
+                }
+            }
+        }
+        return xforms
+    }
+
+    /**
+     * the median (average) of the combined centers of the given XForms
+     */
+    private medianCenter(xforms: XForm[]): vec3 {
+        const center = vec3.create()
+        for (const xf of xforms) {
+            const p = mat4.getTranslation(vec3.create(), xf.combined)
+            vec3.add(center, center, p)
+        }
+        if (xforms.length > 0) {
+            vec3.scale(center, center, 1 / xforms.length)
+        }
+        return center
+    }
+
+    /**
+     * (re-)anchor the grab: store the median and the initial state of all selected objects
+     */
+    private initGrab() {
+        this.xforms = this.selectedXForms().map((xf) => {
+            if (xf.transform === undefined) {
+                xf.transform = mat4.create()
+            }
+            return xf
+        })
+        this.initialCenter = this.medianCenter(this.xforms)
+        this.initialTransforms = this.xforms.map((xf) => mat4.clone(xf.combined))
+        const active = this.context.selection.getActive()
+        const activeXForm = active?.getXForm()
+        this.initialTransform = mat4.clone((activeXForm ?? this.xforms[0])?.combined ?? mat4.create())
+        this.moved = vec3.create()
     }
 
     override pointermove(ev: PointerEvent): void {
         ev.preventDefault()
 
-        // this.context.canvas.setPointerCapture(ev.pointerId)
-
-        // const node = this.context.selection.active
-        const node = this.context.selection.getActive()!.getXForm()!
-        // if (!node) {
-        //     return
-        // }
-
         if (!this.grabbing) {
             this.grabbing = true
-            // save the object's initial transform
-            this.initialCenter = mat4.getTranslation(vec3.create(), node.combined)
-            this.initialTransform = mat4.clone(node.combined)
-            // calculate the screen diference between the object and the pointer
-            const screen = world2screen(this.initialCenter, this.context.sceneUniforms.projectionMatrix, this.context.canvas)
+            this.initGrab()
+            // calculate the screen difference between the median of the selected objects and the pointer
+            const screen = world2screen(this.initialCenter!, this.context.sceneUniforms.projectionMatrix, this.context.canvas)
             screen.x -= ev.offsetX
             screen.y -= ev.offsetY
             this.delta = screen
         }
-
-        // const parent = (node.parent as XForm)
-        // if (parent.transform === undefined) {
-        //     parent.transform = mat4.create()
-        // }
 
         /** normal of plane in which to move */
         let planeNormal: vec3 | undefined
@@ -164,10 +204,20 @@ export class ObjectGrabController extends Controller {
             )
         }
 
-        setMat4Translation(node.transform!, pt)
+        // move all selected objects by the same delta
+        vec3.sub(this.moved, pt, this.initialCenter!)
+        for (let i = 0; i < this.xforms.length; i++) {
+            const xf = this.xforms[i]
+            if (xf.transform === undefined) {
+                xf.transform = mat4.create()
+            }
+            const pos = mat4.getTranslation(vec3.create(), this.initialTransforms[i])
+            vec3.add(pos, pos, this.moved)
+            setMat4Translation(xf.transform, pos)
+            xf.dirty = true
+        }
         this.updateLabel()
 
-        node.dirty = true
         this.context.selection.updateEditorModelFromActive()
         this.context.invalidate()
     }
@@ -185,17 +235,11 @@ export class ObjectGrabController extends Controller {
     }
 
     private updateLabel() {
-        const p0 = this.initialCenter!
+        const p1 = vec3.clone(this.moved)
 
-        // const node = this.context.selection.active!
-        // const parent = (node.parent as XForm)
-        const parent = this.context.selection.getActive()!.getXForm()!
-        const p1 = mat4.getTranslation(vec3.create(), parent.transform!)
-
-        vec3.sub(p1, p1, p0)
         const dx = p1[0].toFixed(4)
-        const dy = p1[0].toFixed(4)
-        const dz = p1[0].toFixed(4)
+        const dy = p1[1].toFixed(4)
+        const dz = p1[2].toFixed(4)
         const d = vec3.length(p1).toFixed(4)
 
         const axis = this.context.axisRenderer
@@ -228,15 +272,15 @@ export class ObjectGrabController extends Controller {
      * quit grab
      */
     cancel() {
-        // const node = this.context.selection.active!
-        // const parent = (node.parent as XForm)
-        const parent = this.context.selection.getActive()!.getXForm()!
-        setMat4Translation(parent.transform!, this.initialCenter!)
+        for (let i = 0; i < this.xforms.length; i++) {
+            const xf = this.xforms[i]
+            const pos = mat4.getTranslation(vec3.create(), this.initialTransforms[i])
+            setMat4Translation(xf.transform!, pos)
 
-        parent.dirty = true
+            xf.dirty = true
+        }
         this.context.invalidate()
 
         this.confirm()
     }
 }
-

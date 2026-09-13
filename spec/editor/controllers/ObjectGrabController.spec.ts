@@ -17,7 +17,7 @@ describe("ObjectGrabController", () => {
         it("stores initial state and creates info label", () => {
             const { context, infoOverlay } = createEnvironment()
             const { mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
 
             const ctrl = new ObjectGrabController(context, root)
 
@@ -33,7 +33,7 @@ describe("ObjectGrabController", () => {
         it("creates transform when node.transform is undefined", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             parent.transform = undefined as any
 
             const ctrl = new ObjectGrabController(context, root)
@@ -47,7 +47,7 @@ describe("ObjectGrabController", () => {
         it("X|Y|Z sets single axis constraint", () => {
             const { context } = createEnvironment()
             const { mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             const ctrl = new ObjectGrabController(context, root)
 
             ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyX" }))
@@ -69,7 +69,7 @@ describe("ObjectGrabController", () => {
         it("Shift+(X|Y|Z) sets plane constraint", () => {
             const { context } = createEnvironment()
             const { mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             const ctrl = new ObjectGrabController(context, root)
 
             ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyX", shiftKey: true }))
@@ -91,7 +91,7 @@ describe("ObjectGrabController", () => {
         it("invalidates and updates info label", () => {
             const { context, infoOverlay } = createEnvironment()
             const { mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             const ctrl = new ObjectGrabController(context, root)
 
             ctrl.keydown(new KeyboardEvent("keydown", { code: "KeyX" }))
@@ -104,7 +104,7 @@ describe("ObjectGrabController", () => {
         it("left mouse button calls confirm()", () => {
             const { context } = createEnvironment()
             const { mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             const ctrl = new ObjectGrabController(context, root)
 
             const spy = vi.spyOn(ctrl, "confirm")
@@ -115,7 +115,7 @@ describe("ObjectGrabController", () => {
         it("right mouse button calls cancel()", () => {
             const { context } = createEnvironment()
             const { mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             const ctrl = new ObjectGrabController(context, root)
 
             const spy = vi.spyOn(ctrl, "cancel")
@@ -128,7 +128,7 @@ describe("ObjectGrabController", () => {
         it("resets grabbing, axis, and pops controller", () => {
             const { context } = createEnvironment()
             const { mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             context.axisRenderer.set(true, false, false)
             const ctrl = new ObjectGrabController(context, root)
             ctrl.grabbing = true
@@ -147,7 +147,7 @@ describe("ObjectGrabController", () => {
         it("restores initial position and pops controller", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             const ctrl = new ObjectGrabController(context, root)
 
             setMat4Translation(parent.transform!, vec3.fromValues(5, 3, 8))
@@ -168,7 +168,7 @@ describe("ObjectGrabController", () => {
         it("free grab grips the object on the first move", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             const ctrl = new ObjectGrabController(context, root)
 
             ctrl.pointermove(makeMove(400, 300))
@@ -187,7 +187,7 @@ describe("ObjectGrabController", () => {
         it("free grab moves the object as the pointer moves", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             const ctrl = new ObjectGrabController(context, root)
 
             ctrl.pointermove(makeMove(400, 300))
@@ -204,7 +204,7 @@ describe("ObjectGrabController", () => {
         it("free grab works with a tilted camera", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             const ctrl = new ObjectGrabController(context, root)
 
@@ -225,7 +225,7 @@ describe("ObjectGrabController", () => {
         it("sets grabbing flag on first move only", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             const ctrl = new ObjectGrabController(context, root)
 
             ctrl.pointermove(makeMove(400, 300))
@@ -238,7 +238,7 @@ describe("ObjectGrabController", () => {
         it("does not recompute delta on subsequent moves", () => {
             const { context } = createEnvironment()
             const { mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             const ctrl = new ObjectGrabController(context, root)
 
             ctrl.pointermove(makeMove(400, 300))
@@ -253,7 +253,7 @@ describe("ObjectGrabController", () => {
         it("X axis constraint keeps the grab on the X plane", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             context.axisRenderer.set(true, false, false)
             const ctrl = new ObjectGrabController(context, root)
@@ -268,7 +268,7 @@ describe("ObjectGrabController", () => {
         it("Y axis constraint keeps the grab on the Y plane", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             context.axisRenderer.set(false, true, false)
             const ctrl = new ObjectGrabController(context, root)
@@ -283,7 +283,7 @@ describe("ObjectGrabController", () => {
         it("Z axis constraint keeps the grab on the Z plane", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             context.axisRenderer.set(false, false, true)
             const ctrl = new ObjectGrabController(context, root)
@@ -298,7 +298,7 @@ describe("ObjectGrabController", () => {
         it("XY plane constraint keeps the grab on the XY plane", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             context.axisRenderer.set(true, true, false)
             const ctrl = new ObjectGrabController(context, root)
@@ -313,7 +313,7 @@ describe("ObjectGrabController", () => {
         it("XZ plane constraint keeps the grab on the XZ plane", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             context.axisRenderer.set(true, false, true)
             const ctrl = new ObjectGrabController(context, root)
@@ -328,7 +328,7 @@ describe("ObjectGrabController", () => {
         it("YZ plane constraint keeps the grab on the YZ plane", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             context.axisRenderer.set(false, true, true)
             const ctrl = new ObjectGrabController(context, root)
@@ -343,7 +343,7 @@ describe("ObjectGrabController", () => {
         it("XYZ constraint is not implemented and returns early", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             parent.dirty = false
             context.axisRenderer.set(true, true, true)
             const ctrl = new ObjectGrabController(context, root)
@@ -359,7 +359,7 @@ describe("ObjectGrabController", () => {
         it("works with LOCAL transform orientation (free grab)", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
             const ctrl = new ObjectGrabController(context, root)
@@ -375,7 +375,7 @@ describe("ObjectGrabController", () => {
         it("works with LOCAL transform orientation (X axis)", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
             context.axisRenderer.set(true, false, false)
@@ -392,7 +392,7 @@ describe("ObjectGrabController", () => {
         it("works with LOCAL transform orientation (Y axis)", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
             context.axisRenderer.set(false, true, false)
@@ -408,7 +408,7 @@ describe("ObjectGrabController", () => {
         it("works with LOCAL transform orientation (Z axis)", () => {
             const { context } = createEnvironment()
             const { parent, mesh, root } = createNodeTree(context)
-            context.selection.active = mesh
+            context.selection.setActive(mesh)
             tiltCamera(context)
             context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
             context.axisRenderer.set(false, false, true)
@@ -419,6 +419,64 @@ describe("ObjectGrabController", () => {
             expect(ctrl.grabbing).toBe(true)
             expect(parent.dirty).toBe(true)
             expectMoved(mat4.getTranslation(vec3.create(), parent.transform!))
+        })
+
+        it("moves all selected objects by the same delta", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh, root } = createNodeTree(context)
+            const second = addNode(context, root, 0, 2, -10)
+            context.selection.setActive(mesh)
+            context.selection.selected.add(second.mesh)
+            const ctrl = new ObjectGrabController(context, root)
+
+            ctrl.pointermove(makeMove(400, 300))
+            ctrl.pointermove(makeMove(500, 300))
+
+            const t1 = mat4.getTranslation(vec3.create(), parent.transform!)
+            const t2 = mat4.getTranslation(vec3.create(), second.parent.transform!)
+            const d1 = vec3.sub(vec3.create(), t1, vec3.fromValues(0, 0, -10))
+            const d2 = vec3.sub(vec3.create(), t2, vec3.fromValues(0, 2, -10))
+            expect(d1[0]).toBeCloseTo(d2[0], 6)
+            expect(d1[1]).toBeCloseTo(d2[1], 6)
+            expect(d1[2]).toBeCloseTo(d2[2], 6)
+            expect(Math.abs(d1[0]) + Math.abs(d1[1]) + Math.abs(d1[2])).toBeGreaterThan(0.001)
+        })
+
+        it("uses the median of the selected objects as the grab anchor", () => {
+            const { context } = createEnvironment()
+            const { mesh, root } = createNodeTree(context)
+            const second = addNode(context, root, 2, 0, -10)
+            context.selection.setActive(mesh)
+            context.selection.selected.add(second.mesh)
+            const ctrl = new ObjectGrabController(context, root)
+
+            expect(ctrl.initialCenter![0]).toBeCloseTo(1, 6)
+            expect(ctrl.initialCenter![1]).toBeCloseTo(0, 6)
+            expect(ctrl.initialCenter![2]).toBeCloseTo(-10, 6)
+        })
+
+        it("cancel restores all selected objects", () => {
+            const { context } = createEnvironment()
+            const { parent, mesh, root } = createNodeTree(context)
+            const second = addNode(context, root, 0, 2, -10)
+            context.selection.setActive(mesh)
+            context.selection.selected.add(second.mesh)
+            const ctrl = new ObjectGrabController(context, root)
+
+            setMat4Translation(parent.transform!, vec3.fromValues(5, 3, 8))
+            setMat4Translation(second.parent.transform!, vec3.fromValues(5, 5, 8))
+
+            ctrl.cancel()
+
+            const t1 = mat4.getTranslation(vec3.create(), parent.transform!)
+            expect(t1[0]).toBeCloseTo(0, 6)
+            expect(t1[1]).toBeCloseTo(0, 6)
+            expect(t1[2]).toBeCloseTo(-10, 6)
+
+            const t2 = mat4.getTranslation(vec3.create(), second.parent.transform!)
+            expect(t2[0]).toBeCloseTo(0, 6)
+            expect(t2[1]).toBeCloseTo(2, 6)
+            expect(t2[2]).toBeCloseTo(-10, 6)
         })
     })
 })
@@ -453,7 +511,14 @@ function createEnvironment() {
     const context: any = {
         selection: {
             active: undefined as any,
+            selected: new Set(),
             getActive: function () { return this.active },
+            getSelected: function () { return this.selected },
+            setActive: function (node: any) {
+                this.active = node
+                this.selected.clear()
+                this.selected.add(node)
+            },
             updateEditorModelFromActive: vi.fn(),
         },
         axisRenderer,
@@ -487,6 +552,20 @@ function createNodeTree(context: any) {
     }) as Mesh
 
     return { root, parent, mesh }
+}
+
+function addNode(context: any, root: Root, x: number, y: number, z: number) {
+    const parent = new XForm(root)
+    parent.transform = mat4.create()
+    mat4.copy(parent.combined, mat4.fromTranslation(mat4.create(), [x, y, z]))
+
+    const combined = mat4.fromTranslation(mat4.create(), [x, y, z])
+    const mesh = Object.create(Mesh.prototype, {
+        combined: { value: combined, writable: true },
+        parent: { value: parent },
+        context: { value: context },
+    }) as Mesh
+    return { parent, mesh }
 }
 
 function infoText(overlay: HTMLElement): string {
