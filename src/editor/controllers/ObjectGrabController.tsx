@@ -318,20 +318,21 @@ export class ObjectGrabController extends Controller {
         const d = vec3.length(p1).toFixed(4)
 
         const axis = this.context.axisRenderer
+        const orientation = this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL ? "local" : "global"
         if (!axis.x && !axis.y && !axis.z) {
             this.setInfo(`𝛥y ${dx} m 𝛥y: ${dy} m 𝛥z: ${dz} m (${d} m)`)
         } else if (!axis.x && axis.y && axis.z) {
-            this.setInfo(`𝛥y: ${dy} m  𝛥z: ${dz} m (${d}) locking global X`)
+            this.setInfo(`𝛥y: ${dy} m  𝛥z: ${dz} m (${d}) locking ${orientation} X`)
         } else if (axis.x && !axis.y && axis.z) {
-            this.setInfo(`𝛥x: ${dx} m  𝛥z: ${dz} m (${d}) locking global Y`)
+            this.setInfo(`𝛥x: ${dx} m  𝛥z: ${dz} m (${d}) locking ${orientation} Y`)
         } else if (axis.x && axis.y && !axis.z) {
-            this.setInfo(`𝛥x: ${dx} m  𝛥y: ${dy} m (${d}) locking global Z`)
+            this.setInfo(`𝛥x: ${dx} m  𝛥y: ${dy} m (${d}) locking ${orientation} Z`)
         } else if (axis.x && !axis.y && !axis.z) {
-            this.setInfo(`𝛥x: ${dx} m (${d}) along global X`)
+            this.setInfo(`𝛥x: ${dx} m (${d}) along ${orientation} X`)
         } else if (!axis.x && axis.y && !axis.z) {
-            this.setInfo(`𝛥y: ${dy} m (${d}) along global Y`)
+            this.setInfo(`𝛥y: ${dy} m (${d}) along ${orientation} Y`)
         } else if (!axis.x && !axis.y && axis.z) {
-            this.setInfo(`𝛥z: ${dz} m (${d}) along global Z`)
+            this.setInfo(`𝛥z: ${dz} m (${d}) along ${orientation} Z`)
         }
     }
 
