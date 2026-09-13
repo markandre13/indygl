@@ -140,7 +140,7 @@ export class ObjectGrabController extends Controller {
             const perspectiveCamera = mat4.multiply(mat4.create(), this.context.sceneUniforms.perspective, this.context.sceneUniforms.camera)
             const camMat = mat4.invert(mat4.create(), this.context.sceneUniforms.camera)!
             const camPos = mat4.getTranslation(vec3.create(), camMat)
-            const rayDir = screen2world({ x: ev.offsetX, y: ev.offsetY }, perspectiveCamera, this.context.canvas)
+            const rayDir = screen2world(pointerPosition, perspectiveCamera, this.context.canvas)
             const result = nearestPointBetweenLines(camPos, rayDir, this.initialCenter!, axisDir)
             pt = vec3.add(vec3.create(), this.initialCenter!, vec3.scale(vec3.create(), axisDir, result.b))
         } else {
