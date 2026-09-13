@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from "vitest"
-import { mat4 } from "gl-matrix"
+import { mat4, vec3 } from "gl-matrix"
 import { ObjectRotateController } from "src/editor/controllers/ObjectRotateController"
 import { XForm } from "src/nodes/XForm"
 import { Mesh } from "src/nodes/Mesh"
@@ -608,6 +608,89 @@ describe("ObjectRotateController", () => {
             expect(mat4.equals(local, global)).toBe(true)
         })
     })
+
+    describe("pointermove with GLOBAL multi-object rotation", () => {
+        it("rotates all selected objects around the median", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addNode(context, root, 10, 0, 0)
+
+            // active = m1, both selected
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.GLOBAL
+
+            const ctrl = new ObjectRotateController(context)
+            context.axisRenderer.set(true, false, false) // X axis
+
+            // move to trigger a rotation
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrl.pointermove(ev)
+
+            expect(p1.dirty).toBe(true)
+            expect(p2.dirty).toBe(true)
+        })
+
+        it("rotateSelectedAroundMedian changes positions symmetrically around median", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addNode(context, root, 10, 0, 0)
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.GLOBAL
+
+            const ctrl = new ObjectRotateController(context)
+            context.axisRenderer.set(true, false, false)
+
+            // median is at x=5
+            expect(ctrl.initialMedian[0]).toBeCloseTo(5, 5)
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrl.pointermove(ev)
+
+            // median of the resulting transforms should stay at x=5 (rotation preserves distances)
+            const newP1 = mat4.getTranslation(vec3.create(), p1.transform!)
+            const newP2 = mat4.getTranslation(vec3.create(), p2.transform!)
+            const newMedianX = (newP1[0] + newP2[0]) / 2
+            expect(newMedianX).toBeCloseTo(5, 4)
+        })
+
+        it("cancel restores all selected objects", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addNode(context, root, 10, 0, 0)
+
+            const initP1Transform = mat4.clone(p1.transform!)
+            const initP2Transform = mat4.clone(p2.transform!)
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.GLOBAL
+
+            const ctrl = new ObjectRotateController(context)
+            context.axisRenderer.set(true, false, false)
+
+            // move
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 250 }, offsetY: { value: 125 } })
+            ctrl.pointermove(ev)
+
+            ctrl.cancel()
+
+            expect(mat4.equals(p1.transform!, initP1Transform)).toBe(true)
+            expect(mat4.equals(p2.transform!, initP2Transform)).toBe(true)
+            expect(context.popController).toHaveBeenCalled()
+        })
+    })
 })
 
 function runAxisRotation(
@@ -684,7 +767,14 @@ function createEnvironment() {
     const context: any = {
         selection: {
             active: undefined as any,
+            selected: new Set(),
             getActive: function () { return this.active },
+            getSelected: function () {
+                if (this.selected.size === 0 && this.active) {
+                    return new Set([this.active])
+                }
+                return this.selected
+            },
             updateEditorModelFromActive: vi.fn(),
         },
         axisRenderer,
@@ -709,6 +799,7 @@ function createNodeTree(context: any) {
     root._context = context
     const parent = new XForm(root)
     parent.transform = mat4.create()
+    mat4.copy(parent.combined, mat4.fromTranslation(mat4.create(), [0, 0, -10]))
 
     const combined = mat4.fromTranslation(mat4.create(), [0, 0, -10])
     const mesh = Object.create(Mesh.prototype, {
@@ -718,4 +809,17 @@ function createNodeTree(context: any) {
     }) as Mesh
 
     return { root, parent, mesh }
+}
+
+function addNode(context: any, root: Root, x: number, y: number, z: number) {
+    const parent = new XForm(root)
+    parent.transform = mat4.create()
+    mat4.copy(parent.combined, mat4.fromTranslation(mat4.create(), [x, y, z]))
+    const combined = mat4.fromTranslation(mat4.create(), [x, y, z])
+    const mesh = Object.create(Mesh.prototype, {
+        combined: { value: combined, writable: true },
+        parent: { value: parent },
+        context: { value: context },
+    }) as Mesh
+    return { parent, mesh }
 }

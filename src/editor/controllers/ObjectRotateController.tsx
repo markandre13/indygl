@@ -7,6 +7,7 @@ import { world2screen } from "src/gl/algorithms/coordinates"
 import { LineWithArrows } from "../viewkit/svg/LineWithArrows"
 import { rad2deg } from "src/gl/algorithms/rad2deg"
 import { TransformOrientation } from "../app/TransformOrientation"
+import type { XForm } from "src/nodes/XForm"
 
 export class ObjectRotateController extends Controller {
     context: Context
@@ -22,6 +23,26 @@ export class ObjectRotateController extends Controller {
      */
     initialAngle!: number
     initialTransform!: mat4
+    /**
+     * the XForm of every selected object (GLOBAL transform orientation only)
+     */
+    xforms: XForm[] = []
+    /**
+     * the combined world transform of every selected object at grab start
+     */
+    initialTransforms: mat4[] = []
+    /**
+     * the original parent-local transform of every selected object at grab start
+     */
+    initialXformTransforms: (mat4 | undefined)[] = []
+    /**
+     * the combined transform of the parent of every selected object at grab start
+     */
+    initialParentTransforms: mat4[] = []
+    /**
+     * the median of the selected objects' positions at grab start
+     */
+    initialMedian: vec3 = vec3.create()
 
     constructor(context: Context) {
         super()
@@ -32,6 +53,36 @@ export class ObjectRotateController extends Controller {
         const node = this.context.selection.getActive()!
         const parent = node.getXForm()!
         const objectCenter = mat4.getTranslation(vec3.create(), node.combined)
+
+        // GLOBAL: rotate all selected objects around the median of their positions.
+        // LOCAL: rotate only the active object around its own center.
+        if (this.context.editorModel.transformOrientation.value === TransformOrientation.GLOBAL) {
+            for (const selected of this.context.selection.getSelected()) {
+                const xf = selected.getXForm()
+                if (xf) {
+                    this.xforms.push(xf)
+                }
+            }
+            if (this.xforms.length === 0) {
+                const xf = node.getXForm()
+                if (xf) {
+                    this.xforms.push(xf)
+                }
+            }
+            this.initialTransforms = this.xforms.map((xf) => mat4.clone(xf.combined))
+            this.initialXformTransforms = this.xforms.map((xf) => (xf.transform ? mat4.clone(xf.transform) : undefined))
+            this.initialParentTransforms = this.xforms.map((xf) => mat4.clone(xf.parent?.combined ?? mat4.create()))
+            const center = vec3.create()
+            for (const tf of this.initialTransforms) {
+                vec3.add(center, center, mat4.getTranslation(vec3.create(), tf))
+            }
+            vec3.scale(center, center, 1 / this.initialTransforms.length)
+            this.initialMedian = center
+            if (this.xforms.length > 1) {
+                vec3.copy(objectCenter, this.initialMedian)
+            }
+        }
+
         const canvas = context.canvas
         const screenCenter = world2screen(objectCenter, context.sceneUniforms.projectionMatrix, canvas)
         canvas.style.cursor = "none"
@@ -158,6 +209,13 @@ export class ObjectRotateController extends Controller {
             }
         }
 
+        if (this.xforms.length > 1) {
+            // GLOBAL: rotate every selected object around the median of their positions
+            this.rotateSelectedAroundMedian(angle, p0)
+            this.context.selection.updateEditorModelFromActive()
+            this.context.invalidate()
+            return
+        }
 
         parent.transform = mat4.rotate(mat4.create(), this.initialTransform, angle, p0)
 
@@ -175,6 +233,34 @@ export class ObjectRotateController extends Controller {
             case 2:
                 this.cancel()
                 break
+        }
+    }
+
+    /**
+     * GLOBAL rotation of all selected objects around the median of their positions.
+     *
+     * Every object orbits the median by the same angle around the given world axis,
+     * and its own orientation rotates by the same world rotation.
+     */
+    private rotateSelectedAroundMedian(angle: number, axis: vec3) {
+        const rotation = quat.setAxisAngle(quat.create(), axis, angle)
+        quat.normalize(rotation, rotation)
+        for (let i = 0; i < this.xforms.length; i++) {
+            const xf = this.xforms[i]
+            const position = vec3.create()
+            const scale = vec3.create()
+            const orientation = mat4.decompose(quat.create(), position, scale, this.initialTransforms[i])
+
+            const offset = vec3.sub(vec3.create(), position, this.initialMedian)
+            vec3.transformQuat(offset, offset, rotation)
+            vec3.add(position, this.initialMedian, offset)
+
+            const orient = quat.multiply(quat.create(), rotation, orientation)
+            const world = mat4.fromRotationTranslationScale(mat4.create(), orient, position, scale)
+
+            const parentInv = mat4.invert(mat4.create(), this.initialParentTransforms[i])!
+            xf.transform = mat4.multiply(mat4.create(), parentInv, world)
+            xf.dirty = true
         }
     }
 
@@ -196,6 +282,13 @@ export class ObjectRotateController extends Controller {
         const parent = this.context.selection.getActive()!.getXForm()!
         parent.transform = this.initialTransform
         parent.dirty = true
+
+        for (let i = 0; i < this.xforms.length; i++) {
+            const xf = this.xforms[i]
+            xf.transform = this.initialXformTransforms[i]
+            xf.dirty = true
+        }
+
         this.context.selection.updateEditorModelFromActive()
         this.context.invalidate()
 
