@@ -176,6 +176,14 @@ export class ObjectScaleController extends Controller {
             parent.transform = mat4.create()
         }
         const isLocal = this.context.editorModel.transformOrientation.value === TransformOrientation.LOCAL
+        if (isLocal && this.xforms.length > 1) {
+            // LOCAL: scale every selected object along its own coordinate system
+            const s = vec3.fromValues(sx, sy, sz)
+            this.scaleSelectedLocally(s)
+            this.context.selection.updateEditorModelFromActive()
+            this.context.invalidate()
+            return
+        }
         if (!isLocal && this.xforms.length > 1) {
             // GLOBAL: scale every selected object around the median of their positions
             const s = vec3.fromValues(sx, sy, sz)
@@ -224,6 +232,22 @@ export class ObjectScaleController extends Controller {
             const newWorld = mat4.multiply(mat4.create(), around, initialTransforms[i])
             const parentInv = mat4.invert(mat4.create(), initialParentTransforms[i])!
             xf.transform = mat4.multiply(mat4.create(), parentInv, newWorld)
+            xf.dirty = true
+        }
+    }
+
+    /**
+     * LOCAL scaling of all selected objects along their own coordinate systems.
+     *
+     * Every object's transform is reset to its initial value and then scaled
+     * along its own local axes, keeping its own position as the pivot.
+     */
+    private scaleSelectedLocally(factor: vec3) {
+        for (let i = 0; i < this.xforms.length; i++) {
+            const xf = this.xforms[i]
+            const transform = this.initialXformTransforms[i] ? mat4.clone(this.initialXformTransforms[i]!) : mat4.create()
+            mat4.scale(transform, transform, factor)
+            xf.transform = transform
             xf.dirty = true
         }
     }

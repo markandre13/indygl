@@ -435,6 +435,95 @@ describe("ObjectScaleController", () => {
             expect(context.popController).toHaveBeenCalled()
         })
     })
+
+    describe("pointermove with LOCAL multi-object scale", () => {
+        it("scales each selected object along its own axes", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addRotatedNode(context, root, 10, 0, -15, "rotateY")
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
+
+            const ctrl = new ObjectScaleController(context, root)
+            context.axisRenderer.set(true, false, false) // X axis
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 820 }, offsetY: { value: 240 } })
+            ctrl.pointermove(ev)
+
+            expect(p1.dirty).toBe(true)
+            expect(p2.dirty).toBe(true)
+
+            // every object scales along its own local X, regardless of its rotation
+            const factor = expectedFactor(context, p1, ctrl, 820, 240)
+            expect(factor).toBeGreaterThan(1)
+            assertScale(p1.transform!, factor, 1, 1)
+            assertScale(p2.transform!, factor, 1, 1)
+        })
+
+        it("keeps each object's own position", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addRotatedNode(context, root, 10, 5, -15, "rotateY")
+
+            const initP1 = mat4.clone(p1.transform!)
+            const initP2 = mat4.clone(p2.transform!)
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
+
+            const ctrl = new ObjectScaleController(context, root)
+            context.axisRenderer.set(true, false, false)
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 820 }, offsetY: { value: 240 } })
+            ctrl.pointermove(ev)
+
+            const pos1 = mat4.getTranslation(vec3.create(), p1.transform!)
+            const pos2 = mat4.getTranslation(vec3.create(), p2.transform!)
+            expect(pos1[0]).toBeCloseTo(mat4.getTranslation(vec3.create(), initP1)[0], 4)
+            expect(pos1[1]).toBeCloseTo(mat4.getTranslation(vec3.create(), initP1)[1], 4)
+            expect(pos1[2]).toBeCloseTo(mat4.getTranslation(vec3.create(), initP1)[2], 4)
+            expect(pos2[0]).toBeCloseTo(mat4.getTranslation(vec3.create(), initP2)[0], 4)
+            expect(pos2[1]).toBeCloseTo(mat4.getTranslation(vec3.create(), initP2)[1], 4)
+            expect(pos2[2]).toBeCloseTo(mat4.getTranslation(vec3.create(), initP2)[2], 4)
+        })
+
+        it("cancel restores all selected objects", () => {
+            const { context } = createEnvironment()
+            const { root, parent: p1, mesh: m1 } = createNodeTree(context)
+            const { parent: p2, mesh: m2 } = addRotatedNode(context, root, 10, 5, -15, "rotateY")
+
+            const initP1 = mat4.clone(p1.transform!)
+            const initP2 = mat4.clone(p2.transform!)
+
+            context.selection.active = m1
+            context.selection.selected.clear()
+            context.selection.selected.add(p1)
+            context.selection.selected.add(p2)
+            context.editorModel.transformOrientation.value = TransformOrientation.LOCAL
+
+            const ctrl = new ObjectScaleController(context, root)
+            context.axisRenderer.set(true, false, false)
+
+            const ev = new PointerEvent("pointermove")
+            Object.defineProperties(ev, { offsetX: { value: 820 }, offsetY: { value: 240 } })
+            ctrl.pointermove(ev)
+
+            ctrl.cancel()
+
+            expect(mat4.equals(p1.transform!, initP1)).toBe(true)
+            expect(mat4.equals(p2.transform!, initP2)).toBe(true)
+            expect(context.popController).toHaveBeenCalled()
+        })
+    })
 })
 
 function createMockAxisRenderer(): AxisRenderer {
@@ -527,6 +616,27 @@ function addNode(context: any, root: Root, x: number, y: number, z: number) {
         parent: { value: parent },
         context: { value: context },
     }) as Mesh
+    return { parent, mesh }
+}
+
+function addRotatedNode(
+    context: any,
+    root: Root,
+    x: number,
+    y: number,
+    z: number,
+    rotAxis: "rotateX" | "rotateY" | "rotateZ"
+) {
+    const { parent, mesh } = addNode(context, root, x, y, z)
+    if (rotAxis === "rotateX") {
+        mat4.rotateX(parent.transform!, parent.transform!, Math.PI / 2)
+    } else if (rotAxis === "rotateY") {
+        mat4.rotateY(parent.transform!, parent.transform!, Math.PI / 2)
+    } else {
+        mat4.rotateZ(parent.transform!, parent.transform!, Math.PI / 2)
+    }
+    mat4.copy(parent.combined, parent.transform!)
+    mat4.copy(mesh.combined, parent.transform!)
     return { parent, mesh }
 }
 
