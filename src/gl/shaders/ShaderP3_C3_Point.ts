@@ -1,22 +1,22 @@
-import { ColorBuffer } from "../../buffers/ColorBuffer"
-import type { ModelUniform } from "../../buffers/ModelUniform"
-import { PositionBuffer } from "../../buffers/PositionBuffer"
-import { FLOAT32_NUM_BYTES } from "../../buffers/sizeof"
-import { Uniform } from "../../buffers/Uniform"
-import type { Context } from "../../Context"
-import type { Device } from "../../Device"
-import { Shader } from "../Shader"
-import { PICK_SIZE } from "../ShaderP3_PickPoint"
+import { ColorBuffer } from "../buffers/ColorBuffer"
+import type { ModelUniform } from "../buffers/ModelUniform"
+import { PositionBuffer } from "../buffers/PositionBuffer"
+import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
+import { Uniform } from "../buffers/Uniform"
+import type { Context } from "../Context"
+import { Shader } from "./Shader"
+import { PICK_SIZE } from "./ShaderP3_PickPoint"
 
 export class ShaderP3_C3_Point extends Shader {
     pipeline: GPURenderPipeline
     pickUniform: Uniform
-    constructor(device: Device,
-        context: Context
-    ) {
-        super(device, code)
+    constructor(context: Context) {
+        const label = "p3-c3-point"
+        const device = context.device
+        super(device, label)
         const pipelineDef: GPURenderPipelineDescriptor = {
-            layout: 'auto',
+            label,
+            layout: "auto",
             vertex: {
                 buffers: [{
                     arrayStride: PositionBuffer.bytesPerVertex,
@@ -38,9 +38,10 @@ export class ShaderP3_C3_Point extends Shader {
                 targets: [{ format: context.presentationFormat }]
             },
             depthStencil: {
-                depthWriteEnabled: true,
-                depthCompare: 'less-equal',
                 format: context.depthTextureFormat,
+
+                depthWriteEnabled: true,
+                depthCompare: 'less',
             },
         }
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
@@ -84,53 +85,3 @@ export class ShaderP3_C3_Point extends Shader {
         pass.draw(6, instanceCount, 0, firstInstance)
     }
 }
-
-const code = /* wgsl */ `
-    struct SceneUniforms { 
-        uProjectionMatrix: mat4x4f,
-    };
-    struct ModelUniforms { 
-        uModelViewMatrix: mat4x4f,
-        uNormalMatrix: mat4x4f,
-    };
-    struct PickUniforms { 
-        scale: vec2f,
-    };
-    @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
-    @group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
-    @group(0) @binding(2) var<uniform> pickUniforms: PickUniforms;
-
-    struct VSOutput {
-        @builtin(position) Position: vec4f,
-        @location(0) color: vec4f,
-    }
-
-    @vertex
-    fn vertex_main(
-        @location(0) vert: vec3f,
-        @location(1) color: vec3f,
-        @builtin(vertex_index) vNdx: u32,
-        @builtin(instance_index) iNdx: u32,
-    ) -> VSOutput {
-        // rectangle to draw the pick point
-        let rectangle = array(
-            vec2f(-1, -1), vec2f( 1, -1), vec2f(-1,  1),
-            vec2f(-1,  1), vec2f( 1, -1), vec2f( 1,  1),
-        );
-        // position of the vertex on screen
-        let indexPos = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(vert, 1);
-        // position of a point of the rectangle to draw for the pick point
-        let pointPos = vec4f(rectangle[vNdx] * pickUniforms.scale * indexPos.w, 0, 0) + indexPos;
-        // encode instance index as rgb color
-        // TODO: do it proper
-        // let color = vec4f(f32(iNdx) / 8.0, 0, 0, 1);
-        return VSOutput(pointPos, vec4(color, 1));
-    }
-
-    @fragment
-    fn fragment_main(
-        vin: VSOutput
-    ) -> @location(0) vec4f {
-        return vin.color;
-    }
-`
