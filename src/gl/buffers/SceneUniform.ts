@@ -10,6 +10,7 @@ export class SceneUniform extends Uniform {
     private _perspective = mat4.create()
     private _camera = mat4.create()
     private _dirty = false
+    private _context: Context
     bindGroup: GPUBindGroup
     constructor(context: Context) {
         super(context.device.device, [
@@ -18,6 +19,7 @@ export class SceneUniform extends Uniform {
             "vec2f",   // scale for drawing points          ( 8 bytes)
             "vec2f"    // padding to multiple of 16 bytes   FIXME: Uniform should provide this padding on it's own
         ])
+        this._context = context
         this.bindGroup = context.device.device.createBindGroup({
             label: 'camera-bind-group',
             layout: context.bindGroupLayout.scene,
@@ -56,8 +58,8 @@ export class SceneUniform extends Uniform {
             // mat4.getTranslation(this.values[1], this._camera)
             // console.log(`camera at: ${vec3.str(this.values[1])}`)
 
-            this.values[2][0] = PICK_SIZE / 320 // context.canvas.clientWidth
-            this.values[2][1] = PICK_SIZE / 200 // context.canvas.clientHeight
+            this.values[2][0] = PICK_SIZE / this._context.canvas.clientWidth
+            this.values[2][1] = PICK_SIZE / this._context.canvas.clientHeight
 
             this._dirty = false
         }
