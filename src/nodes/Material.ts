@@ -38,9 +38,10 @@ export class Material extends IndyNode {
     }
 
     private init() {
-        if (this._colorUniform === undefined) {
+        // initialization for RGB materials
+        if (this._colorUniform === undefined && this._textureFilename === undefined) {
             const context = this.root._context
-            const device = this.root._context.device
+            const device = context.device
             if (this._rgba !== undefined) {
                 this._colorUniform = new ColorUniform(device)
                 this._colorUniform.rgba = this._rgba
@@ -53,22 +54,24 @@ export class Material extends IndyNode {
                     ],
                 })
             }
-            if (this._textureFilename !== undefined) {
-                const texture = new Texture()
-                texture.load(this.root.context, this._textureFilename)
-                    .then(() => {
-                        this._texture = texture
-                        this._bindGroup = device.device.createBindGroup({
-                            label: 'material-bind-group-texture',
-                            layout: context.bindGroupLayout.materialTexture,
-                            entries: [
-                                { binding: 0, resource: context.sampler },
-                                { binding: 1, resource: texture.texture!.createView() },
-                            ],
-                        })
-                        context.invalidate()
+        }
+        // initialization for texture materials
+        if (this._texture === undefined && this._textureFilename !== undefined) {
+            const context = this.root._context
+            const device = this.root._context.device
+            this._texture = new Texture()
+            this._texture.load(context, this._textureFilename)
+                .then(() => {
+                    this._bindGroup = device.device.createBindGroup({
+                        label: 'material-bind-group-texture',
+                        layout: context.bindGroupLayout.materialTexture,
+                        entries: [
+                            { binding: 0, resource: context.sampler },
+                            { binding: 1, resource: this._texture!.texture!.createView() },
+                        ],
                     })
-            }
+                    context.invalidate()
+                })
         }
     }
 
