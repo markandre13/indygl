@@ -36,8 +36,6 @@ export class Context {
 
     axisRenderer: AxisRenderer
 
-    // renderPassDescriptor: GPURenderPassDescriptor
-
     constructor(device: Device, canvas: HTMLCanvasElement, editorModel: EditorModel, selection: ObjectSelection) {
         this.device = device
         this.canvas = canvas

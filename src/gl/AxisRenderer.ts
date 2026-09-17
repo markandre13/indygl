@@ -5,6 +5,9 @@ import { ModelUniform } from "./buffers/ModelUniform"
 import { mat4, vec3 } from "gl-matrix"
 import { TransformOrientation } from "src/editor/app/TransformOrientation"
 
+/**
+ * I draw X, Y and Z axes for objects in red, green and blue.
+ */
 export class AxisRenderer {
     modelView: ModelUniform
     context: Context

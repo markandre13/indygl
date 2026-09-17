@@ -16,7 +16,13 @@ export class ShaderP3_C3_Point extends Shader {
         super(device, label)
         const pipelineDef: GPURenderPipelineDescriptor = {
             label,
-            layout: "auto",
+            layout: device.device.createPipelineLayout({
+                label,
+                bindGroupLayouts: [
+                    context.bindGroupLayout.scene,
+                    context.bindGroupLayout.model,
+                ]
+            }),
             vertex: {
                 buffers: [{
                     arrayStride: PositionBuffer.bytesPerVertex,

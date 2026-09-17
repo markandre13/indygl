@@ -2,6 +2,7 @@ import { mat4, vec3, vec4 } from "gl-matrix"
 import { Uniform } from "./Uniform"
 import type { Context } from "../Context"
 import type { Device } from "../Device"
+import { PICK_SIZE } from "../shaders/ShaderP3_PickPoint"
 
 // TODO: multiply projection and camera before it hits the GPU
 //       to only have one multiplication
@@ -11,7 +12,12 @@ export class SceneUniform extends Uniform {
     private _dirty = false
     bindGroup: GPUBindGroup
     constructor(context: Context) {
-        super(context.device.device, ["mat4x4f", "vec4f"])
+        super(context.device.device, [
+            "mat4x4f", // projection matrix                 (64 bytes)
+            "vec4f",   // camera (used by the Floor shader) (16 bytes)
+            "vec2f",   // scale for drawing points          ( 8 bytes)
+            "vec2f"    // padding to multiple of 16 bytes   FIXME: Uniform should provide this padding on it's own
+        ])
         this.bindGroup = context.device.device.createBindGroup({
             label: 'camera-bind-group',
             layout: context.bindGroupLayout.scene,
@@ -49,6 +55,10 @@ export class SceneUniform extends Uniform {
             vec4.transformMat4(this.values[1], p, camMat)
             // mat4.getTranslation(this.values[1], this._camera)
             // console.log(`camera at: ${vec3.str(this.values[1])}`)
+
+            this.values[2][0] = PICK_SIZE / 320 // context.canvas.clientWidth
+            this.values[2][1] = PICK_SIZE / 200 // context.canvas.clientHeight
+
             this._dirty = false
         }
         super.writeTo(device)

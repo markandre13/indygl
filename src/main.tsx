@@ -17,18 +17,26 @@ import { Material } from "./nodes/Material"
 import { Mesh } from './nodes/Mesh'
 import { XForm } from "./nodes/XForm"
 import { initTheme } from './theme'
+import { PICK_SIZE } from './gl/shaders/ShaderP3_PickPoint'
+import { ColorBuffer } from './gl/buffers/ColorBuffer'
 
 export async function loadMesh(parent: XForm, filename: string) {
     return new Mesh(parent, filename)
 }
 
 interface RenderBuckets {
+    // surface is a single rgb color
     rgbNodes: Mesh[]
-    texNodes: Mesh[]
     rgbNodesSelected: Mesh[]
+    // surface is a texture
+    texNodes: Mesh[]
     texNodesSelected: Mesh[]
+    // surface as an rgb color per point (e.g. for weight painting, morphs, ...)
     rgbPerPtNodes: Mesh[]
-    rgbPerPtNodesSelected: Mesh[]
+    rgbPerPtNodesSelected: Mesh[],
+    // points (e.g. when mesh is in edit mode)
+    pointNodes: Mesh[],
+    // lines/edges
     lineNodes: Mesh[]
 }
 
@@ -87,6 +95,12 @@ function prepareNode(
      */
     if (node instanceof Mesh && node.xyz && !(node.parent instanceof BlendShape)) {
         const xform = node.getXForm()!
+
+        // TODO: this will later become the edit mode
+        if (node.name === "Cube") {
+            buckets.pointNodes.push(node)
+        }
+
         switch (editorModel.viewportShading.value) {
             case ViewportShading.WIREFRAME_XRAY:
                 buckets.lineNodes.push(node)
@@ -165,6 +179,51 @@ function renderLines(
         pass.setVertexBuffer(0, node.points.buffer)
         pass.setIndexBuffer(node.edgeIndices.buffer, 'uint32')
         pass.drawIndexed(node.edgeIndices.length)
+    }
+}
+
+// commit d99a4f1c54c4059044cef41652bf6ee26e2bdb57
+//
+//     const edgeIndices = new IndexBuffer(device, edges)
+//
+//     // const positions = new PositionBuffer(device, cube_XYZ)
+//     const edgeColors = new Float32Array(mesh.positions.length /*3 * cube_XYZ.length*/)
+//     const edgeColorBuffer = new ColorBuffer(device, edgeColors)
+//
+//         if (editorModel.selectionMode.value !== SelectionMode.OBJECT) {
+//             shaderPickPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, obj.positions.length / 3)
+//         }
+
+let edgeColors: Float32Array | undefined
+let edgeColorBuffer: ColorBuffer | undefined
+
+function renderPoints(
+    pass: GPURenderPassEncoder,
+    nodes: Mesh[],
+    context: Context
+) {
+    if (nodes.length === 0) return
+    // console.log('renderPoints')
+    const shader = context.shader.p3_c3_point
+    shader.pickUniform.values[0][0] = PICK_SIZE / context.canvas.clientWidth
+    shader.pickUniform.values[0][1] = PICK_SIZE / context.canvas.clientHeight
+    shader.pickUniform.writeTo(context.device)
+
+    pass.setPipeline(context.shader.p3_c3_point.pipeline)
+    for (const node of nodes) {
+        pass.setBindGroup(1, node.modelView.bindGroup)
+        pass.setVertexBuffer(0, node.points.buffer)
+
+        if (edgeColors === undefined) {
+            edgeColors = new Float32Array(node.xyz!.length)
+            edgeColorBuffer = new ColorBuffer(context.device, edgeColors)
+        }
+
+        pass.setVertexBuffer(1, edgeColorBuffer!.buffer)
+
+        // const firstInstance = offset ? offset : 0
+        // const instanceCount = length ? length : (positions.buffer.size / 3 / FLOAT32_NUM_BYTES) - firstInstance
+        pass.draw(6, node.xyz!.length / 3, 0, 0)
     }
 }
 
@@ -445,11 +504,12 @@ export async function main() {
     context.paint = () => {
         const buckets: RenderBuckets = {
             rgbNodes: [] as Mesh[],
-            texNodes: [] as Mesh[],
             rgbNodesSelected: [] as Mesh[],
+            texNodes: [] as Mesh[],
             texNodesSelected: [] as Mesh[],
             rgbPerPtNodes: [] as Mesh[],
             rgbPerPtNodesSelected: [] as Mesh[],
+            pointNodes: [] as Mesh[],
             lineNodes: [] as Mesh[],
         }
         prepareNode(root, editorModel, context, device, buckets)
@@ -465,6 +525,7 @@ export async function main() {
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
 
         renderLines(pass, buckets.lineNodes, context, materials)
+        renderPoints(pass, buckets.pointNodes, context)
         for (let outline of [true, false]) {
             renderRGBFaces(outline, pass, buckets.rgbNodes, buckets.rgbNodesSelected, context, editorModel, background)
             renderTexFaces(outline, pass, buckets.texNodes, buckets.texNodesSelected, context)
