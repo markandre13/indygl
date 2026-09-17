@@ -26,21 +26,24 @@
     "devDependencies": {
         "@types/chai-almost": "^1.0.3",
         "@types/earcut": "^3.0.0",
-        "@vitest/browser-playwright": "^5.0.0",
+        "@vitest/browser-playwright": "^5.0.1",
         "@webgpu/types": "^0.1.72",
         "chai-almost": "^1.0.1",
         "clickclick.js": "^0.0.1",
         "concurrently": "^10.0.5",
         "jsdom": "^30.0.1",
-        "typescript": "^7.1.0-dev.20260912.1",
+        "typescript": "^7.0.2",
         "vite": "^8.3.0",
         "vite-plugin-glsl": "^1.6.1",
-        "vitest": "^5.0.0"
+        "vitest": "^5.0.1"
     },
     "dependencies": {
         "bignumber.js": "^11.1.5",
         "earcut": "^3.2.3",
         "gl-matrix": "^3.4.4",
         "toad.js": "^0.3.8"
+    },
+    "allowScripts": {
+        "fsevents@2.3.3": true
     }
 }
