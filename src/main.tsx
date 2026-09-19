@@ -2,7 +2,7 @@ import { mat4, quat, vec3 } from 'gl-matrix'
 import { replaceChildren } from 'toad.jsx'
 import { EditorModel } from './editor/app/EditorModel'
 import { ViewportShading } from './editor/app/ViewportShading'
-import { BasicMode } from './editor/controllers/BasicController'
+import { BasicController } from './editor/controllers/BasicController'
 import { ObjectSelectController } from './editor/controllers/ObjectSelectController'
 import { MainScreen } from './editor/view/MainScreen'
 import { deg2rad } from './gl/algorithms/deg2rad'
@@ -490,7 +490,7 @@ export async function main() {
     editorModel.selectionMode.signal.add(context.invalidate)
     editorModel.viewportShading.signal.add(context.invalidate)
     new ResizeObserver(context.invalidate).observe(canvas)
-    context.pushController(new BasicMode(context))
+    context.pushController(new BasicController(context))
     context.pushController(new ObjectSelectController(context, root))
 
     // FIXME: these materials are internal and should not be nodes => split the Material class?

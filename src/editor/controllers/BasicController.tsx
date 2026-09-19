@@ -11,7 +11,7 @@ import type { Point } from 'src/gl/types/Point'
  * [`] to enable flymode
  * numpad to rotate/set camera
  */
-export class BasicMode extends Controller {
+export class BasicController extends Controller {
     private context: Context
     constructor(view: Context) {
         super()
