@@ -53,13 +53,25 @@ export class Mesh extends IndyNode implements MeshData {
     fuv?: ArrayLike<number>
     normal?: ArrayLike<number>
     fnormal?: ArrayLike<number>
-    rgb?: ArrayLike<number>
+
     groupSubset?: Map<string, MeshSubset>
     materialSubset?: Map<string, MeshSubset>
     // vertex groups
     // faces to material
     // sharp edges
     // ...
+
+    /**
+     * vertex flags
+     * 
+     * - 1: selected
+     * 
+     *      similar to Blender, which edges are selected in edit mode is persisted
+     */
+    vflags?: ArrayLike<number>
+
+    /** vertex color, e.g. used to color points in edit mode, visuallize weights, blendshape */
+    rgb?: ArrayLike<number>
 
     constructor(parent: XForm, opt?: MeshData)
     constructor(parent: XForm, filename?: string)
@@ -169,6 +181,9 @@ export class Mesh extends IndyNode implements MeshData {
             this._single_index = decoupleXYZandUV(this._triangles)
         }
     }
+    /**
+     * indices of triangles to render the surface
+     */
     get indices() {
         this.prepare()
         if (this._indices === undefined) {
@@ -176,6 +191,9 @@ export class Mesh extends IndyNode implements MeshData {
         }
         return this._indices
     }
+    /**
+     * indices of edges to render edges in wireframe and edit modes
+     */
     get edgeIndices() {
         this.prepare()
         if (this._edgeIndices === undefined) {
@@ -193,6 +211,9 @@ export class Mesh extends IndyNode implements MeshData {
         }
         return this._edgeIndices
     }
+    /**
+     * vertices
+     */
     get points() {
         this.prepare()
         if (this._points === undefined) {

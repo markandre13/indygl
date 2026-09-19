@@ -1,6 +1,15 @@
 import { vec3 } from "gl-matrix"
 import type { JSX } from "toad.jsx/jsx-runtime"
 
+/**
+ * I handle the keyboard and pointer events for the 3D View.
+ * 
+ * At the moment I am activated by Context.pushController(...) and deactivated
+ * by Context.popController().
+ * 
+ * Events are send to all active controllers, starting with the one pushed last.
+ * The propagation stops when preventDefault() has been called on the event.
+ */
 export class Controller {
     /**
      * deactivate controller
