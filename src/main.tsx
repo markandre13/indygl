@@ -19,6 +19,8 @@ import { XForm } from "./nodes/XForm"
 import { initTheme } from './theme'
 import { PICK_SIZE } from './gl/shaders/ShaderP3_PickPoint'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
+import { SelectionMode } from './editor/app/SelectionMode'
+import { PointSelectController } from './editor/controllers/PointSelectController'
 
 export async function loadMesh(parent: XForm, filename: string) {
     return new Mesh(parent, filename)
@@ -459,6 +461,25 @@ async function loadBlendshapes(root: Root) {
     const key3 = new BlendShape(blendshapeGroup, "browOuterUpRight", "obj/arkit/browOuterUpRight.obj")
 }
 
+// some experimental code to persist/restore some of the more complex
+// application state.
+// for now to persist ObjectSelection to make it nicer to develop the
+// mesh edit modes
+function persist(root: Root, selection: ObjectSelection) {
+
+}
+
+function p(node: IndyNode) {
+    for(const child of node.children) {
+        p(child)
+    }
+}
+
+function restore(root: Root, selection: ObjectSelection) {
+
+}
+
+
 // MainScreen provides the canvas needed by Context (formerly CanvasContext)
 export async function main() {
     initTheme()
@@ -470,6 +491,9 @@ export async function main() {
     const root = new Root()
     // await loadBlendshapes(root)
     await loadDemoScene(root)
+
+    document.addEventListener("visibilitychange", () => persist(root, selection) )
+    restore(root, selection)
 
     // console.log(root)
 
@@ -490,8 +514,22 @@ export async function main() {
     editorModel.selectionMode.signal.add(context.invalidate)
     editorModel.viewportShading.signal.add(context.invalidate)
     new ResizeObserver(context.invalidate).observe(canvas)
-    context.pushController(new BasicController(context))
-    context.pushController(new ObjectSelectController(context, root))
+
+    editorModel.selectionMode.signal.add(() => {
+        context.clearController()
+        switch (editorModel.selectionMode.value) {
+
+            case SelectionMode.OBJECT:
+                context.pushController(new BasicController(context))
+                context.pushController(new ObjectSelectController(context, root))
+                break
+            default:
+                context.pushController(new BasicController(context))
+                // context.pushController(new PointSelectController(context, root))
+        }
+    })
+    editorModel.selectionMode.signal.emit()
+
 
     // FIXME: these materials are internal and should not be nodes => split the Material class?
     const matWire = new Material(root, [0, 0, 0, 1])

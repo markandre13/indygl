@@ -37,6 +37,15 @@ export class Material extends IndyNode {
         }
     }
 
+    persist(data: any) {
+        if (this._rgba) {
+            data.rgba = this._rgba
+        }
+        if (this._textureFilename) {
+            data.texture = this._textureFilename
+        }
+    }
+
     private init() {
         // initialization for RGB materials
         if (this._colorUniform === undefined && this._textureFilename === undefined) {

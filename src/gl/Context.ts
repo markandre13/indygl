@@ -178,6 +178,18 @@ export class Context {
         }
         this.invalidate()
     }
+    clearController() {
+        while (this._controllerStack.length > 0) {
+            const previousController = this._controllerStack.pop()
+            if (previousController === undefined) {
+                break
+            }
+            if (previousController) {
+                previousController.setInfo(undefined)
+                previousController.destructor()
+            }
+        }
+    }
 
     //
     // depth texture

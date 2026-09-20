@@ -11,7 +11,7 @@ import { PICK_SIZE, ShaderP3_PickPoint } from "src/gl/shaders/ShaderP3_PickPoint
 import { ShaderP3_IDX } from "src/gl/shaders/ShaderP3_IDX"
 import { FLOAT32_NUM_BYTES } from "src/gl/buffers/sizeof"
 
-export class EdgeSelectController extends Controller {
+export class PointSelectController extends Controller {
     context: Context
     modelUniforms: ModelUniform
     edgeColors: Float32Array
@@ -107,9 +107,9 @@ export class EdgeSelectController extends Controller {
         const rgba = new Uint8Array(data)
 
         //
-        // find edge closest to pointer position
+        // find point closest to pointer position
         //
-        let edgeIdx: number = 0
+        let pointIdx: number = 0
         let distance = Number.MAX_VALUE
 
         let cx = Math.round(ev.offsetX)
@@ -126,16 +126,16 @@ export class EdgeSelectController extends Controller {
                     const d = Math.sqrt(Math.pow(cx - x, 2) + Math.pow(cy - y, 2))
                     if (d < distance) {
                         distance = d
-                        edgeIdx = edge
+                        pointIdx = edge
                     }
                 }
             }
         }
-        --edgeIdx
+        --pointIdx
 
         // TODO: search area around mouse click!!!
         // const edgeIdx = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16) - 1
-        const edgeColorIdx = edgeIdx * 3
+        const pointColorIdx = pointIdx * 3
         // console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[pickIdx]}, ${rgba[pickIdx + 1]}, ${rgba[pickIdx + 2]}, idx2=${edgeIdx}, idx3=${edgeColorIdx}`)
 
         readbackBuffer.unmap()
@@ -144,15 +144,15 @@ export class EdgeSelectController extends Controller {
         context.presentationFormat = pf
         context.backgroundColor = cl
 
-        if (edgeIdx >= 0) {
+        if (pointIdx >= 0) {
             // toggle color of edge 
             // todo: blender has last selected point in white
             // todo: blender uses shift to add to selection, non-shift to deselect other points
-            const v = edgeColors[edgeColorIdx] ? [0, 0, 0] : [1, 0.5, 0]// #fe7900
-            edgeColors[edgeColorIdx] = v[0]
-            edgeColors[edgeColorIdx + 1] = v[1]
-            edgeColors[edgeColorIdx + 2] = v[2]
-            device.device.queue.writeBuffer(edgeColorBuffer.buffer, FLOAT32_NUM_BYTES * edgeColorIdx, edgeColors, edgeColorIdx, 3)
+            const v = edgeColors[pointColorIdx] ? [0, 0, 0] : [1, 0.5, 0]// #fe7900
+            edgeColors[pointColorIdx] = v[0]
+            edgeColors[pointColorIdx + 1] = v[1]
+            edgeColors[pointColorIdx + 2] = v[2]
+            device.device.queue.writeBuffer(edgeColorBuffer.buffer, FLOAT32_NUM_BYTES * pointColorIdx, edgeColors, pointColorIdx, 3)
 
             context.invalidate()
         }
