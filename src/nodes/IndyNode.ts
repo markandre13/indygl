@@ -46,6 +46,8 @@ export class IndyNode {
      * which name to display in the outliner
      */
     get name(): string { return this.constructor.name }
+    set name(name: string) { throw Error('no setter available for name') }
+
     get uihints(): NodeUiHints { return IndyNode.uiHints }
 
     get show(): boolean | undefined { return undefined }

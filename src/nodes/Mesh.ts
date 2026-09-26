@@ -23,6 +23,8 @@ export class Mesh extends IndyNode implements MeshData {
         propertyTab: PropertyTab.DATA
     }
     override get name(): string { return this.dataName ?? this.constructor.name }
+    override set name(name: string) { this.dataName = name }
+
     override get uihints(): NodeUiHints { return Mesh.uiHints }
 
     override get show(): boolean | undefined {

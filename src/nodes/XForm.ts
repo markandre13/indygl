@@ -9,6 +9,8 @@ export class XForm extends IndyNode {
         propertyTab: PropertyTab.OBJECT
     }
     override get name(): string { return this.objectName ?? this.constructor.name }
+    override set name(name: string) { this.objectName = name }
+
     override get uihints(): NodeUiHints { return IndyNode.uiHints }
 
     override get show(): boolean | undefined {

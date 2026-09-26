@@ -8,6 +8,11 @@ import { rad2deg } from './algorithms/rad2deg'
 import { Signal } from 'toad.js/reactive/Signal'
 import { quat2euler } from './algorithms/quat2euler'
 
+export interface ObjectSelectionAPI {
+    active?: IndyNode
+    selected: Set<IndyNode>
+}
+
 /**
  * I track the currently selected object plus the last selected object aka. active object.
  * 
@@ -15,7 +20,7 @@ import { quat2euler } from './algorithms/quat2euler'
  * * selected & active should be XForm
  * * also track other nodes
  */
-export class ObjectSelection {
+export class ObjectSelection implements ObjectSelectionAPI {
     /**
      * signal which nodes have changed
      */
@@ -26,7 +31,7 @@ export class ObjectSelection {
     /**
      * the last selected node
      */
-    private active?: IndyNode
+    active?: IndyNode
     selected = new Set<IndyNode>();
     private rotationQuat = quat.create()
     private lastEuler = { x: 0, y: 0, z: 0 }

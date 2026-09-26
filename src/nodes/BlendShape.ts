@@ -16,6 +16,7 @@ export class BlendShape extends IndyNode {
         propertyTab: PropertyTab.SHAPE_KEY
     }
     override get name(): string { return this.shapeName }
+    override set name(name: string) { this.shapeName = name }
     override get uihints(): NodeUiHints { return BlendShape.uiHints }
 
     private shapeName: string
@@ -31,6 +32,15 @@ export class BlendShape extends IndyNode {
     transform?: mat4
     _meshData?: MeshData
     _mesh?: Mesh
+
+    persist(data: any) {
+        data.name = this.name
+        data.filename = this.filename
+    }
+    restore(data: any) {
+        this.name = data.name
+        this.filename = data.filename
+    }
 
     async meshData() {
         if (this._meshData) {
@@ -72,7 +82,7 @@ export class BlendShape extends IndyNode {
         // mesh.material = new Material(this.context, [0, 0.2, 1, 1])
 
         const distance = new Array<number>(mesh.indices.length)
-        for(let i=0;i<distance.length; ++i) {
+        for (let i = 0; i < distance.length; ++i) {
             distance[i] = 0
         }
         let max = 0
@@ -88,7 +98,7 @@ export class BlendShape extends IndyNode {
             // const rgb = hsv2rgb(distance[i] / max * 360, 1, 1)
             const d = distance[i] / max
             // console.log(`d[i] = ${distance[i]}`)
-            const rgb = {r:d, g:0, b:1-d}
+            const rgb = { r: d, g: 0, b: 1 - d }
             color[i3] = rgb.r
             color[i3 + 1] = rgb.g
             color[i3 + 2] = rgb.b

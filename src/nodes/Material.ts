@@ -15,6 +15,8 @@ export class Material extends IndyNode {
         propertyTab: PropertyTab.MATERIAL
     }
     override get name(): string { return this.dataName ?? this.constructor.name }
+    override set name(name: string) { this.dataName = name }
+
     override get uihints(): NodeUiHints { return Material.uiHints }
 
     private _bindGroup?: GPUBindGroup

@@ -21,10 +21,7 @@ import { PICK_SIZE } from './gl/shaders/ShaderP3_PickPoint'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
 import { SelectionMode } from './editor/app/SelectionMode'
 import { PointSelectController } from './editor/controllers/PointSelectController'
-
-export async function loadMesh(parent: XForm, filename: string) {
-    return new Mesh(parent, filename)
-}
+import { persist } from './nodes/persistance'
 
 interface RenderBuckets {
     // surface is a single rgb color
@@ -390,9 +387,10 @@ function renderOutlinePass(commandEncoder: GPUCommandEncoder, context: Context) 
     pass.end()
 }
 
-async function loadDemoScene(root: Root) {
+function loadDemoScene() {
+    const root = new Root()
     const teapot = new XForm(root)
-    const teapotMesh = await loadMesh(teapot, "obj/utah_teapot.obj")
+    const teapotMesh = new Mesh(teapot, "obj/utah_teapot.obj")
     teapot.objectName = teapotMesh.dataName = "Utah Teapot"
     teapotMesh.material = new Material(root, [1, 0.5, 0, 1])
     teapot.transform = mat4.create()
@@ -402,21 +400,21 @@ async function loadDemoScene(root: Root) {
     // mat4.rotateZ(teapot.transform, teapot.transform, deg2rad(40))
 
     const dodecahedron = new XForm(root)
-    const dodecahedronMesh = await loadMesh(dodecahedron, "obj/dodecahedron.obj")
+    const dodecahedronMesh = new Mesh(dodecahedron, "obj/dodecahedron.obj")
     dodecahedron.objectName = dodecahedronMesh.dataName = "Dodecahedron"
     dodecahedronMesh.material = new Material(root, [0, 1, 0, 1])
     dodecahedron.transform = mat4.create()
     mat4.translate(dodecahedron.transform, dodecahedron.transform, vec3.fromValues(3.15, 3.4, 0))
 
     const cube = new XForm(root)
-    const cubeMesh = await loadMesh(cube, "obj/mh/cube.obj")
+    const cubeMesh = new Mesh(cube, "obj/mh/cube.obj")
     cube.objectName = cubeMesh.dataName = "Cube"
     cubeMesh.material = new Material(root, [0, 0.2, 1, 1])
     cube.transform = mat4.create()
     mat4.translate(cube.transform, cube.transform, vec3.fromValues(2, 1, 4))
 
     const human = new XForm(root)
-    const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    const humanMesh = new  Mesh(human, "obj/mh/base.obj")
     human.objectName = humanMesh.dataName = "Human"
     humanMesh.material = new Material(root, "img/young_caucasian_female_special_suit.jpg")
 
@@ -435,16 +433,19 @@ async function loadDemoScene(root: Root) {
     // teeth.transform = mat4.create()
     // mat4.rotateY(teeth.transform, teeth.transform, deg2rad(90))
     // // mat4.scale(teeth.transform, teeth.transform, vec3.fromValues(6, 6, 6)) // this wrecks the shading, guess through the normal matrix being messed up
+
+    return root
 }
 
 let sourceBuffer: VertexBuffer | undefined
 let destinationBuffer: VertexBuffer | undefined
 let copyBuffer = false
 
-async function loadBlendshapes(root: Root) {
+function loadBlendshapes() {
+    const root = new Root()
     const human = new XForm(root)
     human.objectName = "Human"
-    const humanMesh = await loadMesh(human, "obj/mh/base.obj")
+    const humanMesh = new  Mesh(human, "obj/mh/base.obj")
     humanMesh.dataName = "Human"
     humanMesh.material = new Material(root, "img/young_caucasian_female_special_suit.jpg")
     // humanMesh.material = new Material(context, [0, 0.5, 1, 1])
@@ -459,24 +460,8 @@ async function loadBlendshapes(root: Root) {
     const key1 = new BlendShape(blendshapeGroup, "browInnerUp", "obj/arkit/browInnerUp.obj")
     const key2 = new BlendShape(blendshapeGroup, "browDownRight", "obj/arkit/browDownRight.obj")
     const key3 = new BlendShape(blendshapeGroup, "browOuterUpRight", "obj/arkit/browOuterUpRight.obj")
-}
 
-// some experimental code to persist/restore some of the more complex
-// application state.
-// for now to persist ObjectSelection to make it nicer to develop the
-// mesh edit modes
-function persist(root: Root, selection: ObjectSelection) {
-
-}
-
-function p(node: IndyNode) {
-    for(const child of node.children) {
-        p(child)
-    }
-}
-
-function restore(root: Root, selection: ObjectSelection) {
-
+    return root
 }
 
 
@@ -488,12 +473,11 @@ export async function main() {
     const editorModel = new EditorModel()
     const selection = new ObjectSelection(editorModel)
 
-    const root = new Root()
     // await loadBlendshapes(root)
-    await loadDemoScene(root)
+    const root = loadDemoScene()
 
     document.addEventListener("visibilitychange", () => persist(root, selection) )
-    restore(root, selection)
+    // restore(selection)
 
     // console.log(root)
 
