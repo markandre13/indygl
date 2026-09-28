@@ -18,6 +18,7 @@ import { Material } from "src/nodes/Material"
 import { BlendShapeGroup } from "src/nodes/BlendShapeGroup"
 import { XForm } from "src/nodes/XForm"
 import type { Root } from "src/nodes/IndyNode"
+import { Menu } from "toad.js/menu/Menu"
 
 interface MainScreenProps extends HTMLElementProps {
     model: EditorModel
@@ -41,13 +42,21 @@ export function MainScreen(props: MainScreenProps) {
     const transform = props.model.transform
 
     const root = <div class="main">
-        <div ref={menubar} class="menubar">
-            <div>File</div>
-            <div>Edit</div>
-            <div>Render</div>
-            <div>Window</div>
-            <div>Help</div>
-        </div>
+        <Menu ref={menubar} config={[
+            {
+                name: "file", label: "File",
+                // sub: [
+                //     { name: "new", label: "New" },
+                //     { name: "import", label: "Import" },
+                //     { name: "export", label: "Export" },
+                //     { name: "delete", label: "Delete" },
+                // ],
+            },
+            { name: "edit", label: "Edit" },
+            { name: "render", label: "Render" },
+            { name: "window", label: "Window" },
+            { name: "help", label: "Help" },
+        ]}></Menu>
         <div ref={toolbar} class="toolbar">
             <div>
                 <IconRadioButton model={selectionMode} value={SelectionMode.OBJECT} title="Object Selection Mode" svgHref="icons.svg#icon-select-object" />
@@ -84,7 +93,7 @@ export function MainScreen(props: MainScreenProps) {
         <canvas ref={canvas} class="canvas" tabIndex={0}></canvas>
         <svg ref={svg} class="overlay" id="svg-overlay" />
         <div ref={overlay} class="overlay" id="overlay" />
-        <Outliner ref={outliner} root={props.root} objectSelection={props.selection} propertyTab={propertyTab}/>
+        <Outliner ref={outliner} root={props.root} objectSelection={props.selection} propertyTab={propertyTab} />
 
         <div ref={panel} class="panel">
             <div class="panel-tabs">
