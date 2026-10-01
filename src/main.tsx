@@ -21,7 +21,7 @@ import { PICK_SIZE } from './gl/shaders/ShaderP3_PickPoint'
 import { ColorBuffer } from './gl/buffers/ColorBuffer'
 import { SelectionMode } from './editor/app/SelectionMode'
 import { PointSelectController } from './editor/controllers/PointSelectController'
-import { persist } from './nodes/persistance'
+import { persist, restore } from './nodes/persistance'
 
 interface RenderBuckets {
     // surface is a single rgb color
@@ -414,7 +414,7 @@ function loadDemoScene() {
     mat4.translate(cube.transform, cube.transform, vec3.fromValues(2, 1, 4))
 
     const human = new XForm(root)
-    const humanMesh = new  Mesh(human, "obj/mh/base.obj")
+    const humanMesh = new Mesh(human, "obj/mh/base.obj")
     human.objectName = humanMesh.dataName = "Human"
     humanMesh.material = new Material(root, "img/young_caucasian_female_special_suit.jpg")
 
@@ -445,7 +445,7 @@ function loadBlendshapes() {
     const root = new Root()
     const human = new XForm(root)
     human.objectName = "Human"
-    const humanMesh = new  Mesh(human, "obj/mh/base.obj")
+    const humanMesh = new Mesh(human, "obj/mh/base.obj")
     humanMesh.dataName = "Human"
     humanMesh.material = new Material(root, "img/young_caucasian_female_special_suit.jpg")
     // humanMesh.material = new Material(context, [0, 0.5, 1, 1])
@@ -464,6 +464,25 @@ function loadBlendshapes() {
     return root
 }
 
+function initPersitance(selection: ObjectSelection): Root {
+    let root: Root | undefined
+    
+    const jsonString = localStorage.getItem("scenegraph")
+    if (jsonString) {
+        root = restore(JSON.parse(jsonString), selection) as Root
+    }
+
+    if (root === undefined) {
+        root = loadDemoScene()
+        // root = loadBlendshapes()
+    }
+
+    document.addEventListener("visibilitychange", () => {
+        localStorage.setItem("scenegraph", JSON.stringify(persist(root as any, selection)))
+    })
+
+    return root
+}
 
 // MainScreen provides the canvas needed by Context (formerly CanvasContext)
 export async function main() {
@@ -473,11 +492,7 @@ export async function main() {
     const editorModel = new EditorModel()
     const selection = new ObjectSelection(editorModel)
 
-    // await loadBlendshapes(root)
-    const root = loadDemoScene()
-
-    document.addEventListener("visibilitychange", () => persist(root, selection) )
-    // restore(selection)
+    const root = initPersitance(selection)
 
     // console.log(root)
 
@@ -509,7 +524,7 @@ export async function main() {
                 break
             default:
                 context.pushController(new BasicController(context))
-                // context.pushController(new PointSelectController(context, root))
+            // context.pushController(new PointSelectController(context, root))
         }
     })
     editorModel.selectionMode.signal.emit()
