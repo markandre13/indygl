@@ -2,11 +2,10 @@ import { Mesh } from "src/nodes/Mesh"
 import { IndyNode } from "src/nodes/IndyNode"
 import { Controller } from "./Controller"
 import { MouseButton } from "./details/MouseButton"
-import { IconKey, IconMouseLeft, IconMouseMiddle, IconMouseRight, IconOption } from "src/editor/viewkit/InputIcons"
+import { IconKey, IconMouseLeft, IconMouseMiddle } from "src/editor/viewkit/InputIcons"
 import { ObjectGrabController } from "./ObjectGrabController"
 import type { Context } from "src/gl/Context"
 import { Texture } from "src/gl/buffers/Texture"
-import { ShaderP3_IDX_Id } from "src/gl/shaders/ShaderP3_IDX_Id"
 import { PICK_SIZE } from "src/gl/shaders/ShaderP3_PickPoint"
 import { ObjectScaleController } from "./ObjectScaleController"
 import { ObjectRotateController } from "./ObjectRotateController"
@@ -56,6 +55,7 @@ export class ObjectSelectController extends Controller {
         const device = context.device
         const canvas = context.canvas
 
+        // TODO: only create texture when canvas is resized
         const pickTexture = new Texture()
         pickTexture.texture = device.device.createTexture({
             label: "pick-texture",
@@ -68,16 +68,16 @@ export class ObjectSelectController extends Controller {
                 GPUTextureUsage.RENDER_ATTACHMENT,
         })
         const texview = pickTexture.texture.createView()
-
-        const pickShader = new ShaderP3_IDX_Id(this.context, pickTexture.texture.format)
+      
+        const pickShader = context.shader.p3_idx_id
 
         const commandEncoder = device.device!.createCommandEncoder()
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview, [0, 0, 0, 1]))
 
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
-
         pass.setPipeline(pickShader.pipeline)
 
+        // draw all objects, each in one color indicating it's postion within allObjects[]
         const allObjects: IndyNode[] = []
         function prepare(node: IndyNode) {
             if (node instanceof Mesh) {
@@ -121,17 +121,20 @@ export class ObjectSelectController extends Controller {
         const rgba = new Uint8Array(data)
 
         //
-        // find edge closest to pointer position
+        // find object closest to pointer position
         //
         let index: number = 0
         let distance = Number.MAX_VALUE
 
         let cx = Math.round(ev.offsetX)
         let cy = Math.round(ev.offsetY)
+
+        // rectangle around (cx, cy) within bounds of pick texture
         let left = Math.max(0, cx - PICK_SIZE)
         let top = Math.max(0, cy - PICK_SIZE)
         let right = Math.min(cx + PICK_SIZE, canvas.width)
         let bottom = Math.min(cy + PICK_SIZE, canvas.height)
+
         for (let y = top; y < bottom; ++y) {
             for (let x = left; x < right; ++x) {
                 const pickIdx = x * 4 + y * bytesPerRow
@@ -148,7 +151,7 @@ export class ObjectSelectController extends Controller {
         --index
 
         readbackBuffer.unmap()
-        pickTexture.texture.destroy()
+        pickTexture.texture.destroy() // not available on firefox
 
         //
         // add to selection

@@ -26,7 +26,7 @@ export class ShaderCollection {
         this.floor = new ShaderFloor(context)
         this.outline = new ShaderOutline(context)
         this.p3_idx = new ShaderP3_IDX(context)
-        this.p3_idx_id = new ShaderP3_IDX_Id(context)
+        this.p3_idx_id = new ShaderP3_IDX_Id(context, 'rgba8unorm')
         this.p3_idx_line = new ShaderP3_IDX_Line(context)
         this.p3_n3_idx = new ShaderP3_N3_IDX(context)
         this.p3_n3_t2_idx = new ShaderP3_N3_T2_IDX(context)

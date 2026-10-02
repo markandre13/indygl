@@ -524,7 +524,7 @@ export async function main() {
                 break
             default:
                 context.pushController(new BasicController(context))
-            // context.pushController(new PointSelectController(context, root))
+                context.pushController(new PointSelectController(context, root))
         }
     })
     editorModel.selectionMode.signal.emit()
