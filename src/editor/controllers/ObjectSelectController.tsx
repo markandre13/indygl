@@ -55,20 +55,7 @@ export class ObjectSelectController extends Controller {
         const device = context.device
         const canvas = context.canvas
 
-        // TODO: only create texture when canvas is resized
-        const pickTexture = new Texture()
-        pickTexture.texture = device.device.createTexture({
-            label: "pick-texture",
-            size: [canvas.width, canvas.height],
-            format: 'rgba8unorm',
-            usage:
-                GPUTextureUsage.COPY_DST |
-                GPUTextureUsage.COPY_SRC |
-                GPUTextureUsage.TEXTURE_BINDING |
-                GPUTextureUsage.RENDER_ATTACHMENT,
-        })
-        const texview = pickTexture.texture.createView()
-      
+        const texview = context.getPickTextureView()
         const pickShader = context.shader.p3_idx_id
 
         const commandEncoder = device.device!.createCommandEncoder()
@@ -79,7 +66,7 @@ export class ObjectSelectController extends Controller {
 
         // draw all objects, each in one color indicating it's postion within allObjects[]
         const allObjects: IndyNode[] = []
-        function prepare(node: IndyNode) {
+        function drawSceneGraph(node: IndyNode) {
             if (node instanceof Mesh) {
                 pass.setBindGroup(1, node.modelView.bindGroup)
                 pass.setVertexBuffer(0, node.points.buffer)
@@ -88,10 +75,10 @@ export class ObjectSelectController extends Controller {
                 allObjects.push(node)
             }
             for (const child of node.children) {
-                prepare(child)
+                drawSceneGraph(child)
             }
         }
-        prepare(this.root)
+        drawSceneGraph(this.root)
 
         pass.end()
 
@@ -99,6 +86,7 @@ export class ObjectSelectController extends Controller {
             return a + (r - a % r)
         }
 
+        // copy map pick texture from GPU into CPU memory
         const bytesPerRow = roundTo(canvas.width * 4, 256)
 
         const readbackBuffer = device.device.createBuffer({
@@ -107,7 +95,7 @@ export class ObjectSelectController extends Controller {
         })
 
         commandEncoder.copyTextureToBuffer(
-            { texture: pickTexture.texture },
+            { texture: context.getPickTexture()!! },
             { buffer: readbackBuffer, offset: 0, bytesPerRow, rowsPerImage: canvas.height },
             { width: canvas.width, height: canvas.height }
         )
@@ -151,7 +139,6 @@ export class ObjectSelectController extends Controller {
         --index
 
         readbackBuffer.unmap()
-        pickTexture.texture.destroy() // not available on firefox
 
         //
         // add to selection

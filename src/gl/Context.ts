@@ -13,6 +13,7 @@ import { EditorModel } from 'src/editor/app/EditorModel'
 import { ObjectSelection } from './ObjectSelection'
 import type { Point } from './types/Point'
 import { Root } from 'src/nodes/IndyNode'
+import { Texture } from './buffers/Texture'
 
 export enum Projection {
     ORTHOGONAL,
@@ -194,12 +195,12 @@ export class Context {
     //
     // depth texture
     //
-    depthTextureFormat: GPUTextureFormat = 'depth24plus-stencil8';
+    readonly depthTextureFormat: GPUTextureFormat = 'depth24plus-stencil8';
     depthTexture?: GPUTexture
     private depthTextureView?: GPUTextureView
 
     invalidateDepthTexture() {
-        this.depthTexture?.destroy()
+        this.depthTexture?.destroy() // not available on firefox
         this.depthTexture = undefined
         this.depthTextureView = undefined
     }
@@ -224,6 +225,48 @@ export class Context {
             this.depthTextureView = depthTexture.createView({ label })
         }
         return this.depthTextureView!
+    }
+
+    //
+    // pick texture
+    //
+    readonly pickTextureFormat: GPUTextureFormat = 'rgba8unorm';
+    private pickTexture?: GPUTexture
+    private pickTextureView?: GPUTextureView
+    getPickTexture() {
+        return this.pickTexture
+    }
+
+    getPickTextureView(): GPUTextureView {
+        const device = this.device
+        if (this.pickTexture !== undefined) {
+            if (this.pickTexture.width !== this.canvas.width
+                || this.pickTexture.height !== this.canvas.height
+            ) {
+                this.pickTexture = undefined
+                this.pickTextureView = undefined
+            }
+        }
+
+        if (this.pickTexture === undefined) {
+            this.pickTexture = device.device.createTexture({
+                label: "pick-texture",
+                size: [this.canvas.width, this.canvas.height],
+                format: this.pickTextureFormat,
+                usage:
+                    GPUTextureUsage.COPY_DST |
+                    GPUTextureUsage.COPY_SRC |
+                    GPUTextureUsage.TEXTURE_BINDING |
+                    GPUTextureUsage.RENDER_ATTACHMENT,
+            })
+            console.log("create new pick texture")
+        }
+
+        if (this.pickTextureView === undefined) {
+            this.pickTextureView = this.pickTexture.createView({ label: "pick-texture" })
+        }
+
+        return this.pickTextureView
     }
 
     private postProcessBindGroup?: GPUBindGroup
