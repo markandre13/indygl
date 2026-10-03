@@ -7,9 +7,8 @@ struct ModelUniforms {
     uModelViewMatrix: mat4x4f,
     uNormalMatrix: mat4x4f,
 };
-
 @group(0) @binding(0) var<uniform> sceneUniforms: SceneUniforms;
-@group(1) @binding(0) var<uniform> modelUniforms: ModelUniforms;
+@group(0) @binding(1) var<uniform> modelUniforms: ModelUniforms;
 
 struct VSOutput {
     @builtin(position) Position: vec4f,
@@ -19,7 +18,6 @@ struct VSOutput {
 @vertex
 fn vertex_main(
     @location(0) vert: vec3f,
-    @location(1) color: vec3f,
     @builtin(vertex_index) vNdx: u32,
     @builtin(instance_index) iNdx: u32,
 ) -> VSOutput {
@@ -32,10 +30,13 @@ fn vertex_main(
     let indexPos = sceneUniforms.uProjectionMatrix * modelUniforms.uModelViewMatrix * vec4(vert, 1);
     // position of a point of the rectangle to draw for the pick point
     let pointPos = vec4f(rectangle[vNdx] * sceneUniforms.scale * indexPos.w, 0, 0) + indexPos;
+
     // encode instance index as rgb color
-    // TODO: do it proper
-    // let color = vec4f(f32(iNdx) / 8.0, 0, 0, 1);
-    return VSOutput(pointPos, vec4(color, 1));
+    let i = iNdx + 1;
+    let r = f32(i & 0xff) / 255;
+    let g = f32((i>>8) & 0xff) / 255;
+    let b = f32((i>>16) & 0xff) / 255;
+    return VSOutput(pointPos, vec4f(r, g, b, 1));
 }
 
 @fragment

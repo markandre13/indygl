@@ -2,14 +2,11 @@ import { ColorBuffer } from "../buffers/ColorBuffer"
 import type { ModelUniform } from "../buffers/ModelUniform"
 import { PositionBuffer } from "../buffers/PositionBuffer"
 import { FLOAT32_NUM_BYTES } from "../buffers/sizeof"
-import { Uniform } from "../buffers/Uniform"
 import type { Context } from "../Context"
 import { Shader } from "./Shader"
-import { PICK_SIZE } from "./ShaderP3_PickPoint"
 
 export class ShaderP3_C3_Point extends Shader {
     pipeline: GPURenderPipeline
-    pickUniform: Uniform
     constructor(context: Context) {
         const label = "p3-c3-point"
         const device = context.device
@@ -51,8 +48,6 @@ export class ShaderP3_C3_Point extends Shader {
             },
         }
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
-
-        this.pickUniform = new Uniform(device.device, ["vec2f"])
     }
 
     bindGroup?: GPUBindGroup
@@ -63,7 +58,6 @@ export class ShaderP3_C3_Point extends Shader {
                 entries: [
                     { binding: 0, resource: context.sceneUniforms.buffer },
                     { binding: 1, resource: modelUniforms.buffer },
-                    { binding: 2, resource: this.pickUniform.buffer }
                 ],
             })
         }
@@ -78,10 +72,6 @@ export class ShaderP3_C3_Point extends Shader {
         offset?: number,
         length?: number
     ) {
-        this.pickUniform.values[0][0] = PICK_SIZE / context.canvas.clientWidth
-        this.pickUniform.values[0][1] = PICK_SIZE / context.canvas.clientHeight
-        this.pickUniform.writeTo(this.device)
-
         pass.setPipeline(this.pipeline)
         pass.setBindGroup(0, this.createBindGroup(context, modelUniforms))
         pass.setVertexBuffer(0, positions.buffer)

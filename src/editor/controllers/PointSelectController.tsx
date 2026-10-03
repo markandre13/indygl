@@ -2,25 +2,13 @@
 import type { Context } from "src/gl/Context"
 import { Controller } from "./Controller"
 import { MouseButton } from "./details/MouseButton"
-import type { ModelUniform } from "src/gl/buffers/ModelUniform"
-import type { PositionBuffer } from "src/gl/buffers/PositionBuffer"
-import type { IndexBuffer } from "src/gl/buffers/IndexBuffer"
-import type { ColorBuffer } from "src/gl/buffers/ColorBuffer"
-import { Texture } from "src/gl/buffers/Texture"
-import { PICK_SIZE, ShaderP3_PickPoint } from "src/gl/shaders/ShaderP3_PickPoint"
-import { ShaderP3_IDX } from "src/gl/shaders/ShaderP3_IDX"
-import { FLOAT32_NUM_BYTES } from "src/gl/buffers/sizeof"
+import { PICK_SIZE } from "src/gl/shaders/ShaderP3_PickPoint"
 import type { IndyNode } from "src/nodes/IndyNode"
+import { FLOAT32_NUM_BYTES } from "src/gl/buffers/sizeof"
 
 export class PointSelectController extends Controller {
     context: Context
     root: IndyNode
-    // modelUniforms: ModelUniform
-    // edgeColors: Float32Array
-    // positions: PositionBuffer
-    // indices: IndexBuffer
-    // edgeColorBuffer: ColorBuffer
-
     constructor(context: Context, root: IndyNode) {
         super()
         this.context = context
@@ -31,110 +19,103 @@ export class PointSelectController extends Controller {
         if (ev.button !== MouseButton.LEFT) {
             return
         }
+
+        const context = this.context
+        const device = context.device
+        const canvas = context.canvas
+
+        const node = context.selection.active?.getMesh()
+        if (!node) {
+            return
+        }
+
         console.log('select point')
-        // const context = this.context
-        // const device = context.device
-        // const canvas = context.canvas
-        // const modelUniforms = this.modelUniforms
-        // const edgeColors = this.edgeColors
-        // const positions = this.positions
-        // const indices = this.indices
-        // const edgeColorBuffer = this.edgeColorBuffer
 
-        // const pickTexture = new Texture()
-        // pickTexture.texture = device.device.createTexture({
-        //     label: "pick-texture",
-        //     size: [canvas.width, canvas.height],
-        //     format: 'rgba8unorm',
-        //     usage:
-        //         GPUTextureUsage.COPY_DST |
-        //         GPUTextureUsage.COPY_SRC |
-        //         GPUTextureUsage.TEXTURE_BINDING |
-        //         GPUTextureUsage.RENDER_ATTACHMENT,
-        // })
-        // const texview = pickTexture.texture.createView()
+        const texview = context.getPickTextureView()
+        const pickTexture = context.getPickTexture()!
 
-        // const cl = context.backgroundColor
-        // const pf = context.presentationFormat
+        // FIXME: p3_c3_point draws points with color from buffer
+        //        ShaderP3_PickPoint draws points with color from enumeration
+        //        and the shaders hasn't been updated yet
+        const pickShader = context.shader.p3_c3_point
 
-        // context.presentationFormat = pickTexture.texture.format
-        // context.backgroundColor = [0, 0, 0, 1]
+        const commandEncoder = device.device!.createCommandEncoder({ label: "point-select-controller" })
+        const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview, [0, 0, 0, 1]))
 
-        // // used to draw the points
-        // const shaderPickPoints = new ShaderP3_PickPoint(device, context)
-        // // used to draw the objects in black to hide hidden points
-        // const shaderPickFaces = new ShaderP3_IDX(context)
+        pass.setBindGroup(0, context.sceneUniforms.bindGroup)
+        pass.setPipeline(pickShader.pipeline)
 
-        // const commandEncoder = device.device!.createCommandEncoder()
-        // const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview))
+        pass.setBindGroup(1, node.modelView.bindGroup)
+        pass.setVertexBuffer(0, node.points.buffer)
+        pass.setVertexBuffer(1, node.edgeColorBuffer.buffer)
+        pass.draw(6, node.xyz!.length / 3, 0, 0)
 
-        // shaderPickPoints.draw(pass, context, modelUniforms, positions, 0, edgeColors.length / 3)
-        // // shaderPickFaces.draw(pass, context, modelUniforms, positions, indices, [0, 0, 0, 1])
+        pass.end()
 
-        // pass.end()
+        function roundTo(a: number, r: number) {
+            return a + (r - a % r)
+        }
 
-        // function roundTo(a: number, r: number) {
-        //     return a + (r - a % r)
-        // }
+        const bytesPerRow = roundTo(canvas.width * 4, 256)
 
-        // const bytesPerRow = roundTo(canvas.width * 4, 256)
+        const readbackBuffer = device.device.createBuffer({
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            size: bytesPerRow * canvas.height,
+        })
 
-        // const readbackBuffer = device.device.createBuffer({
-        //     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-        //     size: bytesPerRow * canvas.height,
-        // })
+        commandEncoder.copyTextureToBuffer(
+            { texture: pickTexture },
+            { buffer: readbackBuffer, offset: 0, bytesPerRow, rowsPerImage: canvas.height },
+            { width: canvas.width, height: canvas.height }
+        )
 
-        // commandEncoder.copyTextureToBuffer(
-        //     { texture: pickTexture.texture },
-        //     { buffer: readbackBuffer, offset: 0, bytesPerRow, rowsPerImage: canvas.height },
-        //     { width: canvas.width, height: canvas.height }
-        // )
+        const commandBuffer = commandEncoder.finish()
+        device.device.queue.submit([commandBuffer])
+        await device.device.queue.onSubmittedWorkDone()
 
-        // const commandBuffer = commandEncoder.finish()
-        // device.device.queue.submit([commandBuffer])
-        // await device.device.queue.onSubmittedWorkDone()
+        await readbackBuffer.mapAsync(GPUMapMode.READ)
+        const data = readbackBuffer.getMappedRange()
+        const rgba = new Uint8Array(data)
 
-        // await readbackBuffer.mapAsync(GPUMapMode.READ)
-        // const data = readbackBuffer.getMappedRange()
-        // const rgba = new Uint8Array(data)
+        //
+        // find point closest to pointer position
+        //
+        let pointIdx: number = 0
+        let distance = Number.MAX_VALUE
 
-        // //
-        // // find point closest to pointer position
-        // //
-        // let pointIdx: number = 0
-        // let distance = Number.MAX_VALUE
+        let cx = Math.round(ev.offsetX)
+        let cy = Math.round(ev.offsetY)
+        let left = Math.max(0, cx - PICK_SIZE)
+        let top = Math.max(0, cy - PICK_SIZE)
+        let right = Math.min(cx + PICK_SIZE, canvas.width)
+        let bottom = Math.min(cy + PICK_SIZE, canvas.height)
+        for (let y = top; y < bottom; ++y) {
+            for (let x = left; x < right; ++x) {
+                const pickIdx = x * 4 + y * bytesPerRow
+                const edge = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16)
+                if (edge > 0) {
+                    const d = Math.sqrt(Math.pow(cx - x, 2) + Math.pow(cy - y, 2))
+                    if (d < distance) {
+                        distance = d
+                        pointIdx = edge
+                    }
+                }
+            }
+        }
+        --pointIdx
 
-        // let cx = Math.round(ev.offsetX)
-        // let cy = Math.round(ev.offsetY)
-        // let left = Math.max(0, cx - PICK_SIZE)
-        // let top = Math.max(0, cy - PICK_SIZE)
-        // let right = Math.min(cx + PICK_SIZE, canvas.width)
-        // let bottom = Math.min(cy + PICK_SIZE, canvas.height)
-        // for (let y = top; y < bottom; ++y) {
-        //     for (let x = left; x < right; ++x) {
-        //         const pickIdx = x * 4 + y * bytesPerRow
-        //         const edge = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16)
-        //         if (edge > 0) {
-        //             const d = Math.sqrt(Math.pow(cx - x, 2) + Math.pow(cy - y, 2))
-        //             if (d < distance) {
-        //                 distance = d
-        //                 pointIdx = edge
-        //             }
-        //         }
-        //     }
-        // }
-        // --pointIdx
+        // TODO: search area around mouse click!!!
+        // const edgeIdx = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16) - 1
+        const pointColorIdx = pointIdx * 3
+        // console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[pickIdx]}, ${rgba[pickIdx + 1]}, ${rgba[pickIdx + 2]}, idx2=${edgeIdx}, idx3=${edgeColorIdx}`)
 
-        // // TODO: search area around mouse click!!!
-        // // const edgeIdx = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16) - 1
-        // const pointColorIdx = pointIdx * 3
-        // // console.log(`pointer down ${ev.x}, ${ev.y} -> ${rgba[pickIdx]}, ${rgba[pickIdx + 1]}, ${rgba[pickIdx + 2]}, idx2=${edgeIdx}, idx3=${edgeColorIdx}`)
-
-        // readbackBuffer.unmap()
+        readbackBuffer.unmap()
         // pickTexture.texture.destroy()
 
         // context.presentationFormat = pf
         // context.backgroundColor = cl
+
+        console.log(`pointIdx = ${pointIdx}`)
 
         // if (pointIdx >= 0) {
         //     // toggle color of edge 

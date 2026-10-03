@@ -2,7 +2,8 @@ import type { Device } from "../Device"
 import floor from "./floor.wgsl"
 import outline from "./outline.wgsl"
 import p3_idx from "./p3-idx.wgsl"
-import p3_idx_id from "./p3-idx-id.wgsl"
+import p3_idx_pick_object from "./p3-idx-pick-object.wgsl"
+import p3_pick_point from "./p3-pick-point.wgsl"
 import p3_n3_idx from "./p3-n3-idx.wgsl"
 import p3_n3_t2_idx from "./p3-n3-t2-idx.wgsl"
 import p3_c3_idx from "./p3-c3-idx.wgsl"
@@ -23,7 +24,8 @@ export class Shader {
                 case 'floor': code = floor; break
                 case 'outline': code = outline; break
                 case 'p3-idx': code = p3_idx; break
-                case 'p3-idx-id': code = p3_idx_id; break
+                case 'p3-idx-pick-object': code = p3_idx_pick_object; break
+                case 'p3-c3-pick-point': code = p3_pick_point; break
                 case 'p3-n3-idx': code = p3_n3_idx; break
                 case 'p3-n3-t2-idx': code = p3_n3_t2_idx; break
                 case 'p3-c3-idx': code = p3_c3_idx; break

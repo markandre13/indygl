@@ -5,14 +5,14 @@ import { Shader } from "./Shader"
 /**
  * write id as rgb color
  */
-export class ShaderP3_IDX_Id extends Shader {
+export class ShaderP3_IDX_PickObject extends Shader {
     pipeline: GPURenderPipeline
 
     constructor(
         context: Context,
         presentationFormat: GPUTextureFormat = context.presentationFormat
     ) {
-        const label = 'p3-idx-id'
+        const label = 'p3-idx-pick-object'
         const device = context.device
         super(device, label)
         const pipelineDef: GPURenderPipelineDescriptor = {
@@ -22,7 +22,6 @@ export class ShaderP3_IDX_Id extends Shader {
                 bindGroupLayouts: [
                     context.bindGroupLayout.scene,
                     context.bindGroupLayout.model,
-                    // context.bindGroupLayout.materialRGBA
                 ]
             }),
             vertex: {

@@ -253,5 +253,16 @@ export class Mesh extends IndyNode implements MeshData {
         this.prepare()
         return this._triangles?.materialSubset?.get(name)
     }
+
+    _edgeColors: Float32Array | undefined
+    _edgeColorBuffer: ColorBuffer | undefined
+
+    get edgeColorBuffer(): ColorBuffer {
+        if (this._edgeColors === undefined) {
+            this._edgeColors = new Float32Array(this.xyz!.length)
+            this._edgeColorBuffer = new ColorBuffer(this.context.device, this._edgeColors)
+        }
+        return this._edgeColorBuffer!
+    }
 }
 

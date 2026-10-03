@@ -193,35 +193,32 @@ function renderLines(
 //             shaderPickPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, obj.positions.length / 3)
 //         }
 
-let edgeColors: Float32Array | undefined
-let edgeColorBuffer: ColorBuffer | undefined
+// let edgeColors: Float32Array | undefined
+// let edgeColorBuffer: ColorBuffer | undefined
 
+/**
+ * 
+ * @param pass 
+ * @param nodes 
+ * @param context 
+ * @returns 
+ */
 function renderPoints(
     pass: GPURenderPassEncoder,
     nodes: Mesh[],
     context: Context
 ) {
     if (nodes.length === 0) return
-    // console.log('renderPoints')
-    const shader = context.shader.p3_c3_point
-    shader.pickUniform.values[0][0] = PICK_SIZE / context.canvas.clientWidth
-    shader.pickUniform.values[0][1] = PICK_SIZE / context.canvas.clientHeight
-    shader.pickUniform.writeTo(context.device)
+    // const shader = context.shader.p3_c3_point
+    // shader.pickUniform.values[0][0] = PICK_SIZE / context.canvas.clientWidth
+    // shader.pickUniform.values[0][1] = PICK_SIZE / context.canvas.clientHeight
+    // shader.pickUniform.writeTo(context.device)
 
     pass.setPipeline(context.shader.p3_c3_point.pipeline)
     for (const node of nodes) {
         pass.setBindGroup(1, node.modelView.bindGroup)
         pass.setVertexBuffer(0, node.points.buffer)
-
-        if (edgeColors === undefined) {
-            edgeColors = new Float32Array(node.xyz!.length)
-            edgeColorBuffer = new ColorBuffer(context.device, edgeColors)
-        }
-
-        pass.setVertexBuffer(1, edgeColorBuffer!.buffer)
-
-        // const firstInstance = offset ? offset : 0
-        // const instanceCount = length ? length : (positions.buffer.size / 3 / FLOAT32_NUM_BYTES) - firstInstance
+        pass.setVertexBuffer(1, node.edgeColorBuffer.buffer)
         pass.draw(6, node.xyz!.length / 3, 0, 0)
     }
 }
@@ -528,7 +525,6 @@ export async function main() {
         }
     })
     editorModel.selectionMode.signal.emit()
-
 
     // FIXME: these materials are internal and should not be nodes => split the Material class?
     const matWire = new Material(root, [0, 0, 0, 1])

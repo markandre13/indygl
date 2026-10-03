@@ -5,7 +5,6 @@ import { MouseButton } from "./details/MouseButton"
 import { IconKey, IconMouseLeft, IconMouseMiddle } from "src/editor/viewkit/InputIcons"
 import { ObjectGrabController } from "./ObjectGrabController"
 import type { Context } from "src/gl/Context"
-import { Texture } from "src/gl/buffers/Texture"
 import { PICK_SIZE } from "src/gl/shaders/ShaderP3_PickPoint"
 import { ObjectScaleController } from "./ObjectScaleController"
 import { ObjectRotateController } from "./ObjectRotateController"
@@ -56,9 +55,9 @@ export class ObjectSelectController extends Controller {
         const canvas = context.canvas
 
         const texview = context.getPickTextureView()
-        const pickShader = context.shader.p3_idx_id
+        const pickShader = context.shader.p3_idx_pick_object
 
-        const commandEncoder = device.device!.createCommandEncoder()
+        const commandEncoder = device.device!.createCommandEncoder({label: "object-select-controller"})
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview, [0, 0, 0, 1]))
 
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
