@@ -7,26 +7,33 @@ import { Shader } from "./Shader"
 export const PICK_SIZE = 5
 
 export class ShaderP3_PickPoint extends Shader {
-    pipeline: GPURenderPipeline
+    readonly pipeline: GPURenderPipeline
+
     constructor(context: Context) {
-        const label = "p3-c3-pick-point"
+        const label = "p3-pick-point"
         const device = context.device
         super(device, label)
         const pipelineDef: GPURenderPipelineDescriptor = {
-            layout: 'auto',
+            label,
+            layout: device.device.createPipelineLayout({
+                label,
+                bindGroupLayouts: [
+                    context.bindGroupLayout.scene,
+                    context.bindGroupLayout.model,
+                ]
+            }),
             vertex: {
                 buffers: [{
-                    arrayStride: PositionBuffer.bytesPerVertex,
-                    stepMode: 'instance',
+                    arrayStride: FLOAT32_NUM_BYTES * 3,
                     attributes: [
-                        { shaderLocation: 0, ...PositionBuffer.position },
+                        { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
                     ]
                 }],
                 module: this.module
             },
             fragment: {
                 module: this.module,
-                targets: [{ format: context.presentationFormat }]
+                targets: [{ format: "rgba8unorm" }]
             },
             depthStencil: {
                 depthWriteEnabled: true,
@@ -36,7 +43,7 @@ export class ShaderP3_PickPoint extends Shader {
         }
         this.pipeline = device.device!.createRenderPipeline(pipelineDef)
     }
-    
+
     bindGroup?: GPUBindGroup
     private createBindGroup(context: Context, modelUniforms: ModelUniform): GPUBindGroup {
         if (this.bindGroup === undefined) {
@@ -63,6 +70,10 @@ export class ShaderP3_PickPoint extends Shader {
         pass.setVertexBuffer(0, positions.buffer)
         const firstInstance = offset ? offset : 0
         const instanceCount = length ? length : (positions.buffer.size / 3 / FLOAT32_NUM_BYTES) - firstInstance
-        pass.draw(6, instanceCount, 0, firstInstance)
+        pass.draw(
+            6, // vertices for point
+            instanceCount, // number of instances
+            0, // first vertex for point
+            firstInstance)
     }
 }

@@ -25,7 +25,7 @@ export class Shader {
                 case 'outline': code = outline; break
                 case 'p3-idx': code = p3_idx; break
                 case 'p3-idx-pick-object': code = p3_idx_pick_object; break
-                case 'p3-c3-pick-point': code = p3_pick_point; break
+                case 'p3-pick-point': code = p3_pick_point; break
                 case 'p3-n3-idx': code = p3_n3_idx; break
                 case 'p3-n3-t2-idx': code = p3_n3_t2_idx; break
                 case 'p3-c3-idx': code = p3_c3_idx; break

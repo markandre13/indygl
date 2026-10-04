@@ -29,7 +29,7 @@ export class PointSelectController extends Controller {
             return
         }
 
-        console.log('select point')
+        // console.log('select point')
 
         const texview = context.getPickTextureView()
         const pickTexture = context.getPickTexture()!
@@ -37,7 +37,10 @@ export class PointSelectController extends Controller {
         // FIXME: p3_c3_point draws points with color from buffer
         //        ShaderP3_PickPoint draws points with color from enumeration
         //        and the shaders hasn't been updated yet
-        const pickShader = context.shader.p3_c3_point
+
+        // also: this needs 2 shaders, one for the points, one for the surfaces in black
+
+        const pickShader = context.shader.p3_pick_point
 
         const commandEncoder = device.device!.createCommandEncoder({ label: "point-select-controller" })
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview, [0, 0, 0, 1]))
@@ -47,7 +50,7 @@ export class PointSelectController extends Controller {
 
         pass.setBindGroup(1, node.modelView.bindGroup)
         pass.setVertexBuffer(0, node.points.buffer)
-        pass.setVertexBuffer(1, node.edgeColorBuffer.buffer)
+        // pass.setVertexBuffer(1, node.edgeColorBuffer.buffer)
         pass.draw(6, node.xyz!.length / 3, 0, 0)
 
         pass.end()

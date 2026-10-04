@@ -39,8 +39,4 @@ fn vertex_main(
 }
 
 @fragment
-fn fragment_main(
-    vin: VSOutput
-) -> @location(0) vec4f {
-    return vin.color;
-}
+fn fragment_main(vin: VSOutput) -> @location(0) vec4f { return vin.color; }
