@@ -50,8 +50,12 @@ export class PointSelectController extends Controller {
 
         pass.setBindGroup(1, node.modelView.bindGroup)
         pass.setVertexBuffer(0, node.points.buffer)
-        // pass.setVertexBuffer(1, node.edgeColorBuffer.buffer)
-        pass.draw(6, node.xyz!.length / 3, 0, 0)
+        pass.draw(
+            6, // vertex count
+            node.xyz!.length / 3, // instance count
+            0, // first vertex
+            0  // first index
+        )
 
         pass.end()
 
@@ -107,6 +111,16 @@ export class PointSelectController extends Controller {
         }
         --pointIdx
 
+        // for (let y = 0; y < canvas.height; ++y) {
+        //     for (let x = 0; x < canvas.width; ++x) {
+        //         const pickIdx = x * 4 + y * bytesPerRow
+        //         const edge = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16)
+        //         if (edge > 0) {
+        //             console.log(`${x}, ${y}: ${edge}`)
+        //         }
+        //     }
+        // }
+
         // TODO: search area around mouse click!!!
         // const edgeIdx = rgba[pickIdx] + (rgba[pickIdx + 1] << 8) + (rgba[pickIdx + 2] << 16) - 1
         const pointColorIdx = pointIdx * 3
@@ -114,23 +128,22 @@ export class PointSelectController extends Controller {
 
         readbackBuffer.unmap()
         // pickTexture.texture.destroy()
+        // console.log(`pointIdx = ${pointIdx}`)
 
-        // context.presentationFormat = pf
-        // context.backgroundColor = cl
+        if (pointIdx >= 0) {
+            const edgeColors = node._edgeColors!
+            const edgeColorBuffer = node._edgeColorBuffer!
 
-        console.log(`pointIdx = ${pointIdx}`)
+            // toggle color of edge 
+            // todo: blender has last selected point in white
+            // todo: blender uses shift to add to selection, non-shift to deselect other points
+            const v = edgeColors[pointColorIdx] ? [0, 0, 0] : [1, 0.5, 0]// #fe7900
+            edgeColors[pointColorIdx] = v[0]
+            edgeColors[pointColorIdx + 1] = v[1]
+            edgeColors[pointColorIdx + 2] = v[2]
+            device.device.queue.writeBuffer(edgeColorBuffer.buffer, FLOAT32_NUM_BYTES * pointColorIdx, edgeColors, pointColorIdx, 3)
 
-        // if (pointIdx >= 0) {
-        //     // toggle color of edge 
-        //     // todo: blender has last selected point in white
-        //     // todo: blender uses shift to add to selection, non-shift to deselect other points
-        //     const v = edgeColors[pointColorIdx] ? [0, 0, 0] : [1, 0.5, 0]// #fe7900
-        //     edgeColors[pointColorIdx] = v[0]
-        //     edgeColors[pointColorIdx + 1] = v[1]
-        //     edgeColors[pointColorIdx + 2] = v[2]
-        //     device.device.queue.writeBuffer(edgeColorBuffer.buffer, FLOAT32_NUM_BYTES * pointColorIdx, edgeColors, pointColorIdx, 3)
-
-        //     context.invalidate()
-        // }
+            context.invalidate()
+        }
     }
 }

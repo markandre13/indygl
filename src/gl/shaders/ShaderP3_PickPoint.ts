@@ -25,6 +25,7 @@ export class ShaderP3_PickPoint extends Shader {
             vertex: {
                 buffers: [{
                     arrayStride: FLOAT32_NUM_BYTES * 3,
+                    stepMode: 'instance',
                     attributes: [
                         { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
                     ]
