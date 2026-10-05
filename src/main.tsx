@@ -17,8 +17,6 @@ import { Material } from "./nodes/Material"
 import { Mesh } from './nodes/Mesh'
 import { XForm } from "./nodes/XForm"
 import { initTheme } from './theme'
-import { PICK_SIZE } from './gl/shaders/ShaderP3_PickPoint'
-import { ColorBuffer } from './gl/buffers/ColorBuffer'
 import { SelectionMode } from './editor/app/SelectionMode'
 import { PointSelectController } from './editor/controllers/PointSelectController'
 import { persist, restore } from './nodes/persistance'
@@ -37,6 +35,7 @@ interface RenderBuckets {
     pointNodes: Mesh[],
     // lines/edges
     lineNodes: Mesh[]
+    rgbLineNodes: Mesh[]
 }
 
 function prepareNode(
@@ -95,34 +94,35 @@ function prepareNode(
     if (node instanceof Mesh && node.xyz && !(node.parent instanceof BlendShape)) {
         const xform = node.getXForm()!
 
-        // TODO: this will later become the edit mode
-        if (node.name === "Cube") {
+        if (editorModel.selectionMode.value !== SelectionMode.OBJECT
+            && context.selection.isSelected(xform)) {
             buckets.pointNodes.push(node)
-        }
+            buckets.rgbLineNodes.push(node)
+        } else
 
-        switch (editorModel.viewportShading.value) {
-            case ViewportShading.WIREFRAME_XRAY:
-                buckets.lineNodes.push(node)
-                break
-            case ViewportShading.WIREFRAME:
-                buckets.lineNodes.push(node)
-                buckets.rgbNodes.push(node)
-                break
-            default:
-                if (node.material?.texture !== undefined) {
-                    if (context.selection.selected.has(xform)) {
-                        buckets.texNodesSelected.push(node)
+            switch (editorModel.viewportShading.value) {
+                case ViewportShading.WIREFRAME_XRAY:
+                    buckets.lineNodes.push(node)
+                    break
+                case ViewportShading.WIREFRAME:
+                    buckets.lineNodes.push(node)
+                    buckets.rgbNodes.push(node)
+                    break
+                default:
+                    if (node.material?.texture !== undefined) {
+                        if (context.selection.selected.has(xform)) {
+                            buckets.texNodesSelected.push(node)
+                        } else {
+                            buckets.texNodes.push(node)
+                        }
                     } else {
-                        buckets.texNodes.push(node)
+                        if (context.selection.selected.has(xform)) {
+                            buckets.rgbNodesSelected.push(node)
+                        } else {
+                            buckets.rgbNodes.push(node)
+                        }
                     }
-                } else {
-                    if (context.selection.selected.has(xform)) {
-                        buckets.rgbNodesSelected.push(node)
-                    } else {
-                        buckets.rgbNodes.push(node)
-                    }
-                }
-        }
+            }
     }
     // NOTE: the most universal approach would be to deform the morph mesh via another mesh
     if (node instanceof BlendShape) {
@@ -159,15 +159,16 @@ function prepareNode(
 
 function renderLines(
     pass: GPURenderPassEncoder,
-    nodes: Mesh[],
+    meshes: Mesh[],
     context: Context,
     materials: { wire: Material; selected: Material; active: Material }
 ) {
-    if (nodes.length === 0) return
+    if (meshes.length === 0) return
+
     pass.setPipeline(context.shader.p3_idx_line.pipeline)
-    for (const node of nodes) {
-        const xform = node.getXForm()!
-        pass.setBindGroup(1, node.modelView.bindGroup)
+    for (const mesh of meshes) {
+        const xform = mesh.getXForm()!
+        pass.setBindGroup(1, mesh.modelView.bindGroup)
         if (context.selection.isActive(xform)) {
             pass.setBindGroup(2, materials.active.bindGroup)
         } else if (context.selection.selected.has(xform)) {
@@ -175,51 +176,49 @@ function renderLines(
         } else {
             pass.setBindGroup(2, materials.wire.bindGroup)
         }
-        pass.setVertexBuffer(0, node.points.buffer)
-        pass.setIndexBuffer(node.edgeIndices.buffer, 'uint32')
-        pass.drawIndexed(node.edgeIndices.length)
+        pass.setVertexBuffer(0, mesh.points.buffer)
+        pass.setIndexBuffer(mesh.edgeIndices.buffer, 'uint32')
+        pass.drawIndexed(mesh.edgeIndices.length)
     }
 }
 
-// commit d99a4f1c54c4059044cef41652bf6ee26e2bdb57
-//
-//     const edgeIndices = new IndexBuffer(device, edges)
-//
-//     // const positions = new PositionBuffer(device, cube_XYZ)
-//     const edgeColors = new Float32Array(mesh.positions.length /*3 * cube_XYZ.length*/)
-//     const edgeColorBuffer = new ColorBuffer(device, edgeColors)
-//
-//         if (editorModel.selectionMode.value !== SelectionMode.OBJECT) {
-//             shaderPickPoints.draw(pass, context, modelUniforms, positions, edgeColorBuffer, 0, obj.positions.length / 3)
-//         }
+function renderRGBLines(
+    pass: GPURenderPassEncoder,
+    meshes: Mesh[],
+    context: Context
+) {
+    if (meshes.length === 0) return
 
-// let edgeColors: Float32Array | undefined
-// let edgeColorBuffer: ColorBuffer | undefined
+    pass.setPipeline(context.shader.p3_c3_line.pipeline)
+    for (const mesh of meshes) {
+        pass.setBindGroup(1, mesh.modelView.bindGroup)
+        pass.setVertexBuffer(0, mesh.points.buffer)
+        pass.setVertexBuffer(1, mesh.edgeColorBuffer.buffer)
+        pass.setIndexBuffer(mesh.edgeIndices.buffer, 'uint32')
+        pass.drawIndexed(mesh.edgeIndices.length)
+    }
+}
 
 /**
  * 
  * @param pass 
- * @param nodes 
+ * @param meshes 
  * @param context 
  * @returns 
  */
 function renderPoints(
     pass: GPURenderPassEncoder,
-    nodes: Mesh[],
+    meshes: Mesh[],
     context: Context
 ) {
-    if (nodes.length === 0) return
-    // const shader = context.shader.p3_c3_point
-    // shader.pickUniform.values[0][0] = PICK_SIZE / context.canvas.clientWidth
-    // shader.pickUniform.values[0][1] = PICK_SIZE / context.canvas.clientHeight
-    // shader.pickUniform.writeTo(context.device)
+    if (meshes.length === 0) return
 
     pass.setPipeline(context.shader.p3_c3_point.pipeline)
-    for (const node of nodes) {
-        pass.setBindGroup(1, node.modelView.bindGroup)
-        pass.setVertexBuffer(0, node.points.buffer)
-        pass.setVertexBuffer(1, node.edgeColorBuffer.buffer)
-        pass.draw(6, node.xyz!.length / 3, 0, 0)
+    for (const mesh of meshes) {
+        pass.setBindGroup(1, mesh.modelView.bindGroup)
+        pass.setVertexBuffer(0, mesh.points.buffer)
+        pass.setVertexBuffer(1, mesh.edgeColorBuffer.buffer)
+        pass.draw(6, mesh.xyz!.length / 3, 0, 0)
     }
 }
 
@@ -463,7 +462,7 @@ function loadBlendshapes() {
 
 function initPersitance(selection: ObjectSelection): Root {
     let root: Root | undefined
-    
+
     const jsonString = localStorage.getItem("scenegraph")
     if (jsonString) {
         root = restore(JSON.parse(jsonString), selection) as Root
@@ -536,14 +535,15 @@ export async function main() {
 
     context.paint = () => {
         const buckets: RenderBuckets = {
-            rgbNodes: [] as Mesh[],
-            rgbNodesSelected: [] as Mesh[],
-            texNodes: [] as Mesh[],
-            texNodesSelected: [] as Mesh[],
-            rgbPerPtNodes: [] as Mesh[],
-            rgbPerPtNodesSelected: [] as Mesh[],
-            pointNodes: [] as Mesh[],
-            lineNodes: [] as Mesh[],
+            rgbNodes: [],
+            rgbNodesSelected: [],
+            texNodes: [],
+            texNodesSelected: [],
+            rgbPerPtNodes: [],
+            rgbPerPtNodesSelected: [],
+            pointNodes: [],
+            lineNodes: [],
+            rgbLineNodes: []
         }
         prepareNode(root, editorModel, context, device, buckets)
 
@@ -558,6 +558,7 @@ export async function main() {
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
 
         renderLines(pass, buckets.lineNodes, context, materials)
+        renderRGBLines(pass, buckets.rgbLineNodes, context)
         renderPoints(pass, buckets.pointNodes, context)
         for (let outline of [true, false]) {
             renderRGBFaces(outline, pass, buckets.rgbNodes, buckets.rgbNodesSelected, context, editorModel, background)

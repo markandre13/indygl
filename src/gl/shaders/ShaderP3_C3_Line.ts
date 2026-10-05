@@ -1,13 +1,15 @@
 import { FLOAT32_NUM_BYTES } from "src/gl/buffers/sizeof"
 import type { Context } from "src/gl/Context"
 import { Shader } from "./Shader"
+import { PositionBuffer } from "../buffers/PositionBuffer"
+import { ColorBuffer } from "../buffers/ColorBuffer"
 
-export class ShaderP3C3_Line extends Shader {
+export class ShaderP3_C3_Line extends Shader {
     pipeline: GPURenderPipeline
     constructor(context: Context) {
-        const label = 'p3c3-line'
+        const label = 'p3-c3-line'
         const device = context.device
-        super(device, 'p3c3')
+        super(device, "p3-c3-idx")
         const pipelineDef: GPURenderPipelineDescriptor = {
             label,
             layout: device.device.createPipelineLayout({
@@ -19,10 +21,14 @@ export class ShaderP3C3_Line extends Shader {
             }),
             vertex: {
                 buffers: [{
-                    arrayStride: FLOAT32_NUM_BYTES * 6,
+                    arrayStride: PositionBuffer.bytesPerVertex,
                     attributes: [
-                        { shaderLocation: 0, offset: FLOAT32_NUM_BYTES * 0, format: 'float32x3' },
-                        { shaderLocation: 1, offset: FLOAT32_NUM_BYTES * 3, format: 'float32x3' },
+                        { shaderLocation: 0, ...PositionBuffer.position },
+                    ]
+                }, {
+                    arrayStride: ColorBuffer.bytesPerVertex,
+                    attributes: [
+                        { shaderLocation: 1, ...ColorBuffer.color },
                     ]
                 }],
                 module: this.module
