@@ -15,8 +15,6 @@ export class ShaderCollection {
     readonly floor: ShaderFloor
     readonly outline: ShaderOutline
     readonly p3_idx: ShaderP3_IDX
-    readonly p3_idx_pick_object: ShaderP3_IDX_PickObject
-    readonly p3_pick_point: ShaderP3_PickPoint
     readonly p3_idx_line: ShaderP3_IDX_Line
     readonly p3_n3_idx: ShaderP3_N3_IDX
     readonly p3_n3_t2_idx: ShaderP3_N3_T2_IDX
@@ -24,6 +22,13 @@ export class ShaderCollection {
     readonly p3_c3_point: ShaderP3_C3_Point
     readonly p3c3_line: ShaderP3_C3_Line
     readonly p3_c3_line: ShaderP3_C3_Line
+
+    // shaders to draw into a texture of format 'rgba8unorm'
+    readonly p3_idx_pick_object: ShaderP3_IDX_PickObject
+    readonly p3_pick_point: ShaderP3_PickPoint
+    texture: {
+        readonly p3_idx: ShaderP3_IDX
+    }
 
     constructor(context: Context) {
         this.floor = new ShaderFloor(context)
@@ -38,5 +43,9 @@ export class ShaderCollection {
         this.p3_c3_point = new ShaderP3_C3_Point(context)
         this.p3c3_line = new ShaderP3_C3_Line(context)
         this.p3_c3_line = new ShaderP3_C3_Line(context)
+
+        this.texture = {
+            p3_idx: new ShaderP3_IDX(context, 'rgba8unorm')
+        }
     }
 }

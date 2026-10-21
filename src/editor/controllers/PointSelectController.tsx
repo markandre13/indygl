@@ -1,18 +1,46 @@
-
 import type { Context } from "src/gl/Context"
 import { Controller } from "./Controller"
 import { MouseButton } from "./details/MouseButton"
 import { PICK_SIZE } from "src/gl/shaders/ShaderP3_PickPoint"
 import type { IndyNode } from "src/nodes/IndyNode"
 import { FLOAT32_NUM_BYTES } from "src/gl/buffers/sizeof"
+import { ViewportShading } from "../app/ViewportShading"
+import type { Material } from "src/nodes/Material"
+
+// NEXT STEPS
+// STEP 1 DONE
+// when x-ray mode is off (wire and solid)
+// * draw faces in black when during pick
+// STEP 1.5
+// * draw faces
+// STEP 2
+// * share duplicate code between (Object|Point)SelectController
+// STEP 3
+// * the cube with it's separated faces has 3 points per edge
+// * in Blender x-ray mode
+//   * tool is Tweak
+//     * using click, the selection cycles through all points
+//     * using shift-click, when there are still unselected
+//       edges, they are added one by one
+//   * tool is Circle
+//     * all points are selected with a single click
+//
+//   * Blender cycles through all points within the pick radius
+//
+// * how is blender doing that?
+// * i could maintain an extra list tracking overlapping points in
+//   world space? (or better: determine overlapping points in view space)
 
 export class PointSelectController extends Controller {
     context: Context
     root: IndyNode
-    constructor(context: Context, root: IndyNode) {
+    matBlack: Material
+
+    constructor(context: Context, root: IndyNode, matBlack: Material) {
         super()
         this.context = context
         this.root = root
+        this.matBlack = matBlack
     }
 
     override async pointerdown(ev: PointerEvent) {
@@ -40,15 +68,14 @@ export class PointSelectController extends Controller {
 
         // also: this needs 2 shaders, one for the points, one for the surfaces in black
 
-        const pickShader = context.shader.p3_pick_point
-
         const commandEncoder = device.device!.createCommandEncoder({ label: "point-select-controller" })
         const pass = commandEncoder.beginRenderPass(context.getRenderPassDescriptor(texview, [0, 0, 0, 1]))
 
         pass.setBindGroup(0, context.sceneUniforms.bindGroup)
-        pass.setPipeline(pickShader.pipeline)
-
         pass.setBindGroup(1, node.modelView.bindGroup)
+
+        // draw points
+        pass.setPipeline(context.shader.p3_pick_point.pipeline)
         pass.setVertexBuffer(0, node.points.buffer)
         pass.draw(
             6, // vertex count
@@ -56,6 +83,17 @@ export class PointSelectController extends Controller {
             0, // first vertex
             0  // first index
         )
+
+        // when not in x-ray mode, render surfaces in black
+        if (context.editorModel.viewportShading.value != ViewportShading.WIREFRAME_XRAY &&
+            context.editorModel.viewportShading.value != ViewportShading.SOLID_XRAY) {
+
+            pass.setPipeline(context.shader.texture.p3_idx.pipeline)
+            pass.setBindGroup(2, this.matBlack.bindGroup)
+
+            pass.setIndexBuffer(node.indices.buffer, 'uint32')
+            pass.drawIndexed(node.indices.length)
+        }
 
         pass.end()
 

@@ -7,6 +7,7 @@ export class ShaderP3_IDX extends Shader {
 
     constructor(
         context: Context,
+        presentationFormat: GPUTextureFormat = context.presentationFormat,
         label = 'p3-idx',
         topology: GPUPrimitiveTopology = 'triangle-list',
         cullMode: GPUCullMode = 'back',
@@ -36,7 +37,7 @@ export class ShaderP3_IDX extends Shader {
             },
             fragment: {
                 module: this.module,
-                targets: [{ format: context.presentationFormat }]
+                targets: [{ format: presentationFormat }]
             },
             primitive: { topology, cullMode },
             depthStencil: {

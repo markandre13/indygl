@@ -510,6 +510,14 @@ export async function main() {
     editorModel.viewportShading.signal.add(context.invalidate)
     new ResizeObserver(context.invalidate).observe(canvas)
 
+    // FIXME: these materials are internal and should not be nodes => split the Material class?
+    const matBlack = new Material(root, [0, 0, 0, 1])
+    const matWire = new Material(root, [0, 0, 0, 1])
+    const matObjectSelected = new Material(root, [0.929, 0.341, 0, 1])
+    const matActiveObject = new Material(root, [1, 0.627, 0.157, 1])
+    const background = new Material(root, context.backgroundColor)
+    const materials = { wire: matWire, selected: matObjectSelected, active: matActiveObject }
+
     editorModel.selectionMode.signal.add(() => {
         context.clearController()
         switch (editorModel.selectionMode.value) {
@@ -520,18 +528,11 @@ export async function main() {
                 break
             default:
                 context.pushController(new BasicController(context))
-                context.pushController(new PointSelectController(context, root))
+                context.pushController(new PointSelectController(context, root, matBlack))
         }
     })
     editorModel.selectionMode.signal.emit()
 
-    // FIXME: these materials are internal and should not be nodes => split the Material class?
-    const matWire = new Material(root, [0, 0, 0, 1])
-    const matObjectSelected = new Material(root, [0.929, 0.341, 0, 1])
-    const matActiveObject = new Material(root, [1, 0.627, 0.157, 1])
-    const background = new Material(root, context.backgroundColor)
-
-    const materials = { wire: matWire, selected: matObjectSelected, active: matActiveObject }
 
     context.paint = () => {
         const buckets: RenderBuckets = {

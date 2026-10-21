@@ -106,13 +106,15 @@ export function OutlineChevron(props?: {
 }
 
 /**
- * Display data of current file.
+ * Display data of the current file.
+ * 
+ * Also allows to select objects when in edit mode.
  */
 export function Outliner(props: OutlinerProps) {
 
     const outliner = <div class="outliner" ref={props.ref} /> as HTMLElement
 
-    // FIXME: seting the background via style={{backgroundImage: encodeURIComponent(backgroundImage)}} ain't working
+    // FIXME: setting the background via style={{backgroundImage: encodeURIComponent(backgroundImage)}} ain't working
     const barHeight = 22
     let backgroundImage = `<svg xmlns="http://www.w3.org/2000/svg" class="outliner-bar" viewBox="0 0 40 ${2 * barHeight}">`
         + `<rect x="0" y="0" width="40" height="${barHeight}" fill="rgba(0,0,0,0)" stroke="none" />`
