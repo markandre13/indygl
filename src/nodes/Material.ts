@@ -1,7 +1,7 @@
 import { PropertyTab } from "src/editor/app/PropertyTab"
 import { ColorUniform } from "../gl/buffers/ColorUniform"
 import { Texture } from "../gl/buffers/Texture"
-import { IndyNode, Root, type NodeUiHints } from "./IndyNode"
+import { IndyNode, Root, type Node2Name, type NodeUiHints } from "./IndyNode"
 
 /**
  * TODO: for Material to work similar to Blender, we'd need a global list of materials
@@ -39,7 +39,7 @@ export class Material extends IndyNode {
         }
     }
 
-    persist(data: any) {
+    override persist(data: any, _: Node2Name) {
         if (this._rgba) {
             data.rgba = this._rgba
         }

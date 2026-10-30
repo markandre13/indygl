@@ -103,7 +103,8 @@ describe("IndyNode", () => {
                 "name": "Cube",
                 "#type": "Mesh",
                 "filename": "obj/mh/cube.obj",
-                "material": "/Root/Material#2"
+                "material": "/Root/Material#2",
+                "vflags": [0, 0, 0, 0, 1, 1, 1, 1]
             }]
         }, {
             "name": "Material#2",
@@ -172,6 +173,7 @@ function loadDemoScene(): Root {
     cube.objectName = cubeMesh.dataName = "Cube"
     cubeMesh.material = new Material(root, [0, 0.2, 1, 1])
     cube.transform = mat4.create()
+    cubeMesh.vflags = [0, 0, 0, 0, 1, 1, 1, 1]
     mat4.translate(cube.transform, cube.transform, vec3.fromValues(2, 1, 4))
 
     const human = new XForm(root)

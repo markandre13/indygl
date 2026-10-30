@@ -11,11 +11,18 @@ import type { Material } from "src/nodes/Material"
 // STEP 1 DONE
 // when x-ray mode is off (wire and solid)
 // * draw faces in black when during pick
+// STEP 1.1
+// * persist/restore selected points
+// STEP 1.2
+// * select with/without shift key
+// STEP 1.3
+// * move selected points
 // STEP 1.5
-// * draw faces
+// * draw faces (this one is tricky because of the transparency. try to find out which algorthims blender uses)
 // STEP 2
 // * share duplicate code between (Object|Point)SelectController
 // STEP 3
+// handle points close to each other where picking via texture only get's one
 // * the cube with it's separated faces has 3 points per edge
 // * in Blender x-ray mode
 //   * tool is Tweak
@@ -169,13 +176,20 @@ export class PointSelectController extends Controller {
         // console.log(`pointIdx = ${pointIdx}`)
 
         if (pointIdx >= 0) {
+            // todo: this is actually stuff which belongs into Mesh. but the write buffer should happen on-demand
             const edgeColors = node._edgeColors!
             const edgeColorBuffer = node._edgeColorBuffer!
+
+            // toggle edge
+            if (node.vflags === undefined) {
+                node.vflags = new Array(node.xyz!!.length / 3).fill(0)
+            }
+            node.vflags[pointIdx] ^= 1
 
             // toggle color of edge 
             // todo: blender has last selected point in white
             // todo: blender uses shift to add to selection, non-shift to deselect other points
-            const v = edgeColors[pointColorIdx] ? [0, 0, 0] : [1, 0.5, 0]// #fe7900
+            const v = node.vflags[pointIdx] ? [1, 0.5, 0] : [0, 0, 0] // #fe7900
             edgeColors[pointColorIdx] = v[0]
             edgeColors[pointColorIdx + 1] = v[1]
             edgeColors[pointColorIdx + 2] = v[2]

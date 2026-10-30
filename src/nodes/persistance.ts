@@ -1,9 +1,8 @@
 import type { ObjectSelectionAPI } from "src/gl/ObjectSelection"
-import { Root, type IndyNode } from "./IndyNode"
+import { Root, type IndyNode, type Node2Name } from "./IndyNode"
 import { Material } from "./Material"
 import { Mesh } from "./Mesh"
 import { XForm } from "./XForm"
-import { mat4 } from "gl-matrix"
 import { BlendShapeGroup } from "./BlendShapeGroup"
 import { BlendShape } from "./BlendShape"
 
@@ -41,25 +40,18 @@ function decode(data: any, selection: ObjectSelectionAPI, parent: IndyNode | und
     const type = data["#type"]
     const children = data["#children"] ?? []
     let node: IndyNode | undefined
+    // TODO: rebuild the tree 1st, but with names. then call restore() so that it can find referenced nodes by name
     switch (type) {
         case "Root":
             node = new Root()
             break
         case "XForm":
-            node = new XForm(parent!!, data.name)
-            if (data.transform) {
-                const t = data.transform as number[]
-                (node as XForm).transform = mat4.fromValues(
-                    t[0], t[1], t[2], t[3],
-                    t[4], t[5], t[6], t[7],
-                    t[8], t[9], t[10], t[11],
-                    t[12], t[13], t[14], t[15]
-                )
-            }
+            node = new XForm(parent!!)
+            node.restore(data)
             break
         case "Mesh":
-            node = new Mesh(parent as any, data.filename)
-            node.name = data.name
+            node = new Mesh(parent as any)
+            node.restore(data)
             break
         case "Material":
             node = new Material(parent as any, data.rgba ? data.rgba : data.texture)
@@ -67,19 +59,11 @@ function decode(data: any, selection: ObjectSelectionAPI, parent: IndyNode | und
             break
         case "BlendShapeGroup":
             node = new BlendShapeGroup(parent as any)
-            if (data.transform) {
-                const t = data.transform as number[]
-                (node as XForm).transform = mat4.fromValues(
-                    t[0], t[1], t[2], t[3],
-                    t[4], t[5], t[6], t[7],
-                    t[8], t[9], t[10], t[11],
-                    t[12], t[13], t[14], t[15]
-                )
-            }
+            node.restore(data)
             break
         case "BlendShape":
-            node = new BlendShape(parent as any, "", "");
-            (node as BlendShape).restore(data)
+            node = new BlendShape(parent as any, "", "")
+            node.restore(data)
             break
         default:
             throw Error(`restore: unknown node type '${type}'`)
@@ -100,7 +84,6 @@ function decode(data: any, selection: ObjectSelectionAPI, parent: IndyNode | und
     return node
 }
 
-
 /**
  * make a unique names for all nodes
  * 
@@ -108,7 +91,7 @@ function decode(data: any, selection: ObjectSelectionAPI, parent: IndyNode | und
  * * appends #<number>
  * 
  */
-function makenames(node: IndyNode, node2name: Map<IndyNode, string>, usedNames = new Set<string>(), path: string = "/") {
+function makenames(node: IndyNode, node2name: Node2Name, usedNames = new Set<string>(), path: string = "/") {
     // make node.name unique within it's parent
     while (usedNames.has(path + node.name)) {
         const s = node.name.split("#")
@@ -128,7 +111,6 @@ function makenames(node: IndyNode, node2name: Map<IndyNode, string>, usedNames =
     }
 }
 
-// NOTE: we need links! try usd style pathnames
 function encode(node: IndyNode, selection: ObjectSelectionAPI, node2name: Map<IndyNode, string>) {
     const data = {} as any
     data.name = node.name
@@ -141,24 +123,8 @@ function encode(node: IndyNode, selection: ObjectSelectionAPI, node2name: Map<In
         data.active = true
     }
 
-    if (node instanceof Mesh) {
-        data.filename = node.filename
-        if (node.material) {
-            data.material = node2name.get(node.material)
-        }
-    } else if (node instanceof XForm) {
-        if (node.transform) {
-            data.transform = Array.from(node.transform)
-        }
-    } else if (node instanceof Material) {
-        node.persist(data)
-    } else if (node instanceof BlendShapeGroup) {
-        if (node.transform) {
-            data.transform = Array.from(node.transform)
-        }
-    } else if (node instanceof BlendShape) {
-        node.persist(data)
-    }
+    node.persist(data, node2name)
+
     const children: any[] = []
     for (const child of node.children) {
         children.push(encode(child, selection, node2name))

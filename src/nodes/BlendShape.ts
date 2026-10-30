@@ -1,5 +1,5 @@
 import { PropertyTab } from 'src/editor/app/PropertyTab'
-import { IndyNode, type NodeUiHints } from './IndyNode'
+import { IndyNode, type Node2Name, type NodeUiHints } from './IndyNode'
 import { BlendShapeGroup } from './BlendShapeGroup'
 import { vec3, type mat4 } from 'gl-matrix'
 import { Mesh } from './Mesh'
@@ -33,11 +33,11 @@ export class BlendShape extends IndyNode {
     _meshData?: MeshData
     _mesh?: Mesh
 
-    persist(data: any) {
+    override persist(data: any, _: Node2Name) {
         data.name = this.name
         data.filename = this.filename
     }
-    restore(data: any) {
+    override restore(data: any) {
         this.name = data.name
         this.filename = data.filename
     }

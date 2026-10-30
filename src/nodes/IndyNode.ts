@@ -33,7 +33,12 @@ export interface NodeUiHints {
     propertyTab: PropertyTab
 }
 
+export type Node2Name = Map<IndyNode, string>
+
 export class IndyNode {
+
+    persist(data: any, node2Name: Node2Name) {}
+    restore(data: any) {}
 
     // note: here Smalltalk has an advantage because there
     // what defined here as static is a class too.

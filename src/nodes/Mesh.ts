@@ -9,7 +9,7 @@ import { smoothShading } from "src/gl/algorithms/smoothShading"
 import type { MeshData } from "../gl/algorithms/MeshData"
 import type { MeshSubset } from "src/gl/algorithms/MeshSubset"
 import { edges } from "src/gl/algorithms/edges"
-import { IndyNode, NODE_CHANGE, type NodeUiHints } from "./IndyNode"
+import { IndyNode, NODE_CHANGE, type Node2Name, type NodeUiHints } from "./IndyNode"
 import { XForm } from "./XForm"
 import { vec3 } from "gl-matrix"
 import { WavefrontObj } from "src/gl/file/WavefrontObj"
@@ -43,7 +43,7 @@ export class Mesh extends IndyNode implements MeshData {
     }
     #show = true
 
-    filename?: string
+    _filename?: string
     dataName?: string
 
     _modelView?: ModelUniform
@@ -66,11 +66,11 @@ export class Mesh extends IndyNode implements MeshData {
     /**
      * vertex flags
      * 
-     * - 1: selected
+     * * 1: selected
      * 
      *      similar to Blender, which edges are selected in edit mode is persisted
      */
-    vflags?: ArrayLike<number>
+    vflags?: Array<number>
 
     /** vertex color, e.g. used to color points in edit mode, visuallize weights, blendshape */
     rgb?: ArrayLike<number>
@@ -83,24 +83,48 @@ export class Mesh extends IndyNode implements MeshData {
 
         // this.modelView = new ModelUniform(this.context)
         if (typeof optOrFilename === "string") {
-            const filename = this.filename = optOrFilename
-            fetch(filename).then(response => {
-                response.text().then(body => {
-                    if (!response.ok) {
-                        throw Error(`failed to load '${filename}': ${response.status} ${response.statusText}: ${body}`)
-                    }
-                    const obj = new WavefrontObj(filename, body)
-                    this.init(obj)
-                    this.dirty = true
-                    // this.context.invalidate()
-                }).catch(e => {
-                    console.error(e)
-                })
+            this.filename = optOrFilename
+        } else {
+            this.init(optOrFilename)
+        }
+    }
+
+    get filename(): string | undefined { return this._filename }
+    set filename(filename: string) {
+        this._filename = filename
+        fetch(filename).then(response => {
+            response.text().then(body => {
+                if (!response.ok) {
+                    throw Error(`failed to load '${filename}': ${response.status} ${response.statusText}: ${body}`)
+                }
+                const obj = new WavefrontObj(filename, body)
+                this.init(obj)
+                this.dirty = true
+                // this.context.invalidate()
             }).catch(e => {
                 console.error(e)
             })
-        } else {
-            this.init(optOrFilename)
+        }).catch(e => {
+            console.error(e)
+        })
+    }
+
+    override persist(data: any, node2name: Node2Name): void {
+        data.filename = this._filename
+        if (this.vflags) {
+            data.vflags = this.vflags
+        }
+        if (this.material) {
+            data.material = node2name.get(this.material)
+        }
+    }
+    override restore(data: any): void {
+        this.name = data.name
+        if (data.filename) {
+            this.filename = data.filename
+        }
+        if (data.vflags) {
+            this.vflags = data.vflags
         }
     }
 
@@ -260,6 +284,14 @@ export class Mesh extends IndyNode implements MeshData {
     get edgeColorBuffer(): ColorBuffer {
         if (this._edgeColors === undefined) {
             this._edgeColors = new Float32Array(this.xyz!.length)
+            if (this.vflags !== undefined) {
+                for (let idx = 0, colorIdx = 0; idx < this.vflags.length; ++idx) {
+                    const v = this.vflags[idx] ? [1, 0.5, 0] : [0, 0, 0] // #fe7900
+                    this._edgeColors[colorIdx++] = v[0]
+                    this._edgeColors[colorIdx++] = v[1]
+                    this._edgeColors[colorIdx++] = v[2]
+                }
+            }
             this._edgeColorBuffer = new ColorBuffer(this.context.device, this._edgeColors)
         }
         return this._edgeColorBuffer!
